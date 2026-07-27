@@ -1,8 +1,6 @@
-using Hgs.Share.Exceptions;
+﻿using Hgs.Share.Exceptions;
 using Hgs.Share.Responses.ApiResponses;
 using Microsoft.Data.SqlClient;
-using Serilog;
-using System.Net;
 using System.Text.Json;
 
 namespace API.Middleware;
@@ -37,108 +35,116 @@ public class ExceptionHandlingMiddleware
 
     private async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
-        _logger.LogError(exception, "An unhandled exception occurred: {Message}", exception.Message);
+        var requestId = context.TraceIdentifier;
+        var method = context.Request.Method;
+        var path = context.Request.Path;
 
-        var response = context.Response;
-        response.ContentType = "application/json";
+        context.Response.ContentType = "application/json";
 
-        var errorResponse = new ApiResponse<object>();
+        int statusCode;
+        string message;
+        object? data = null;
 
         switch (exception)
         {
-            case NotFoundException notFoundEx:
-                response.StatusCode = (int)HttpStatusCode.NotFound;
-                errorResponse = ApiResponse<object>.FailResponse(notFoundEx.Message, notFoundEx.StatusCode);
-                Log.Information("NotFoundException: {Message}", notFoundEx.Message);
+            case NotFoundException ex:
+                statusCode = ex.StatusCode;
+                message = ex.Message;
                 break;
 
-            case UnauthorizedException unauthorizedEx:
-                response.StatusCode = (int)HttpStatusCode.Unauthorized;
-                errorResponse = ApiResponse<object>.FailResponse(unauthorizedEx.Message, unauthorizedEx.StatusCode);
-                Log.Information("UnauthorizedException: {Message}", unauthorizedEx.Message);
+            case BadRequestException ex:
+                statusCode = ex.StatusCode;
+                message = ex.Message;
                 break;
 
-            case ForbiddenException forbiddenEx:
-                response.StatusCode = (int)HttpStatusCode.Forbidden;
-                errorResponse = ApiResponse<object>.FailResponse(forbiddenEx.Message, forbiddenEx.StatusCode);
-                Log.Information("ForbiddenException: {Message}", forbiddenEx.Message);
+            case ValidationException ex:
+                statusCode = ex.StatusCode;
+                message = ex.Message;
+                data = ex.Errors;
                 break;
 
-            case BadRequestException badRequestEx:
-                response.StatusCode = (int)HttpStatusCode.BadRequest;
-                errorResponse = ApiResponse<object>.FailResponse(badRequestEx.Message, badRequestEx.StatusCode);
-                Log.Information("BadRequestException: {Message}", badRequestEx.Message);
+            case UnauthorizedException ex:
+                statusCode = ex.StatusCode;
+                message = ex.Message;
                 break;
 
-            case ValidationException validationEx:
-                response.StatusCode = (int)HttpStatusCode.BadRequest;
-                errorResponse = ApiResponse<object>.FailResponse(validationEx.Message, validationEx.StatusCode);
-                if (validationEx.Errors.Count > 0)
-                {
-                    errorResponse.Data = validationEx.Errors;
-                }
-                Log.Information("ValidationException: {Message} - Errors: {Errors}", 
-                    validationEx.Message, JsonSerializer.Serialize(validationEx.Errors));
+            case ForbiddenException ex:
+                statusCode = ex.StatusCode;
+                message = ex.Message;
                 break;
 
-            case ConflictException conflictEx:
-                response.StatusCode = (int)HttpStatusCode.Conflict;
-                errorResponse = ApiResponse<object>.FailResponse(conflictEx.Message, conflictEx.StatusCode);
-                Log.Information("ConflictException: {Message}", conflictEx.Message);
+            case ConflictException ex:
+                statusCode = ex.StatusCode;
+                message = ex.Message;
                 break;
 
-            case TooManyRequestsException tooManyRequestsEx:
-                response.StatusCode = (int)HttpStatusCode.TooManyRequests;
-                errorResponse = ApiResponse<object>.FailResponse(tooManyRequestsEx.Message, tooManyRequestsEx.StatusCode);
-                Log.Information("TooManyRequestsException: {Message}", tooManyRequestsEx.Message);
+            case TooManyRequestsException ex:
+                statusCode = ex.StatusCode;
+                message = ex.Message;
                 break;
 
-            case BusinessRuleException businessRuleEx:
-                response.StatusCode = 422; // Unprocessable Entity
-                errorResponse = ApiResponse<object>.FailResponse(businessRuleEx.Message, businessRuleEx.StatusCode);
-                Log.Information("BusinessRuleException: {Message}", businessRuleEx.Message);
+            case BusinessRuleException ex:
+                statusCode = ex.StatusCode;
+                message = ex.Message;
                 break;
 
-            case SqlException sqlEx:
-                response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                errorResponse = ApiResponse<object>.FailResponse("A database error occurred. Please try again later.", 500);
-                Log.Error(sqlEx, "SqlException: {Message} - Error Number: {ErrorNumber}", 
-                    sqlEx.Message, sqlEx.Number);
-                break;
-
-            case NullReferenceException nullRefEx:
-                response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                errorResponse = ApiResponse<object>.FailResponse("An internal server error occurred. Please try again later.", 500);
-                Log.Error(nullRefEx, "NullReferenceException: {Message}", nullRefEx.Message);
+            case SqlException:
+                statusCode = StatusCodes.Status500InternalServerError;
+                message = "A database error occurred. Please try again later.";
                 break;
 
             default:
-                response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                errorResponse = ApiResponse<object>.FailResponse("An unexpected error occurred. Please try again later.", 500);
-                Log.Error(exception, "Unhandled Exception: {Type} - {Message}", 
-                    exception.GetType().Name, exception.Message);
+                statusCode = StatusCodes.Status500InternalServerError;
+                message = "An unexpected error occurred. Please try again later.";
                 break;
         }
 
-        // Include detailed error information in development mode
-        if (_env.IsDevelopment())
-        {
-            var errorDetails = new
-            {
-                Type = exception.GetType().Name,
-                Message = exception.Message,
-                StackTrace = exception.StackTrace,
-                InnerException = exception.InnerException?.Message
-            };
+        context.Response.StatusCode = statusCode;
 
-            errorResponse.Data = errorDetails;
+        // Log đúng 1 lần
+        if (statusCode >= 500)
+        {
+            _logger.LogError(
+                exception,
+                "[{RequestId}] {Method} {Path} => {StatusCode} - {Message}",
+                requestId,
+                method,
+                path,
+                statusCode,
+                exception.Message);
+        }
+        else
+        {
+            _logger.LogWarning(
+                "[{RequestId}] {Method} {Path} => {StatusCode} - {Message}",
+                requestId,
+                method,
+                path,
+                statusCode,
+                exception.Message);
         }
 
-        var result = JsonSerializer.Serialize(errorResponse, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        });
+        var response = ApiResponse<object>.FailResponse(message, statusCode);
 
-        await response.WriteAsync(result);
+        response.Data = data;
+
+        if (_env.IsDevelopment())
+        {
+            response.Data = new
+            {
+                RequestId = requestId,
+                Exception = exception.GetType().Name,
+                Message = exception.Message,
+                StackTrace = exception.StackTrace,
+                ValidationErrors = data
+            };
+        }
+
+        await context.Response.WriteAsync(
+            JsonSerializer.Serialize(response,
+            new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            }));
     }
 }
