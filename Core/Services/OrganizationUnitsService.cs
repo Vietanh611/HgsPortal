@@ -1,4 +1,5 @@
 using Core.Interfaces;
+using Data.DbContexts;
 using Domain.Entities.Identity;
 using Hgs.Share.Requests.OrganizationUnits;
 using Microsoft.EntityFrameworkCore;
@@ -7,9 +8,9 @@ namespace Core.Services;
 
 public class OrganizationUnitsService : IOrganizationUnitsService
 {
-    private readonly IAppDbContext _dbContext;
+    private readonly HgsDbContext _dbContext;
 
-    public OrganizationUnitsService(IAppDbContext dbContext)
+    public OrganizationUnitsService(HgsDbContext dbContext)
     {
         _dbContext = dbContext;
     }

@@ -1,4 +1,5 @@
 using Core.Interfaces;
+using Data.DbContexts;
 using Domain.Entities.Identity;
 using Hgs.Share.Requests.Users;
 using Microsoft.EntityFrameworkCore;
@@ -8,9 +9,9 @@ namespace Core.Services;
 
 public class UsersService : IUsersService
 {
-    private readonly IAppDbContext _dbContext;
+    private readonly HgsDbContext _dbContext;
 
-    public UsersService(IAppDbContext dbContext)
+    public UsersService(HgsDbContext dbContext)
     {
         _dbContext = dbContext;
     }

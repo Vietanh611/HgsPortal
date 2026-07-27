@@ -1,4 +1,5 @@
 using Core.Interfaces;
+using Data.DbContexts;
 using Domain.Entities.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -6,9 +7,9 @@ namespace Core.Services;
 
 public class RolesService : IRolesService
 {
-    private readonly IAppDbContext _dbContext;
+    private readonly HgsDbContext _dbContext;
 
-    public RolesService(IAppDbContext dbContext)
+    public RolesService(HgsDbContext dbContext)
     {
         _dbContext = dbContext;
     }

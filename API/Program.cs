@@ -6,7 +6,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using Serilog.Context;
 using System.Text;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,11 +28,34 @@ builder.Services.AddDbContext<HgsDbContext>(options => options.UseSqlServer(buil
 builder.Services.AddDbContext<AcdmContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("ACDMconnection")));
 
 
-builder.Services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<HgsDbContext>());
 builder.Services.AddScoped<IOrganizationUnitsService, OrganizationUnitsService>();
 builder.Services.AddScoped<IUsersService, UsersService>();
 builder.Services.AddScoped<IRolesService, RolesService>();
 builder.Services.AddScoped<ICustomerSatisfactionService, CustomerSatisfactionService>();
+builder.Services.AddScoped<IFlightService, FlightService>();
+
+var rateLimitSettings = builder.Configuration.GetSection("RateLimiting");
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        RateLimitPartition.GetSlidingWindowLimiter(
+            partitionKey: context.User?.Identity?.Name ?? context.Request.Headers.Host.ToString(),
+            factory: _ => new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = rateLimitSettings.GetValue<int>("PermitLimit"),
+                Window = TimeSpan.FromSeconds(rateLimitSettings.GetValue<int>("WindowInSeconds")),
+                SegmentsPerWindow = 2,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = rateLimitSettings.GetValue<int>("QueueLimit")
+            }));
+
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode = 429;
+        await context.HttpContext.Response.WriteAsync("Too many requests. Please try again later.", cancellationToken);
+    };
+});
 
 builder.Services.AddAuthentication(options =>
 {
@@ -68,6 +93,19 @@ if (app.Environment.IsDevelopment())
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
+app.UseRateLimiter();
+// Add Serilog request logging
+app.Use(async (context, next) =>
+{
+    using (LogContext.PushProperty("RequestId", context.TraceIdentifier))
+    using (LogContext.PushProperty("User", context.User.Identity?.Name ?? "Anonymous"))
+    using (LogContext.PushProperty("Method", context.Request.Method))
+    using (LogContext.PushProperty("Path", context.Request.Path))
+    {
+        await next();
+    }
+});
+app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
 
 app.UseAuthentication();

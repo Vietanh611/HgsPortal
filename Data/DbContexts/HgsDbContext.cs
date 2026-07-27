@@ -1,11 +1,10 @@
-﻿using Core.Interfaces;
-using Domain.Entities.CustomerSatisfaction;
+﻿using Domain.Entities.CustomerSatisfaction;
 using Domain.Entities.Identity;
 using Domain.Entities.System;
 using Microsoft.EntityFrameworkCore;
 namespace Data.DbContexts
 {
-    public class HgsDbContext : DbContext, IAppDbContext
+    public class HgsDbContext : DbContext
     {
         public HgsDbContext(DbContextOptions<HgsDbContext> options) : base(options)
         {

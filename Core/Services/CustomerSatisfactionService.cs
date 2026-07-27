@@ -1,15 +1,15 @@
 using Core.Interfaces;
+using Data.DbContexts;
 using Domain.Entities.CustomerSatisfaction;
 using Hgs.Share.Requests.CustomerSatisfaction;
 using Microsoft.EntityFrameworkCore;
-
 namespace Core.Services;
 
 public class CustomerSatisfactionService : ICustomerSatisfactionService
 {
-    private readonly IAppDbContext _dbContext;
+    private readonly HgsDbContext _dbContext;
 
-    public CustomerSatisfactionService(IAppDbContext dbContext)
+    public CustomerSatisfactionService(HgsDbContext dbContext)
     {
         _dbContext = dbContext;
     }
