@@ -15,6 +15,9 @@ namespace Data.DbContexts
         public DbSet<UserRoles> UserRoles => Set<UserRoles>();
         public DbSet<RefreshTokens> RefreshTokens => Set<RefreshTokens>();
         public DbSet<Menus> Menus => Set<Menus>();
+        public DbSet<Modules> Modules => Set<Modules>();
+        public DbSet<UserModules> UserModules => Set<UserModules>();
+        public DbSet<UserMenus> UserMenus => Set<UserMenus>();
         public DbSet<OrganizationUnits> OrganizationUnits => Set<OrganizationUnits>();
 
         #region CustomerSatisfaction
@@ -27,9 +30,20 @@ namespace Data.DbContexts
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            //var entities = modelBuilder.Model.GetEntityTypes();
+            //foreach (var e in modelBuilder.Model.GetEntityTypes())
+            //{
+            //    Console.WriteLine($"Entity: {e.ClrType.FullName}");
+
+            //    foreach (var p in e.GetProperties())
+            //    {
+            //        Console.WriteLine($"   {p.Name} : {p.ClrType.FullName}");
+            //    }
+            //}
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.ApplyConfigurationsFromAssembly(typeof(HgsDbContext).Assembly);
+
+
             modelBuilder.Entity<EvaluationReasonLinks>()
         .HasKey(x => new { x.EvaluationId, x.ReasonId });
 

@@ -549,6 +549,245 @@ All flight endpoints require authentication.
 
 ---
 
+## User Roles Endpoints
+
+All user role endpoints require authentication.
+
+### Get All User Role Assignments
+**Endpoint:** `GET /api/userroles`
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Success",
+  "statusCode": 200,
+  "data": [
+    {
+      "id": 1,
+      "userId": 1,
+      "username": "john.doe",
+      "userFullName": "John Doe",
+      "roleId": 2,
+      "roleCode": "ADMIN",
+      "roleName": "Administrator",
+      "assignedAt": "2024-01-15T10:00:00Z",
+      "assignedBy": 1,
+      "expiredAt": null
+    }
+  ]
+}
+```
+
+### Get User Role Assignment by ID
+**Endpoint:** `GET /api/userroles/{id}`
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Success",
+  "statusCode": 200,
+  "data": {
+    "id": 1,
+    "userId": 1,
+    "username": "john.doe",
+    "userFullName": "John Doe",
+    "roleId": 2,
+    "roleCode": "ADMIN",
+    "roleName": "Administrator",
+    "assignedAt": "2024-01-15T10:00:00Z",
+    "assignedBy": 1,
+    "expiredAt": null
+  }
+}
+```
+
+**Error Responses:**
+- `404 Not Found` - User role assignment with specified ID not found
+
+### Get User Roles by User ID
+**Endpoint:** `GET /api/userroles/by-user/{userId}`
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Success",
+  "statusCode": 200,
+  "data": [
+    {
+      "id": 1,
+      "userId": 1,
+      "username": "john.doe",
+      "userFullName": "John Doe",
+      "roleId": 2,
+      "roleCode": "ADMIN",
+      "roleName": "Administrator",
+      "assignedAt": "2024-01-15T10:00:00Z",
+      "assignedBy": 1,
+      "expiredAt": null
+    }
+  ]
+}
+```
+
+### Get User Roles by Role ID
+**Endpoint:** `GET /api/userroles/by-role/{roleId}`
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Success",
+  "statusCode": 200,
+  "data": [
+    {
+      "id": 1,
+      "userId": 1,
+      "username": "john.doe",
+      "userFullName": "John Doe",
+      "roleId": 2,
+      "roleCode": "ADMIN",
+      "roleName": "Administrator",
+      "assignedAt": "2024-01-15T10:00:00Z",
+      "assignedBy": 1,
+      "expiredAt": null
+    }
+  ]
+}
+```
+
+### Assign Role to User
+**Endpoint:** `POST /api/userroles`
+
+**Request Body:**
+```json
+{
+  "userId": 1,
+  "roleId": 2,
+  "expiredAt": "2024-12-31T23:59:59Z"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Success",
+  "statusCode": 200,
+  "data": {
+    "id": 1,
+    "userId": 1,
+    "roleId": 2,
+    "assignedAt": "2024-01-15T10:00:00Z",
+    "expiredAt": "2024-12-31T23:59:59Z"
+  }
+}
+```
+
+**Error Responses:**
+- `404 Not Found` - User or role not found
+- `409 Conflict` - User already has this role assigned
+
+### Update User Role Assignment
+**Endpoint:** `PUT /api/userroles/{id}`
+
+**Request Body:**
+```json
+{
+  "expiredAt": "2024-12-31T23:59:59Z"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Success",
+  "statusCode": 200,
+  "data": {
+    "id": 1,
+    "userId": 1,
+    "roleId": 2,
+    "assignedAt": "2024-01-15T10:00:00Z",
+    "expiredAt": "2024-12-31T23:59:59Z"
+  }
+}
+```
+
+**Error Responses:**
+- `404 Not Found` - User role assignment not found
+
+### Remove Role from User
+**Endpoint:** `DELETE /api/userroles/{id}`
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Success",
+  "statusCode": 200,
+  "data": true
+}
+```
+
+**Error Responses:**
+- `404 Not Found` - User role assignment not found
+- `409 Conflict` - Cannot remove the last role from a user
+
+### Assign Multiple Roles to User
+**Endpoint:** `POST /api/userroles/assign-multiple`
+
+**Request Body:**
+```json
+{
+  "userId": 1,
+  "roleIds": [2, 3, 4],
+  "expiredAt": "2024-12-31T23:59:59Z"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Roles assigned successfully",
+  "statusCode": 200,
+  "data": true
+}
+```
+
+**Error Responses:**
+- `404 Not Found` - User or role not found
+
+### Remove Multiple Roles from User
+**Endpoint:** `POST /api/userroles/remove-multiple`
+
+**Request Body:**
+```json
+{
+  "userId": 1,
+  "roleIds": [2, 3]
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Roles removed successfully",
+  "statusCode": 200,
+  "data": true
+}
+```
+
+**Error Responses:**
+- `404 Not Found` - User not found
+- `409 Conflict` - Cannot remove the last role from a user
+
+---
+
 ## Standard Response Format
 
 All API responses follow this format:

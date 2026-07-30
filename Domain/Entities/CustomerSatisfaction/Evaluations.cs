@@ -9,16 +9,20 @@ namespace Domain.Entities.CustomerSatisfaction
         [Key]
         public int Id { get; set; }
 
-        public int FlightId { get; set; }
+        public int? FlightId { get; set; }
 
-        public int DeviceId { get; set; }
+        public int? StaffUserId { get; set; }
 
-        public int Rating { get; set; }
+        public int? DeviceId { get; set; }
 
-        [StringLength(1000)]
-        public string? Comment { get; set; }
+        [StringLength(100)]
+        public string? CheckinCounterName { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public int RatingLevel { get; set; }
+
+        public int EvaluationType { get; set; }
+
+        public DateTime CreatedAt { get; set; }
 
         #region Navigation
 

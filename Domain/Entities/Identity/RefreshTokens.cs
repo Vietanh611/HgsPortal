@@ -9,6 +9,7 @@
         public string Token { get; set; } = string.Empty;
 
         public string JwtId { get; set; } = string.Empty;
+        public string? UserAgent { get; set; }
 
         public DateTime CreatedAt { get; set; }
 
