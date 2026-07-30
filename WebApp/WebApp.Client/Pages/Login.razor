@@ -1,0 +1,217 @@
+@page "/login"
+@using WebApp.Client.Layout
+@layout EmptyLayout
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Login</PageTitle>
+
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <h1>HGS Portal</h1>
+            <p>Sign in to your account</p>
+        </div>
+
+        <EditForm Model="@loginRequest" OnValidSubmit="HandleLogin">
+            <DataAnnotationsValidator />
+
+            <div class="form-group">
+                <label for="username">Username</label>
+                <InputText id="username" @bind-Value="loginRequest.Username" class="form-control" placeholder="Enter your username" />
+                <ValidationMessage For="() => loginRequest.Username" class="error-message" />
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <InputText id="password" type="password" @bind-Value="loginRequest.Password" class="form-control" placeholder="Enter your password" />
+                <ValidationMessage For="() => loginRequest.Password" class="error-message" />
+            </div>
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-error">
+                    @errorMessage
+                </div>
+            }
+
+            <button type="submit" class="btn btn-primary btn-block" disabled="@isLoading">
+                @if (isLoading)
+                {
+                    <span class="spinner"></span>
+                    <span>Signing in...</span>
+                }
+                else
+                {
+                    <span>Sign In</span>
+                }
+            </button>
+        </EditForm>
+
+        <div class="login-footer">
+            <p>Don't have an account? <a href="/register">Register</a></p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .login-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background: linear-gradient(135deg, var(--hgs-blue) 0%, var(--hgs-blue-dark) 100%);
+        padding: 1rem;
+    }
+
+    .login-card {
+        background: white;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-lg);
+        padding: 2.5rem;
+        width: 100%;
+        max-width: 400px;
+    }
+
+    .login-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .login-header h1 {
+        color: var(--hgs-blue);
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        font-weight: 700;
+    }
+
+    .login-header p {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+        margin: 0;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: var(--text);
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+
+    .error-message {
+        color: #e53e3e;
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+    }
+
+    .alert {
+        padding: 0.75rem 1rem;
+        border-radius: var(--radius);
+        margin-bottom: 1.5rem;
+        font-size: 0.9rem;
+    }
+
+    .alert-error {
+        background-color: #fee;
+        color: #c53030;
+        border: 1px solid #fc8181;
+    }
+
+    .btn-block {
+        width: 100%;
+    }
+
+    .spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: white;
+        animation: spin 0.8s linear infinite;
+        margin-right: 0.5rem;
+    }
+
+    @@keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .login-footer {
+        text-align: center;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
+    }
+
+    .login-footer p {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    .login-footer a {
+        color: var(--hgs-blue);
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .login-footer a:hover {
+        text-decoration: underline;
+    }
+</style>
+
+@code {
+    private AuthenticateRequest loginRequest = new();
+    private string errorMessage = string.Empty;
+    private bool isLoading = false;
+
+    private async Task HandleLogin()
+    {
+        isLoading = true;
+        errorMessage = string.Empty;
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("auth/login", loginRequest);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse<AuthenticateResponse>>();
+                
+                if (apiResponse != null && apiResponse.Success && apiResponse.Data != null)
+                {
+                    // Store tokens in localStorage using JS interop
+                    await JS.InvokeVoidAsync("localStorage.setItem", "accessToken", apiResponse.Data.AccessToken);
+                    await JS.InvokeVoidAsync("localStorage.setItem", "refreshToken", apiResponse.Data.RefreshToken);
+                    await JS.InvokeVoidAsync("localStorage.setItem", "expiresAt", apiResponse.Data.ExpiresAt.ToString());
+                    
+                    // Navigate to home page
+                    Navigation.NavigateTo("/");
+                }
+                else
+                {
+                    errorMessage = apiResponse?.Message ?? "Login failed";
+                }
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                errorMessage = $"Login failed: {response.StatusCode}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}
