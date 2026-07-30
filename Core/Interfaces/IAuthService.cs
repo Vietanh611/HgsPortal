@@ -1,0 +1,24 @@
+using Hgs.Share.Requests;
+using Hgs.Share.Requests.Users;
+using Hgs.Share.Responses;
+
+namespace Core.Interfaces;
+
+public interface IAuthService
+{
+    Task<AuthenticateResponse> LoginAsync(
+        AuthenticateRequest request,
+        string? userAgent,
+        string? ipAddress,
+        CancellationToken cancellationToken = default);
+
+    Task<AuthenticateResponse> RefreshTokenAsync(
+        RefreshTokenRequest request,
+        string? userAgent,
+        string? ipAddress,
+        CancellationToken cancellationToken = default);
+
+    Task LogoutAsync(
+        LogoutRequest request,
+        CancellationToken cancellationToken = default);
+}

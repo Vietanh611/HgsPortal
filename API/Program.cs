@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Serilog.Context;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
 
@@ -33,6 +34,9 @@ builder.Services.AddScoped<IUsersService, UsersService>();
 builder.Services.AddScoped<IRolesService, RolesService>();
 builder.Services.AddScoped<ICustomerSatisfactionService, CustomerSatisfactionService>();
 builder.Services.AddScoped<IFlightService, FlightService>();
+builder.Services.AddScoped<IUserRoleService, UserRoleService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IMenuService, MenuService>();
 
 var rateLimitSettings = builder.Configuration.GetSection("RateLimiting");
 
@@ -40,15 +44,18 @@ builder.Services.AddRateLimiter(options =>
 {
     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
         RateLimitPartition.GetSlidingWindowLimiter(
-            partitionKey: context.User?.Identity?.Name ?? context.Request.Headers.Host.ToString(),
-            factory: _ => new SlidingWindowRateLimiterOptions
-            {
-                PermitLimit = rateLimitSettings.GetValue<int>("PermitLimit"),
-                Window = TimeSpan.FromSeconds(rateLimitSettings.GetValue<int>("WindowInSeconds")),
-                SegmentsPerWindow = 2,
-                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                QueueLimit = rateLimitSettings.GetValue<int>("QueueLimit")
-            }));
+            //partitionKey: context.User?.Identity?.Name ?? context.Request.Headers.Host.ToString(),
+            partitionKey: context.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? context.Connection.RemoteIpAddress?.ToString()
+                ?? "unknown",
+        factory: _ => new SlidingWindowRateLimiterOptions
+        {
+            PermitLimit = rateLimitSettings.GetValue<int>("PermitLimit"),
+            Window = TimeSpan.FromSeconds(rateLimitSettings.GetValue<int>("WindowInSeconds")),
+            SegmentsPerWindow = 2,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit = rateLimitSettings.GetValue<int>("QueueLimit")
+        }));
 
     options.OnRejected = async (context, cancellationToken) =>
     {
@@ -76,7 +83,20 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret))
     };
 });
-
+// ADD CORS policy to allow requests from the localhost
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("CorsPolicy", policy =>
+    {
+        policy
+            .WithOrigins(
+                "http://localhost:5201"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -92,7 +112,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-
+app.UseCors("CorsPolicy");
 app.UseRateLimiter();
 // Add Serilog request logging
 app.Use(async (context, next) =>

@@ -229,20 +229,18 @@ public class CustomerSatisfactionService : ICustomerSatisfactionService
 
     public async Task<Evaluations> CreateEvaluationAsync(EvaluationsCreateRequest request, CancellationToken cancellationToken = default)
     {
-        if (request.FlightId <= 0 || request.DeviceId <= 0)
+        if (request.DeviceId is null && request.FlightId is null && request.StaffUserId is null)
         {
-            throw new ArgumentException("FlightId and DeviceId are required");
+            throw new ArgumentException("At least one of DeviceId, FlightId, or StaffUserId is required");
         }
 
-        if (request.Rating < 1 || request.Rating > 5)
+        if (request.DeviceId.HasValue)
         {
-            throw new ArgumentException("Rating must be between 1 and 5");
-        }
-
-        var deviceExists = await _dbContext.Devices.AnyAsync(x => x.Id == request.DeviceId, cancellationToken);
-        if (!deviceExists)
-        {
-            throw new KeyNotFoundException("Device not found");
+            var deviceExists = await _dbContext.Devices.AnyAsync(x => x.Id == request.DeviceId.Value, cancellationToken);
+            if (!deviceExists)
+            {
+                throw new KeyNotFoundException("Device not found");
+            }
         }
 
         if (request.ReasonIds is not null && request.ReasonIds.Count > 0)
@@ -261,10 +259,11 @@ public class CustomerSatisfactionService : ICustomerSatisfactionService
         var evaluation = new Evaluations
         {
             FlightId = request.FlightId,
+            StaffUserId = request.StaffUserId,
             DeviceId = request.DeviceId,
-            Rating = request.Rating,
-            Comment = request.Comment,
-            CreatedAt = DateTime.UtcNow
+            CheckinCounterName = request.CheckinCounterName,
+            RatingLevel = request.RatingLevel,
+            EvaluationType = request.EvaluationType
         };
 
         _dbContext.Evaluations.Add(evaluation);
@@ -304,6 +303,11 @@ public class CustomerSatisfactionService : ICustomerSatisfactionService
             evaluation.FlightId = request.FlightId.Value;
         }
 
+        if (request.StaffUserId.HasValue)
+        {
+            evaluation.StaffUserId = request.StaffUserId.Value;
+        }
+
         if (request.DeviceId.HasValue)
         {
             var deviceExists = await _dbContext.Devices.AnyAsync(x => x.Id == request.DeviceId.Value, cancellationToken);
@@ -315,19 +319,19 @@ public class CustomerSatisfactionService : ICustomerSatisfactionService
             evaluation.DeviceId = request.DeviceId.Value;
         }
 
-        if (request.Rating.HasValue)
+        if (request.CheckinCounterName is not null)
         {
-            if (request.Rating < 1 || request.Rating > 5)
-            {
-                throw new ArgumentException("Rating must be between 1 and 5");
-            }
-
-            evaluation.Rating = request.Rating.Value;
+            evaluation.CheckinCounterName = request.CheckinCounterName;
         }
 
-        if (request.Comment is not null)
+        if (request.RatingLevel.HasValue)
         {
-            evaluation.Comment = request.Comment;
+            evaluation.RatingLevel = request.RatingLevel.Value;
+        }
+
+        if (request.EvaluationType.HasValue)
+        {
+            evaluation.EvaluationType = request.EvaluationType.Value;
         }
 
         if (request.ReasonIds is not null)

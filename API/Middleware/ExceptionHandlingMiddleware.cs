@@ -90,12 +90,12 @@ public class ExceptionHandlingMiddleware
 
             case SqlException:
                 statusCode = StatusCodes.Status500InternalServerError;
-                message = "A database error occurred. Please try again later.";
+                message = $"A database error occurred.{exception.Message}. Please try again later.";
                 break;
 
             default:
                 statusCode = StatusCodes.Status500InternalServerError;
-                message = "An unexpected error occurred. Please try again later.";
+                message = $"An unexpected error occurred.{exception.Message}. Please try again later.";
                 break;
         }
 

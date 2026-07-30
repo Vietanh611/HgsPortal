@@ -334,11 +334,12 @@ public class CustomerSatisfactionController : ControllerBase
     {
         Id = evaluation.Id,
         FlightId = evaluation.FlightId,
+        StaffUserId = evaluation.StaffUserId,
         DeviceId = evaluation.DeviceId,
         DeviceName = evaluation.Device?.DeviceName,
-        Rating = evaluation.Rating,
-        Comment = evaluation.Comment,
-        CreatedAt = evaluation.CreatedAt,
+        CheckinCounterName = evaluation.CheckinCounterName,
+        RatingLevel = evaluation.RatingLevel,
+        EvaluationType = evaluation.EvaluationType,
         ReasonIds = evaluation.EvaluationReasonLinks.Select(x => x.ReasonId).ToList()
     };
 
@@ -346,11 +347,12 @@ public class CustomerSatisfactionController : ControllerBase
     {
         Id = evaluation.Id,
         FlightId = evaluation.FlightId,
+        StaffUserId = evaluation.StaffUserId,
         DeviceId = evaluation.DeviceId,
         DeviceName = evaluation.Device?.DeviceName,
-        Rating = evaluation.Rating,
-        Comment = evaluation.Comment,
-        CreatedAt = evaluation.CreatedAt,
+        CheckinCounterName = evaluation.CheckinCounterName,
+        RatingLevel = evaluation.RatingLevel,
+        EvaluationType = evaluation.EvaluationType,
         ReasonIds = evaluation.EvaluationReasonLinks.Select(x => x.ReasonId).ToList()
     };
 
@@ -358,10 +360,11 @@ public class CustomerSatisfactionController : ControllerBase
     {
         Id = evaluation.Id,
         FlightId = evaluation.FlightId,
+        StaffUserId = evaluation.StaffUserId,
         DeviceId = evaluation.DeviceId,
-        Rating = evaluation.Rating,
-        Comment = evaluation.Comment,
-        CreatedAt = evaluation.CreatedAt,
+        CheckinCounterName = evaluation.CheckinCounterName,
+        RatingLevel = evaluation.RatingLevel,
+        EvaluationType = evaluation.EvaluationType,
         ReasonIds = evaluation.EvaluationReasonLinks.Select(x => x.ReasonId).ToList()
     };
 
@@ -369,10 +372,11 @@ public class CustomerSatisfactionController : ControllerBase
     {
         Id = evaluation.Id,
         FlightId = evaluation.FlightId,
+        StaffUserId = evaluation.StaffUserId,
         DeviceId = evaluation.DeviceId,
-        Rating = evaluation.Rating,
-        Comment = evaluation.Comment,
-        CreatedAt = evaluation.CreatedAt,
+        CheckinCounterName = evaluation.CheckinCounterName,
+        RatingLevel = evaluation.RatingLevel,
+        EvaluationType = evaluation.EvaluationType,
         ReasonIds = evaluation.EvaluationReasonLinks.Select(x => x.ReasonId).ToList()
     };
 }

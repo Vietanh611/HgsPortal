@@ -16,8 +16,6 @@ namespace Domain.Entities.Identity
 
         public int? AssignedBy { get; set; }
 
-        public DateTime? ExpiredAt { get; set; }
-
         #region Navigation
 
         [ForeignKey(nameof(UserId))]
