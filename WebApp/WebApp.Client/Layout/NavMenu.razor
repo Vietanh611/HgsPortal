@@ -1,0 +1,154 @@
+﻿<nav class="navbar navbar-dark bg-primary d-md-none fixed-top">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">HGS Portal</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+           @*  <span class="navbar-toggler-icon"></span> *@
+        </button>
+    </div>
+</nav>
+
+<div class="collapse navbar-collapse d-md-none mt-5" id="navbarNav">
+    <ul class="navbar-nav">
+        <li class="nav-item">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <i class="bi bi-house-door-fill me-2"></i> Home
+            </NavLink>
+        </li>
+        <li class="nav-item">
+            <NavLink class="nav-link" href="counter">
+                <i class="bi bi-plus-square-fill me-2"></i> Counter
+            </NavLink>
+        </li>
+        <li class="nav-item">
+            <NavLink class="nav-link" href="weather">
+                <i class="bi bi-list-nested me-2"></i> Weather
+            </NavLink>
+        </li>
+        <li class="nav-item">
+            <NavLink class="nav-link" href="login">
+                <i class="bi bi-person me-2"></i> Login
+            </NavLink>
+        </li>
+    </ul>
+</div>
+
+<aside class="sidebar d-none d-md-block">
+    <div class="sidebar-header">
+        <h4 class="sidebar-brand">HGS Portal</h4>
+    </div>
+    <nav class="sidebar-nav">
+        <NavLink class="sidebar-link" href="" Match="NavLinkMatch.All">
+            <i class="bi bi-house-door-fill"></i>
+            <span>Home</span>
+        </NavLink>
+        <NavLink class="sidebar-link" href="counter">
+            <i class="bi bi-plus-square-fill"></i>
+            <span>Counter</span>
+        </NavLink>
+        <NavLink class="sidebar-link" href="weather">
+            <i class="bi bi-list-nested"></i>
+            <span>Weather</span>
+        </NavLink>
+        <NavLink class="sidebar-link" href="login">
+            <i class="bi bi-person"></i>
+            <span>Login</span>
+        </NavLink>
+    </nav>
+</aside>
+
+<style>
+    .bg-primary {
+        background: linear-gradient(180deg, var(--hgs-blue) 0%, var(--hgs-blue-dark) 100%) !important;
+    }
+
+    .navbar-brand {
+        color: white !important;
+        font-weight: 600;
+    }
+
+    .nav-link {
+        color: #E8EEF8 !important;
+        padding: 0.75rem 1rem;
+        border-radius: var(--radius);
+        margin: 0.25rem 0.5rem;
+        transition: var(--transition);
+    }
+
+    .nav-link:hover {
+        background: rgba(255, 255, 255, 0.12);
+        color: white !important;
+    }
+
+    .nav-link.active {
+        background: var(--hgs-orange);
+        color: white !important;
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(245, 130, 32, 0.35);
+    }
+
+    .navbar-toggler {
+        border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .navbar-toggler-icon {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.7%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+    }
+
+    /* Desktop Sidebar */
+    .sidebar {
+        background: linear-gradient(180deg, var(--hgs-blue) 0%, var(--hgs-blue-dark) 100%);
+        color: white;
+        min-height: 100vh;
+        position: sticky;
+        top: 0;
+        width: 260px;
+        flex-shrink: 0;
+        box-shadow: var(--shadow);
+    }
+
+    .sidebar-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .sidebar-brand {
+        color: white;
+        font-weight: 600;
+        margin: 0;
+        font-size: 1.25rem;
+    }
+
+    .sidebar-nav {
+        padding: 1rem 0;
+    }
+
+    .sidebar-link {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1.5rem;
+        color: #E8EEF8;
+        text-decoration: none;
+        transition: var(--transition);
+        gap: 0.75rem;
+    }
+
+    .sidebar-link:hover {
+        background: rgba(255, 255, 255, 0.12);
+        color: white;
+        padding-left: 1.75rem;
+    }
+
+    .sidebar-link.active {
+        background: var(--hgs-orange);
+        color: white;
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(245, 130, 32, 0.35);
+    }
+
+    .sidebar-link i {
+        width: 20px;
+        height: 20px;
+        font-size: 1.1rem;
+    }
+</style>
+

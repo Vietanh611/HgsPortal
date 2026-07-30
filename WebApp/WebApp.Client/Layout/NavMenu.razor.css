@@ -1,0 +1,173 @@
+/* ==========================================================
+   NavMenu.razor.css
+   HGS Portal Theme
+========================================================== */
+
+/* ===========================
+   Header
+=========================== */
+
+.top-row {
+    height: 64px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    background: transparent;
+}
+
+.navbar-brand {
+    display: flex;
+    align-items: center;
+    color: white;
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: .3px;
+}
+
+/* ===========================
+   Toggle Button
+=========================== */
+
+.navbar-toggler {
+    appearance: none;
+    cursor: pointer;
+    width: 44px;
+    height: 44px;
+    margin-left: auto;
+    border: none;
+    border-radius: 8px;
+    background-color: rgba(255,255,255,.10);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath stroke='rgba(255,255,255,.9)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 22px;
+    transition: var(--transition);
+}
+
+    .navbar-toggler:hover {
+        background-color: rgba(255,255,255,.20);
+    }
+
+    .navbar-toggler:checked {
+        background-color: var(--hgs-orange);
+    }
+
+/* ===========================
+   Navigation
+=========================== */
+
+.nav-scrollable {
+    display: none;
+}
+
+.navbar-toggler:checked ~ .nav-scrollable {
+    display: block;
+}
+
+/* ===========================
+   Menu Items
+=========================== */
+
+.nav-item {
+    margin: 4px 12px;
+}
+
+    .nav-item:first-child {
+        margin-top: 16px;
+    }
+
+    .nav-item:last-child {
+        margin-bottom: 16px;
+    }
+
+    .nav-item ::deep .nav-link {
+        display: flex;
+        align-items: center;
+        height: 46px;
+        padding: 0 16px;
+        border-radius: 10px;
+        color: rgba(255,255,255,.90);
+        font-size: .95rem;
+        font-weight: 500;
+        transition: var(--transition);
+    }
+
+        .nav-item ::deep .nav-link:hover {
+            background: rgba(255,255,255,.12);
+            color: white;
+            transform: translateX(2px);
+        }
+
+    /* ===========================
+   Active Menu
+=========================== */
+
+    .nav-item ::deep a.active {
+        background: var(--hgs-orange);
+        color: white;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(245,130,32,.35);
+    }
+
+/* ===========================
+   Icons
+=========================== */
+
+.bi {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin-right: 14px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: .95;
+    flex-shrink: 0;
+}
+
+/* ===========================
+   Scrollbar
+=========================== */
+
+.nav-scrollable::-webkit-scrollbar {
+    width: 6px;
+}
+
+.nav-scrollable::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,.20);
+    border-radius: 20px;
+}
+
+    .nav-scrollable::-webkit-scrollbar-thumb:hover {
+        background: rgba(255,255,255,.35);
+    }
+
+/* ===========================
+   Desktop
+=========================== */
+
+@media (min-width:641px) {
+
+    .navbar-toggler {
+        display: none;
+    }
+
+    .nav-scrollable {
+        display: block;
+        height: calc(100vh - 64px);
+        overflow-y: auto;
+        padding-bottom: 20px;
+    }
+}
+
+/* ===========================
+   Mobile
+=========================== */
+
+@media (max-width:640.98px) {
+
+    .nav-scrollable {
+        background: rgba(0,0,0,.08);
+        padding-bottom: 10px;
+    }
+}
