@@ -1,3 +1,4 @@
+using WebApp.Client.Services;
 using WebApp.Components;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -6,6 +7,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
 builder.Services.AddHttpClient();
+builder.Services.AddScoped<ApiClient>();
+builder.Services.AddBlazorBootstrap();
+builder.Services.AddScoped<ToastService>();
+builder.Services.AddScoped<DialogService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

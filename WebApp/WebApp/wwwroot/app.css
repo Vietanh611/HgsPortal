@@ -1,3 +1,4 @@
+@import url("css/hgsStyle.css");
 :root {
     --hgs-blue: rgb(23, 71, 158);
     --hgs-blue-dark: #10387F;
@@ -34,7 +35,7 @@ a, .btn-link {
     padding-top: 1.1rem;
 }
 
-@import url("css/hgsStyle.css");
+
 h1:focus {
     outline: none;
 }

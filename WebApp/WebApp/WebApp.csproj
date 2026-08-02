@@ -7,8 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="..\WebApp.Client\Pages\Account\Users\TemplateCell.razor" Link="TemplateCell.razor" />
+    <None Include="..\WebApp.Client\Pages\Users\Component.razor" Link="Component.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\Hgs.Share\Hgs.Share.csproj" />
     <ProjectReference Include="..\WebApp.Client\WebApp.Client.csproj" />
+    <PackageReference Include="Blazor.Bootstrap" Version="3.5.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.29" />
   </ItemGroup>
 

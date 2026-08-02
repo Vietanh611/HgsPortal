@@ -1,0 +1,122 @@
+@using Hgs.Share.Requests.Users
+@using Hgs.Share.Responses.OrganizationUnits
+@using BlazorBootstrap
+
+<Modal @ref="modal" Title="@(IsEditMode ? "Edit User" : "Add User")" OnClose="Close">
+    <BodyTemplate>
+        <EditForm Model="@UserForm" OnValidSubmit="HandleSubmit">
+            <DataAnnotationsValidator />
+            
+            <div class="mb-3">
+                <label class="form-label">Username</label>
+                <InputText @bind-Value="UserForm.Username" class="form-control" disabled="@IsEditMode" />
+                <ValidationMessage For="() => UserForm.Username" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <InputText @bind-Value="UserForm.Email" class="form-control" type="email" />
+                <ValidationMessage For="() => UserForm.Email" class="text-danger" />
+            </div>
+
+            @if (!IsEditMode)
+            {
+                <div class="mb-3">
+                    <label class="form-label">Password</label>
+                    <InputText @bind-Value="UserForm.Password" class="form-control" type="password" />
+                    <ValidationMessage For="() => UserForm.Password" class="text-danger" />
+                </div>
+            }
+
+            <div class="mb-3">
+                <label class="form-label">Full Name</label>
+                <InputText @bind-Value="UserForm.FullName" class="form-control" />
+                <ValidationMessage For="() => UserForm.FullName" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Bravo ID</label>
+                <InputNumber @bind-Value="UserForm.BravoId" class="form-control" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Phone Number</label>
+                <InputText @bind-Value="UserForm.PhoneNumber" class="form-control" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Organization Unit</label>
+                <select class="form-select" @bind="UserForm.OrganizationUnitId">
+                    <option value="">Select Organization Unit</option>
+                    @if (OrganizationUnits != null)
+                    {
+                        @foreach (var org in OrganizationUnits)
+                        {
+                            <option value="@org.Id">@org.Name</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="mb-3 form-check">
+                <InputCheckbox @bind-Value="UserForm.IsActive" class="form-check-input" id="isActive" />
+                <label class="form-check-label" for="isActive">Active</label>
+            </div>
+        </EditForm>
+    </BodyTemplate>
+    <FooterTemplate>
+        <Button Color="ButtonColor.Secondary" @onclick="Close">Cancel</Button>
+        <Button Color="ButtonColor.Primary" @onclick="HandleSubmit" Disabled="@IsSubmitting">
+            @if (IsSubmitting)
+            {
+                <Spinner Color="SpinnerColor.Light" Size="SpinnerSize.Small" class="me-2" />
+            }
+            @(IsEditMode ? "Update" : "Create")
+        </Button>
+    </FooterTemplate>
+</Modal>
+
+@code {
+    private Modal modal = default!;
+    [Parameter]
+    public bool IsVisible { get; set; }
+
+    [Parameter]
+    public UsersCreateRequest UserForm { get; set; } = new();
+
+    [Parameter]
+    public IEnumerable<OrganizationUnitsGetAllResponse>? OrganizationUnits { get; set; }
+
+    [Parameter]
+    public bool IsEditMode { get; set; }
+
+    [Parameter]
+    public bool IsSubmitting { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    [Parameter]
+    public EventCallback OnSubmit { get; set; }
+
+    public async Task ShowAsync()
+    {
+        await modal.ShowAsync();
+    }
+
+    public async Task HideAsync()
+    {
+        await modal.HideAsync();
+    }
+
+    private async Task HandleSubmit()
+    {
+        await OnSubmit.InvokeAsync();
+    }
+
+    private async Task Close()
+    {
+        await HideAsync();
+        await OnClose.InvokeAsync();
+    }
+}

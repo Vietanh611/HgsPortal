@@ -116,7 +116,8 @@ public class MenusController : ControllerBase
         CreatedAt = menu.CreatedAt,
         CreatedBy = menu.CreatedBy,
         UpdatedAt = menu.UpdatedAt,
-        UpdatedBy = menu.UpdatedBy
+        UpdatedBy = menu.UpdatedBy,
+        Children = menu.Children.Select(MapToGetAllResponse).ToList()
     };
 
     private static MenusGetByIdResponse MapToGetByIdResponse(Menus menu) => new()

@@ -329,9 +329,9 @@ public class CustomerSatisfactionService : ICustomerSatisfactionService
             evaluation.RatingLevel = request.RatingLevel.Value;
         }
 
-        if (request.EvaluationType.HasValue)
+        if (!string.IsNullOrWhiteSpace(request.EvaluationType))
         {
-            evaluation.EvaluationType = request.EvaluationType.Value;
+            evaluation.EvaluationType = request.EvaluationType;
         }
 
         if (request.ReasonIds is not null)

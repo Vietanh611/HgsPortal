@@ -1,0 +1,144 @@
+@page "/profile"
+@using BlazorBootstrap
+
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Tài khoản cá nhân</PageTitle>
+
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-3">
+            <Card>
+                <CardBody Class="text-center">
+                    <div class="mb-3">
+                        <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 100px; height: 100px; font-size: 40px;">
+                            @(currentUser?.FullName?.Substring(0, 1).ToUpper() ?? "U")
+                        </div>
+                    </div>
+                    <h4>@(currentUser?.FullName ?? "Loading...")</h4>
+                    <p class="text-muted">@(currentUser?.Username ?? "")</p>
+                    <div class="mt-3">
+                        @if (currentUser?.IsActive == true)
+                        {
+                            <Badge Color="BadgeColor.Success">Active</Badge>
+                        }
+                        else
+                        {
+                            <Badge Color="BadgeColor.Secondary">Inactive</Badge>
+                        }
+                    </div>
+                </CardBody>
+            </Card>
+        </div>
+
+        <div class="col-md-9">
+            <Tabs>
+                <Tab Title="Thông tin" IsActive="true">
+                    <Content>
+                        <Card>
+                            <CardBody>
+                                @if (isLoading)
+                                {
+                                    <div class="text-center">
+                                        <Spinner Color="SpinnerColor.Primary" />
+                                    </div>
+                                }
+                                else
+                                {
+                                    <EditForm Model="@profileForm" OnValidSubmit="HandleUpdateProfile">
+                                        <DataAnnotationsValidator />
+                                        <div class="row mb-3">
+                                            <div class="col-6">
+                                                <label class="form-label">Username</label>
+                                                <input class="form-control" value="@currentUser?.Username" disabled />
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label">Email</label>
+                                                <InputText class="form-control" @bind-Value="profileForm.Email" />
+                                                <ValidationMessage For="() => profileForm.Email" />
+                                            </div>
+                                        </div>
+
+                                        <div class="row mb-3">
+                                            <div class="col-6">
+                                                <label class="form-label">Họ tên</label>
+                                                <InputText class="form-control" @bind-Value="profileForm.FullName" />
+                                                <ValidationMessage For="() => profileForm.FullName" />
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label">Số điện thoại</label>
+                                                <InputText class="form-control" @bind-Value="profileForm.PhoneNumber" />
+                                            </div>
+                                        </div>
+
+                                        <div class="row mb-3">
+                                            <div class="col-6">
+                                                <label class="form-label">Bravo ID</label>
+                                                <InputNumber class="form-control" @bind-Value="profileForm.BravoId" />
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label">Đơn vị tổ chức</label>
+                                                <input class="form-control" value="@currentUser?.OrganizationUnitName" disabled />
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Đăng nhập lần cuối</label>
+                                            <input class="form-control" value="@(currentUser?.LastLoginAt?.ToString("dd/MM/yyyy HH:mm:ss") ?? "Chưa đăng nhập")" disabled />
+                                        </div>
+
+                                        <Button Type="ButtonType.Submit" Color="ButtonColor.Primary" Disabled="@isSubmitting">
+                                            @if (isSubmitting)
+                                            {
+                                                <Spinner Color="SpinnerColor.Light" Size="SpinnerSize.Small" class="me-2" />
+                                            }
+                                            Cập nhật
+                                        </Button>
+                                    </EditForm>
+                                }
+                            </CardBody>
+                        </Card>
+                    </Content>
+                </Tab>
+                <Tab Title="Đổi mật khẩu">
+                    <Content>
+                        <Card>
+                            <CardBody>
+                                <EditForm Model="@changePasswordForm" OnValidSubmit="HandleChangePassword">
+                                    <DataAnnotationsValidator />
+                                    <div class="mb-3">
+                                        <label class="form-label">Mật khẩu hiện tại</label>
+                                        <InputText type="password" class="form-control" @bind-Value="changePasswordForm.CurrentPassword" />
+                                        <ValidationMessage For="() => changePasswordForm.CurrentPassword" />
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Mật khẩu mới</label>
+                                        <InputText type="password" class="form-control" @bind-Value="changePasswordForm.NewPassword" />
+                                        <ValidationMessage For="() => changePasswordForm.NewPassword" />
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Xác nhận mật khẩu mới</label>
+                                        <InputText type="password" class="form-control" @bind-Value="changePasswordForm.ConfirmPassword" />
+                                        <ValidationMessage For="() => changePasswordForm.ConfirmPassword" />
+                                    </div>
+
+                                    <Button Type="ButtonType.Submit" Color="ButtonColor.Primary" Disabled="@isChangingPassword">
+                                        @if (isChangingPassword)
+                                        {
+                                            <Spinner Color="SpinnerColor.Light" Size="SpinnerSize.Small" class="me-2" />
+                                        }
+                                        Đổi mật khẩu
+                                    </Button>
+                                </EditForm>
+                            </CardBody>
+                        </Card>
+                    </Content>
+                </Tab>
+            </Tabs>
+        </div>
+    </div>
+</div>

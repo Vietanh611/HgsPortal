@@ -1,0 +1,180 @@
+using Core.Interfaces;
+using Data.DbContexts;
+using Domain.Entities.System;
+using Hgs.Share.Requests.RoleMenus;
+using Microsoft.EntityFrameworkCore;
+
+namespace Core.Services;
+
+public class RoleMenuService : IRoleMenuService
+{
+    private readonly HgsDbContext _dbContext;
+
+    public RoleMenuService(HgsDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
+    public async Task<IEnumerable<RoleMenus>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.RoleMenus
+            .Include(rm => rm.Role)
+            .Include(rm => rm.Menu)
+            .AsNoTracking()
+            .OrderByDescending(rm => rm.AssignedAt)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<RoleMenus?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.RoleMenus
+            .Include(rm => rm.Role)
+            .Include(rm => rm.Menu)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(rm => rm.Id == id, cancellationToken);
+    }
+
+    public async Task<IEnumerable<RoleMenus>> GetByRoleIdAsync(int roleId, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.RoleMenus
+            .Include(rm => rm.Role)
+            .Include(rm => rm.Menu)
+            .Where(rm => rm.RoleId == roleId)
+            .AsNoTracking()
+            .OrderByDescending(rm => rm.AssignedAt)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IEnumerable<RoleMenus>> GetByMenuIdAsync(int menuId, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.RoleMenus
+            .Include(rm => rm.Role)
+            .Include(rm => rm.Menu)
+            .Where(rm => rm.MenuId == menuId)
+            .AsNoTracking()
+            .OrderByDescending(rm => rm.AssignedAt)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<RoleMenus> CreateAsync(RoleMenusCreateRequest request, int assignedBy, CancellationToken cancellationToken = default)
+    {
+        // Check if role exists
+        var role = await _dbContext.Roles
+            .AsNoTracking()
+            .FirstOrDefaultAsync(r => r.Id == request.RoleId, cancellationToken);
+        if (role is null)
+        {
+            throw new KeyNotFoundException($"Role with ID {request.RoleId} not found");
+        }
+
+        // Check if menu exists
+        var menu = await _dbContext.Menus
+            .AsNoTracking()
+            .FirstOrDefaultAsync(m => m.Id == request.MenuId, cancellationToken);
+        if (menu is null)
+        {
+            throw new KeyNotFoundException($"Menu with ID {request.MenuId} not found");
+        }
+
+        // Check if role already has this menu
+        var existingAssignment = await _dbContext.RoleMenus
+            .AsNoTracking()
+            .FirstOrDefaultAsync(rm => rm.RoleId == request.RoleId && rm.MenuId == request.MenuId, cancellationToken);
+        if (existingAssignment is not null)
+        {
+            throw new InvalidOperationException($"Role already has menu {menu.Name} assigned");
+        }
+
+        var roleMenu = new RoleMenus
+        {
+            RoleId = request.RoleId,
+            MenuId = request.MenuId,
+            AssignedAt = DateTime.UtcNow,
+            AssignedBy = assignedBy,
+        };
+
+        _dbContext.RoleMenus.Add(roleMenu);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return roleMenu;
+    }
+
+    public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var roleMenu = await _dbContext.RoleMenus
+            .FirstOrDefaultAsync(rm => rm.Id == id, cancellationToken);
+
+        if (roleMenu is null)
+        {
+            return false;
+        }
+
+        _dbContext.RoleMenus.Remove(roleMenu);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task AssignMultipleMenusAsync(int roleId, List<int> menuIds, int assignedBy, CancellationToken cancellationToken = default)
+    {
+        // Check if role exists
+        var role = await _dbContext.Roles
+            .AsNoTracking()
+            .FirstOrDefaultAsync(r => r.Id == roleId, cancellationToken);
+        if (role is null)
+        {
+            throw new KeyNotFoundException($"Role with ID {roleId} not found");
+        }
+
+        // Get existing menu assignments
+        var existingMenuIds = await _dbContext.RoleMenus
+            .Where(rm => rm.RoleId == roleId)
+            .Select(rm => rm.MenuId)
+            .ToListAsync(cancellationToken);
+
+        // Filter out already assigned menus
+        var newMenuIds = menuIds.Except(existingMenuIds).ToList();
+
+        foreach (var menuId in newMenuIds)
+        {
+            // Check if menu exists
+            var menu = await _dbContext.Menus
+                .AsNoTracking()
+                .FirstOrDefaultAsync(m => m.Id == menuId, cancellationToken);
+            if (menu is null)
+            {
+                throw new KeyNotFoundException($"Menu with ID {menuId} not found");
+            }
+
+            var roleMenu = new RoleMenus
+            {
+                RoleId = roleId,
+                MenuId = menuId,
+                AssignedAt = DateTime.UtcNow,
+                AssignedBy = assignedBy,
+            };
+
+            _dbContext.RoleMenus.Add(roleMenu);
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task RemoveMultipleMenusAsync(int roleId, List<int> menuIds, CancellationToken cancellationToken = default)
+    {
+        // Check if role exists
+        var role = await _dbContext.Roles
+            .AsNoTracking()
+            .FirstOrDefaultAsync(r => r.Id == roleId, cancellationToken);
+        if (role is null)
+        {
+            throw new KeyNotFoundException($"Role with ID {roleId} not found");
+        }
+
+        var roleMenus = await _dbContext.RoleMenus
+            .Where(rm => rm.RoleId == roleId && menuIds.Contains(rm.MenuId))
+            .ToListAsync(cancellationToken);
+
+        _dbContext.RoleMenus.RemoveRange(roleMenus);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+}

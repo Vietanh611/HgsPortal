@@ -1,10 +1,137 @@
 ﻿@inherits LayoutComponentBase
+@using WebApp.Client.Services
+@using BlazorBootstrap
+@inject DialogService DialogService
 
-<div class="d-flex min-vh-100">
+<div class="bb-page">
+
+    <Sidebar @ref="sidebar" Href="/"
+             
+             Title="HSG PORTAL"
+             DataProvider="SidebarDataProvider"       
+             
+               />
+
+    <main>
+        <article class="content px-4">
+           @Body
+        </article>
+    </main>
+
+</div>
+@code {
+    IEnumerable<NavItem> navItems;
+    Sidebar sidebar = default!;
+    private async Task<SidebarDataProviderResult> SidebarDataProvider(SidebarDataProviderRequest request)
+    {
+        Console.WriteLine($"SidebarDataProvider: {DateTime.Now:HH:mm:ss.fff}");
+        if (navItems is null)
+            navItems = GetNavItems();
+
+        return await Task.FromResult(request.ApplyTo(navItems));
+    }
+
+    private IEnumerable<NavItem> GetNavItems()
+    {
+        navItems = new List<NavItem>
+        {
+            new NavItem { Id = "1", Href = "/", IconName = IconName.HouseDoorFill, Text = "Dashboard"},
+
+            new NavItem { Id = "2", IconName = IconName.PersonCircle, Text = "Account", IconColor = IconColor.Primary },
+            new NavItem { Id = "3", Href = "/users", IconName = IconName.PersonSquare, Text = "Users", ParentId="2"},
+            new NavItem { Id = "4", Href = "/menus", IconName = IconName.MenuAppFill, Text = "Menu", ParentId="2"},
+            new NavItem { Id = "5", Href = "/roles", IconName = IconName.ShieldLock, Text = "Roles", ParentId="2"},
+            new NavItem { Id = "6", Href = "/Profile", IconName = IconName.PersonGear, Text = "Profile", ParentId="2"},
+            new NavItem { Id = "7", Href = "/login", IconName = IconName.Lock, Text = "Login", ParentId="2"},
+
+            // new NavItem { Id = "4", IconName = IconName.ExclamationTriangleFill, Text = "Components", IconColor = IconColor.Success },
+            // new NavItem { Id = "5", Href = "/alerts", IconName = IconName.CheckCircleFill, Text = "Alerts", ParentId="4"},
+            // new NavItem { Id = "6", Href = "/breadcrumb", IconName = IconName.SegmentedNav, Text = "Breadcrumb", ParentId="4"},
+            // new NavItem { Id = "7", Href = "/sidebar", IconName = IconName.LayoutSidebarInset, Text = "Sidebar", ParentId="4"},
+
+            new NavItem { Id = "8", IconName = IconName.WindowPlus, Text = "Forms", IconColor = IconColor.Danger },
+            new NavItem { Id = "9", Href = "/autocomplete", IconName = IconName.InputCursorText, Text = "Auto Complete", ParentId="8"},
+            new NavItem { Id = "10", Href = "/currency-input", IconName = IconName.CurrencyDollar, Text = "Currency Input", ParentId="8"},
+            new NavItem { Id = "11", Href = "/number-input", IconName = IconName.InputCursor, Text = "Number Input", ParentId="8"},
+            new NavItem { Id = "12", Href = "/switch", IconName = IconName.ToggleOn, Text = "Switch", ParentId="8"},
+        };
+
+        return navItems;
+    }
+    private void ToggleSidebar() => sidebar.ToggleSidebar();
+}
+
+    @* <style>
+        :root {
+            --bb-sidebar-width: 270px;
+            --bb-sidebar-collapsed-width: 50px;
+            --bb-sidebar-background-color: rgba(234, 234, 234, 1);
+            --bb-sidebar-top-row-background-color: rgba(0,0,0,0.08);
+            --bb-sidebar-top-row-border-color: rgb(194,192,192);
+            --bb-sidebar-title-text-color: rgb(0,0,0);
+            --bb-sidebar-brand-icon-color: #6f42c1;
+            --bb-sidebar-brand-image-width: 24px;
+            --bb-sidebar-brand-image-height: 24px;
+            --bb-sidebar-title-badge-text-color: rgb(255,255,255);
+            --bb-sidebar-title-badge-background-color: rgba(25,135,84,var(--bs-bg-opacity,1));
+            --bb-sidebar-navbar-toggler-icon-color: rgb(0,0,0);
+            --bb-sidebar-navbar-toggler-background-color: rgba(0,0,0,0.08);
+            --bb-sidebar-content-border-color: rgb(194,192,192);
+            --bb-sidebar-nav-item-text-color: rgba(0,0,0,0.9);
+            --bb-sidebar-nav-item-text-active-color-rgb: 0,0,0;
+            --bb-sidebar-nav-item-text-hover-color: rgba(var(--bb-sidebar-nav-item-text-active-color-rgb),0.9);
+            --bb-sidebar-nav-item-text-active-color: rgba(var(--bb-sidebar-nav-item-text-active-color-rgb),0.9);
+            --bb-sidebar-nav-item-background-hover-color: rgba(var(--bb-sidebar-nav-item-text-active-color-rgb),0.08);
+            --bb-sidebar-nav-item-group-background-color: rgba(var(--bb-sidebar-nav-item-text-active-color-rgb),0.08);
+        }
+    </style> *@
+    <style>
+        :root {
+            /* Sidebar */
+            --bb-sidebar-width: 270px;
+            --bb-sidebar-collapsed-width: 60px;
+            /* Background */
+            --bb-sidebar-background-color: #17479E;
+            --bb-sidebar-top-row-background-color: #123A82;
+            --bb-sidebar-content-border-color: rgba(255,255,255,.15);
+            /* Brand */
+            --bb-sidebar-title-text-color: #FFFFFF;
+            --bb-sidebar-brand-icon-color: #F58220;
+            --bb-sidebar-brand-image-width: 28px;
+            --bb-sidebar-brand-image-height: 28px;
+            /* Badge */
+            --bb-sidebar-title-badge-text-color: #FFFFFF;
+            --bb-sidebar-title-badge-background-color: #F58220;
+            /* Toggle */
+            --bb-sidebar-navbar-toggler-icon-color: #FFFFFF;
+            --bb-sidebar-navbar-toggler-background-color: rgba(255,255,255,.1);
+            /* Menu */
+            --bb-sidebar-nav-item-text-color: rgba(255,255,255,.85);
+            --bb-sidebar-nav-item-text-hover-color: #FFFFFF;
+            --bb-sidebar-nav-item-text-active-color: #FFFFFF;
+            /* Active / Hover */
+        --bb-sidebar-nav-item-background-hover-color: #F58220;
+            --bb-sidebar-nav-item-group-background-color: rgba(255,255,255,.08);
+            /* Border */
+            --bb-sidebar-top-row-border-color: rgba(255,255,255,.15);
+        }
+
+        .bb-top-row {
+            background: #ffffff;
+            border-bottom: 1px solid #D6E4F5;
+        }
+
+        .content {
+            background: #F8F9FA;
+            min-height: 100vh;
+        }
+    </style>
+
+@* <div class="d-flex min-vh-100">
     <NavMenu />
-    
+
     <main class="flex-grow-1">
-        <div class="container py-4 pt-5 mt-5">
+        <div class="container-fluid py-4 pt-5 mt-5">
             @Body
         </div>
     </main>
@@ -14,4 +141,19 @@
     An unhandled error has occurred.
     <a href="" class="reload">Reload</a>
     <a class="dismiss">🗙</a>
-</div>
+</div> *@
+
+<Toasts AutoHide="true" Delay="4000" Placement="ToastsPlacement.TopRight" />
+<ConfirmDialog @ref="confirmDialog" />
+
+@code {
+    private ConfirmDialog confirmDialog;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            DialogService.SetConfirmDialog(confirmDialog);
+        }
+    }
+}

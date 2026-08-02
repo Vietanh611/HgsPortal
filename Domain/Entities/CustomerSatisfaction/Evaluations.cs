@@ -20,7 +20,7 @@ namespace Domain.Entities.CustomerSatisfaction
 
         public int RatingLevel { get; set; }
 
-        public int EvaluationType { get; set; }
+        public string? EvaluationType { get; set; }
 
         public DateTime CreatedAt { get; set; }
 

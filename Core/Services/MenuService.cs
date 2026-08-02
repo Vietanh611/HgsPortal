@@ -18,9 +18,37 @@ public class MenuService : IMenuService
 
     public async Task<IEnumerable<Menus>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await _dbContext.Menus
+        var allMenus = await _dbContext.Menus
             .AsNoTracking()
+            .OrderBy(x => x.SortOrder)
             .ToListAsync(cancellationToken);
+
+        var rootMenus = allMenus
+            .Where(x => !x.ParentId.HasValue)
+            .OrderBy(x => x.SortOrder)
+            .ToList();
+
+        return BuildMenuHierarchyForGetAll(rootMenus, allMenus);
+    }
+
+    private static List<Menus> BuildMenuHierarchyForGetAll(
+        List<Menus> currentMenus,
+        List<Menus> allMenus)
+    {
+        return currentMenus
+            .OrderBy(x => x.SortOrder)
+            .Select(menu =>
+            {
+                var children = allMenus
+                    .Where(x => x.ParentId == menu.Id)
+                    .OrderBy(x => x.SortOrder)
+                    .ToList();
+
+                menu.Children = BuildMenuHierarchyForGetAll(children, allMenus);
+
+                return menu;
+            })
+            .ToList();
     }
 
     public async Task<Menus?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
@@ -240,10 +268,6 @@ public class MenuService : IMenuService
         Icon = menu.Icon,
         SortOrder = menu.SortOrder,
         IsVisible = menu.IsVisible,
-        IsActive = menu.IsActive,
-        CreatedAt = menu.CreatedAt,
-        CreatedBy = menu.CreatedBy,
-        UpdatedAt = menu.UpdatedAt,
-        UpdatedBy = menu.UpdatedBy
+        IsActive = menu.IsActive
     };
 }

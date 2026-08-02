@@ -1,0 +1,132 @@
+@page "/users"
+@using Hgs.Share.Responses.Users
+@using BlazorBootstrap
+@inject NavigationManager Navigation
+
+
+<PageTitle>User Management</PageTitle>
+
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>User Management</h2>
+                <Button Color="ButtonColor.Primary" @onclick="ShowCreateModal">
+                    <Icon Name="IconName.PlusLg" /> Add User
+                </Button>
+            </div>
+
+            <Card>
+                <CardBody>
+                    @if (isLoading)
+                    {
+                        <div class="text-center py-5">
+                            <Spinner Color="SpinnerColor.Primary" />
+                        </div>
+                    }
+                    else if (users == null)
+                    {
+                        <Alert Color="AlertColor.Secondary" class="text-center">
+                            Loading users...
+                        </Alert>
+                    }
+                    else
+                    {
+                        <Grid TItem="UsersGetAllResponse" Data="users" AllowPaging="true" AllowSorting="true" PageSize="10" Responsive="true"
+                              Class="table table-hover table-bordered table-striped">
+                            <GridColumn TItem="UsersGetAllResponse" HeaderText="Username" SortKeySelector="item => item.Username">
+                                @context.Username
+                            </GridColumn>
+                            <GridColumn TItem="UsersGetAllResponse" HeaderText="Email" SortKeySelector="item => item.Email">
+                                @context.Email
+                            </GridColumn>
+                            <GridColumn TItem="UsersGetAllResponse" HeaderText="Full Name" SortKeySelector="item => item.FullName">
+                                @context.FullName
+                            </GridColumn>
+                            <GridColumn TItem="UsersGetAllResponse" HeaderText="Phone" SortKeySelector="item => item.PhoneNumber">
+                                @context.PhoneNumber
+                            </GridColumn>
+                            <GridColumn TItem="UsersGetAllResponse" HeaderText="Bravo ID" SortKeySelector="item => item.BravoId">
+                                @(context.BravoId?.ToString() ?? "N/A")
+                            </GridColumn>
+                            <GridColumn TItem="UsersGetAllResponse" HeaderText="Organization Unit" SortKeySelector="item => item.OrganizationUnitName">
+                                @(context.OrganizationUnitName ?? "N/A")
+                            </GridColumn>
+                            <GridColumn TItem="UsersGetAllResponse" HeaderText="Status">
+                                @if (context.IsActive)
+                                {
+                                    <Badge Color="BadgeColor.Success">Active</Badge>
+                                }
+                                else
+                                {
+                                    <Badge Color="BadgeColor.Secondary">Inactive</Badge>
+                                }
+                                @if (context.IsLocked)
+                                {
+                                    <Badge Color="BadgeColor.Danger" class="ms-1">Locked</Badge>
+                                }
+                            </GridColumn>
+                            <GridColumn TItem="UsersGetAllResponse" HeaderText="Last Login" SortKeyExpression="item => item.LastLoginAt">
+                                @(context.LastLoginAt?.ToString("dd/MM/yyyy HH:mm") ?? "Never")
+                            </GridColumn>
+                            <GridColumn TItem="UsersGetAllResponse" HeaderText="Actions" AllowSorting="false">
+                                <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowEditModal(context)" class="me-1">
+                                    <Icon Name="IconName.Pencil" />
+                                </Button>
+                                <Button Color="ButtonColor.Warning" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowChangePasswordModal(context)" class="me-1">
+                                    <Icon Name="IconName.Key" />
+                                </Button>
+                                <Button Color="ButtonColor.Success" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowAssignRoleModal(context)" class="me-1">
+                                    <Icon Name="IconName.Shield" />
+                                </Button>
+                                <Button Color="ButtonColor.Info" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowAssignMenuModal(context)" class="me-1">
+                                    <Icon Name="IconName.ListCheck" />
+                                </Button>
+                                <Button Color="ButtonColor.Danger" Outline="true" Size="ButtonSize.Small" @onclick="() => DeleteUser(context.Id)">
+                                    <Icon Name="IconName.Trash" />
+                                </Button>
+                            </GridColumn>
+                        </Grid>
+                    }
+                </CardBody>
+            </Card>
+        </div>
+    </div>
+</div>
+
+<UserFormModal @ref="userFormModal"
+    UserForm="userForm"
+    OrganizationUnits="organizationUnits"
+    IsEditMode="isEditMode"
+    IsSubmitting="isSubmitting"
+    OnClose="CloseUserFormModal"
+    OnSubmit="HandleSubmit" />
+
+<ChangePasswordModal @ref="changePasswordModal"
+    ChangePasswordForm="changePasswordForm"
+    Username="@changePasswordUsername"
+    IsChangingPassword="isChangingPassword"
+    OnClose="CloseChangePasswordModal"
+    OnSubmit="HandleChangePassword" />
+
+<AssignMenuModal @ref="assignMenuModal"
+    Username="@assignMenuUsername"
+    OnClose="CloseAssignMenuModal"
+    Menus="menus"
+    SelectedMenuIds="selectedMenuIds"
+    ExpandedMenuIds="expandedMenuIds"
+    IsLoadingMenus="isLoadingMenus"
+    IsAssigningMenus="isAssigningMenus"
+    OnMenuCheckboxChanged="(args) => HandleMenuCheckboxChanged(args.Item1, args.Item2)"
+    ToggleMenu="(menuId) => HandleToggleMenu(menuId)"
+    OnSubmit="HandleAssignMenus" />
+
+<AssignRoleModal @ref="assignRoleModal"
+    Username="@assignRoleUsername"
+    OnClose="CloseAssignRoleModal"
+    Roles="roles"
+    SelectedRoleIds="selectedRoleIds"
+    IsLoadingRoles="isLoadingRoles"
+    IsAssigningRoles="isAssigningRoles"
+    OnRoleCheckboxChanged="HandleRoleCheckboxChanged"
+    OnSubmit="HandleAssignRoles" />

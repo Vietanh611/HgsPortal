@@ -1,0 +1,88 @@
+@using Hgs.Share.Requests.Roles
+@using Hgs.Share.Responses.OrganizationUnits
+@using BlazorBootstrap
+
+<Modal @ref="modal" Title="@(IsEditMode ? "Edit Role" : "Add Role")" IsVisible="@IsVisible" OnClose="OnClose">
+    <BodyTemplate>
+        <EditForm Model="@RoleForm" OnValidSubmit="HandleSubmit">
+            <DataAnnotationsValidator />
+            
+            <div class="mb-3">
+                <label class="form-label">Code</label>
+                <InputText class="form-control" @bind-Value="RoleForm.Code" />
+                <ValidationMessage For="() => RoleForm.Code" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Name</label>
+                <InputText class="form-control" @bind-Value="RoleForm.Name" />
+                <ValidationMessage For="() => RoleForm.Name" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Description</label>
+                <InputTextArea class="form-control" @bind-Value="RoleForm.Description" rows="3" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Organization Unit</label>
+                <InputSelect class="form-select" @bind-Value="RoleForm.OrganizationUnitId">
+                    <option value="">-- Select Organization Unit --</option>
+                    @if (OrganizationUnits != null)
+                    {
+                        @foreach (var ou in OrganizationUnits)
+                        {
+                            <option value="@ou.Id">@ou.Name</option>
+                        }
+                    }
+                </InputSelect>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Data Scope</label>
+                <InputSelect class="form-select" @bind-Value="RoleForm.DataScope">
+                    <option value="Self">Self</option>
+                    <option value="Department">Department</option>
+                    <option value="Organization">Organization</option>
+                    <option value="All">All</option>
+                </InputSelect>
+            </div>
+
+            <div class="mb-3 form-check">
+                <InputCheckbox class="form-check-input" id="isSystemRole" @bind-Value="RoleForm.IsSystemRole" />
+                <label class="form-check-label" for="isSystemRole">System Role</label>
+            </div>
+
+            <div class="mb-3 form-check">
+                <InputCheckbox class="form-check-input" id="isActive" @bind-Value="RoleForm.IsActive" />
+                <label class="form-check-label" for="isActive">Active</label>
+            </div>
+        </EditForm>
+    </BodyTemplate>
+    <FooterTemplate>
+        <Button Color="ButtonColor.Secondary" @onclick="OnClose" Disabled="@IsSubmitting">Cancel</Button>
+        <Button Color="ButtonColor.Primary" @onclick="HandleSubmit" Disabled="@IsSubmitting">
+            @if (IsSubmitting)
+            {
+                <Spinner Color="SpinnerColor.Light" Size="SpinnerSize.Small" class="me-2" />
+            }
+            Save
+        </Button>
+    </FooterTemplate>
+</Modal>
+
+@code {
+    private Modal modal = default!;
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public RolesCreateRequest RoleForm { get; set; } = new();
+    [Parameter] public IEnumerable<OrganizationUnitsGetAllResponse>? OrganizationUnits { get; set; }
+    [Parameter] public bool IsEditMode { get; set; }
+    [Parameter] public bool IsSubmitting { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnSubmit { get; set; }
+
+    private async Task HandleSubmit()
+    {
+        await OnSubmit.InvokeAsync();
+    }
+}

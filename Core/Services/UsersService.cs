@@ -1,25 +1,35 @@
+using Core.Helpers;
 using Core.Interfaces;
 using Data.DbContexts;
+using Domain.Entities.FlyOps;
 using Domain.Entities.Identity;
 using Hgs.Share.Requests.Users;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Cryptography;
 
 namespace Core.Services;
 
 public class UsersService : IUsersService
 {
     private readonly HgsDbContext _dbContext;
+    private readonly FlyOpsDbContext _flyOpsDbContext;
 
-    public UsersService(HgsDbContext dbContext)
+    public UsersService(HgsDbContext dbContext, FlyOpsDbContext flyOpsDbContext)
     {
         _dbContext = dbContext;
+        _flyOpsDbContext = flyOpsDbContext;
     }
 
     public async Task<IEnumerable<Users>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await _dbContext.Users
+            .Include(x => x.OrganizationUnit)
             .Where(x => !x.IsDeleted)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+    }
+    public async Task<IEnumerable<NhanVien>> GetAllBravoNhanVienAsync(CancellationToken cancellationToken = default)
+    {
+        return await _flyOpsDbContext.NhanVien.Where(x => x.ResignDate == null)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
@@ -50,7 +60,7 @@ public class UsersService : IUsersService
         {
             Username = request.Username,
             Email = request.Email,
-            PasswordHash = HashPassword(request.Password),
+            PasswordHash = PasswordHelper.HashPassword(request.Password),
             FullName = request.FullName,
             PhoneNumber = request.PhoneNumber,
             AvatarUrl = request.AvatarUrl,
@@ -126,16 +136,25 @@ public class UsersService : IUsersService
         return true;
     }
 
-    private static string HashPassword(string password)
+    public async Task<bool> ChangePasswordAsync(int id, UsersChangePasswordRequest request, CancellationToken cancellationToken = default)
     {
-        var salt = RandomNumberGenerator.GetBytes(16);
-        var pbkdf2 = new Rfc2898DeriveBytes(password, salt, 100_000, HashAlgorithmName.SHA256);
-        var hash = pbkdf2.GetBytes(32);
+        var user = await _dbContext.Users
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (user is null || user.IsDeleted)
+        {
+            return false;
+        }
 
-        var bytes = new byte[48];
-        Buffer.BlockCopy(salt, 0, bytes, 0, 16);
-        Buffer.BlockCopy(hash, 0, bytes, 16, 32);
+        if (!PasswordHelper.VerifyPassword(request.CurrentPassword, user.PasswordHash))
+        {
+            return false;
+        }
 
-        return Convert.ToBase64String(bytes);
+        user.PasswordHash = PasswordHelper.HashPassword(request.NewPassword);
+        user.UpdatedAt = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return true;
     }
+
+
 }

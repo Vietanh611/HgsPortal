@@ -13,9 +13,5 @@ public class MenusGetByUserIdResponse
     public int SortOrder { get; set; }
     public bool IsVisible { get; set; }
     public bool IsActive { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public int? CreatedBy { get; set; }
-    public DateTime? UpdatedAt { get; set; }
-    public int? UpdatedBy { get; set; }
     public List<MenusGetByUserIdResponse> Children { get; set; } = new();
 }

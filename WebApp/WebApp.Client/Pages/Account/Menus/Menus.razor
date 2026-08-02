@@ -1,0 +1,102 @@
+@page "/menus"
+@using Hgs.Share.Responses.Menus
+@using BlazorBootstrap
+
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<PageTitle>Menu Management</PageTitle>
+
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Menu Management</h2>
+                <Button Color="ButtonColor.Primary" @onclick="ShowCreateModal">
+                    <Icon Name="IconName.PlusLg" /> Add Menu
+                </Button>
+            </div>
+
+            <Card>
+                <CardBody>
+                    @if (isLoading)
+                    {
+                        <div class="text-center py-5">
+                            <Spinner Color="SpinnerColor.Primary" />
+                        </div>
+                    }
+                    else if (menus == null)
+                    {
+                        <Alert Color="AlertColor.Secondary" class="text-center">
+                            Loading menus...
+                        </Alert>
+                    }
+                    else
+                    {
+                        <Grid TItem="MenusGetAllResponse" Data="menus" AllowPaging="true" AllowSorting="true" Responsive="true"
+                              Class="table table-hover table-bordered table-striped"  PageSize="10">
+                            <GridColumn TItem="MenusGetAllResponse" HeaderText="Code" SortKeyExpression="item => item.Code">
+                                @context.Code
+                            </GridColumn>
+                            <GridColumn TItem="MenusGetAllResponse" HeaderText="Name" SortKeyExpression="item => item.Name">
+                                @context.Name
+                            </GridColumn>
+                            <GridColumn TItem="MenusGetAllResponse" HeaderText="Route" SortKeyExpression="item => item.Route">
+                                @(context.Route ?? "N/A")
+                            </GridColumn>
+                            <GridColumn TItem="MenusGetAllResponse" HeaderText="Parent" SortKeyExpression="item => item.ParentId">
+                                @(context.ParentId?.ToString() ?? "Root")
+                            </GridColumn>
+                            <GridColumn TItem="MenusGetAllResponse" HeaderText="Icon" SortKeyExpression="item => item.Icon">
+                                @(context.Icon ?? "N/A")
+                            </GridColumn>
+                            <GridColumn TItem="MenusGetAllResponse" HeaderText="Sort Order" SortKeyExpression="item => item.SortOrder">
+                                @context.SortOrder
+                            </GridColumn>
+                            <GridColumn TItem="MenusGetAllResponse" HeaderText="Visible">
+                                @if (context.IsVisible)
+                                {
+                                    <Badge Color="BadgeColor.Success">Yes</Badge>
+                                }
+                                else
+                                {
+                                    <Badge Color="BadgeColor.Secondary">No</Badge>
+                                }
+                            </GridColumn>
+                            <GridColumn TItem="MenusGetAllResponse" HeaderText="Active">
+                                @if (context.IsActive)
+                                {
+                                    <Badge Color="BadgeColor.Success">Active</Badge>
+                                }
+                                else
+                                {
+                                    <Badge Color="BadgeColor.Secondary">Inactive</Badge>
+                                }
+                            </GridColumn>
+                            <GridColumn TItem="MenusGetAllResponse" HeaderText="Actions" AllowSorting="false">
+                                <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowEditModal(context)" class="me-1">
+                                    <Icon Name="IconName.Pencil" />
+                                </Button>
+                                <Button Color="ButtonColor.Danger" Outline="true" Size="ButtonSize.Small" @onclick="() => DeleteMenu(context.Id)">
+                                    <Icon Name="IconName.Trash" />
+                                </Button>
+                            </GridColumn>
+                        </Grid>
+                    }
+                </CardBody>
+            </Card>
+        </div>
+    </div>
+</div>
+
+@if (isMenuFormModalVisible)
+{
+    <MenuFormModal
+        IsVisible="@isMenuFormModalVisible"
+        MenuForm="menuForm"
+        ParentMenus="parentMenus"
+        IsEditMode="isEditMode"
+        IsSubmitting="isSubmitting"
+        OnClose="CloseMenuFormModal"
+        OnSubmit="HandleSubmit" />
+}
