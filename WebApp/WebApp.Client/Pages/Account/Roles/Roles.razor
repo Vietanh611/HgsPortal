@@ -1,0 +1,119 @@
+@page "/roles"
+@using Hgs.Share.Responses.Roles
+@using BlazorBootstrap
+
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<PageTitle>Role Management</PageTitle>
+
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Role Management</h2>
+                <Button Color="ButtonColor.Primary" @onclick="ShowCreateModal">
+                    <Icon Name="IconName.PlusLg" /> Add Role
+                </Button>
+            </div>
+
+            <Card>
+                <CardBody>
+                    @if (isLoading)
+                    {
+                        <div class="text-center py-5">
+                            <Spinner Color="SpinnerColor.Primary" />
+                        </div>
+                    }
+                    else if (roles == null)
+                    {
+                        <Alert Color="AlertColor.Secondary" class="text-center">
+                            Loading roles...
+                        </Alert>
+                    }
+                    else
+                    {
+                        <Grid TItem="RolesGetAllResponse" Data="roles" AllowPaging="true" AllowSorting="true"
+                              Responsive="true"
+                              Class="table table-hover table-bordered table-striped" PageSize="10">
+                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Code" SortKeyExpression="item => item.Code">
+                                @context.Code
+                            </GridColumn>
+                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Name" SortKeyExpression="item => item.Name">
+                                @context.Name
+                            </GridColumn>
+                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Description" SortKeyExpression="item => item.Description">
+                                @(context.Description ?? "N/A")
+                            </GridColumn>
+                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Organization Unit" SortKeyExpression="item => item.OrganizationUnitName">
+                                @(context.OrganizationUnitName ?? "N/A")
+                            </GridColumn>
+                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Data Scope" SortKeyExpression="item => item.DataScope">
+                                @context.DataScope
+                            </GridColumn>
+                            <GridColumn TItem="RolesGetAllResponse" HeaderText="System Role">
+                                @if (context.IsSystemRole)
+                                {
+                                    <Badge Color="BadgeColor.Info">Yes</Badge>
+                                }
+                                else
+                                {
+                                    <Badge Color="BadgeColor.Secondary">No</Badge>
+                                }
+                            </GridColumn>
+                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Active">
+                                @if (context.IsActive)
+                                {
+                                    <Badge Color="BadgeColor.Success">Active</Badge>
+                                }
+                                else
+                                {
+                                    <Badge Color="BadgeColor.Secondary">Inactive</Badge>
+                                }
+                            </GridColumn>
+                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Actions" AllowSorting="false">
+                                <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowEditModal(context)" class="me-1">
+                                    <Icon Name="IconName.Pencil" />
+                                </Button>
+                                <Button Color="ButtonColor.Info" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowAssignMenuModal(context)" class="me-1">
+                                    <Icon Name="IconName.ListCheck" />
+                                </Button>
+                                <Button Color="ButtonColor.Danger" Outline="true" Size="ButtonSize.Small" @onclick="() => DeleteRole(context.Id)">
+                                    <Icon Name="IconName.Trash" />
+                                </Button>
+                            </GridColumn>
+                        </Grid>
+                    }
+                </CardBody>
+            </Card>
+        </div>
+    </div>
+</div>
+
+@if (isRoleFormModalVisible)
+{
+    <RoleFormModal
+        IsVisible="@isRoleFormModalVisible"
+        RoleForm="roleForm"
+        OrganizationUnits="organizationUnits"
+        IsEditMode="isEditMode"
+        IsSubmitting="isSubmitting"
+        OnClose="CloseRoleFormModal"
+        OnSubmit="HandleSubmit" />
+}
+
+@if (isAssignMenuModalVisible)
+{
+    <AssignMenuModal
+        IsVisible="@isAssignMenuModalVisible"
+        RoleName="@assignMenuRoleName"
+        OnClose="CloseAssignMenuModal"
+        Menus="menus"
+        SelectedMenuIds="selectedMenuIds"
+        ExpandedMenuIds="expandedMenuIds"
+        IsLoadingMenus="isLoadingMenus"
+        IsAssigningMenus="isAssigningMenus"
+        OnMenuCheckboxChanged="HandleMenuCheckboxChanged"
+        ToggleMenu="HandleToggleMenu"
+        OnSubmit="HandleAssignMenus" />
+}

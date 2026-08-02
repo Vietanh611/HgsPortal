@@ -1,0 +1,133 @@
+@using Hgs.Share.Responses.Menus
+@using BlazorBootstrap
+<Modal @ref="modal" Title="@($"Assign Menus - {Username}")" OnClose="Close" Size="ModalSize.Large">
+    <BodyTemplate>
+        <div class="mb-3">
+            <label class="form-label">Select Menus</label>
+            @if (IsLoadingMenus)
+            {
+                <Spinner Color="SpinnerColor.Primary" />
+            }
+            else if (Menus != null)
+            {
+                <div class="border p-3 rounded" style="max-height: 400px; overflow-y: auto;">
+                    @foreach (var menu in Menus.Where(m => !m.ParentId.HasValue))
+                    {
+                        <div class="mb-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="menu-@menu.Id" value="@menu.Id" @onchange="@(e => HandleMenuCheckboxChanged(menu.Id, e.Value.ToString()))" checked="@IsMenuAssigned(menu.Id)" />
+                                <label class="form-check-label fw-bold" for="menu-@menu.Id">
+                                    @menu.Name
+                                </label>
+                                @if (menu.Children.Any())
+                                {
+                                    <button class="btn btn-sm btn-link p-0 ms-2 text-decoration-none" @onclick="() => HandleToggleMenu(menu.Id)">
+                                        <i class="bi @(IsMenuExpanded(menu.Id) ? "bi-chevron-down" : "bi-chevron-right")"></i>
+                                    </button>
+                                }
+                            </div>
+                            @if (menu.Children.Any() && IsMenuExpanded(menu.Id))
+                            {
+                                <div class="ms-4 mt-1">
+                                    @foreach (var child in menu.Children.OrderBy(c => c.SortOrder))
+                                    {
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="menu-@child.Id" value="@child.Id" @onchange="@(e => HandleMenuCheckboxChanged(child.Id, e.Value.ToString()))" checked="@IsMenuAssigned(child.Id)" />
+                                            <label class="form-check-label" for="menu-@child.Id">
+                                                @child.Name
+                                            </label>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </BodyTemplate>
+    <FooterTemplate>
+        <Button Color="ButtonColor.Secondary" @onclick="Close">Cancel</Button>
+        <Button Color="ButtonColor.Primary" Disabled="@IsAssigningMenus" @onclick="HandleSubmit">
+            @if (IsAssigningMenus)
+            {
+                <Spinner Color="SpinnerColor.Light" Size="SpinnerSize.Small" class="me-2" />
+            }
+            Save Assignments
+        </Button>
+    </FooterTemplate>
+</Modal>
+
+@code {
+    private Modal modal = default!;
+    [Parameter]
+    public string Username { get; set; } = string.Empty;
+
+    [Parameter]
+    public IEnumerable<MenusGetAllResponse>? Menus { get; set; }
+
+    [Parameter]
+    public List<int> SelectedMenuIds { get; set; } = new();
+
+    [Parameter]
+    public HashSet<int> ExpandedMenuIds { get; set; } = new();
+
+    [Parameter]
+    public bool IsLoadingMenus { get; set; }
+
+    [Parameter]
+    public bool IsAssigningMenus { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    [Parameter]
+    public EventCallback OnSubmit { get; set; }
+
+    [Parameter]
+    public EventCallback<(int, string?)> OnMenuCheckboxChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<int> ToggleMenu { get; set; }
+
+    public async Task ShowAsync()
+    {
+        await modal.ShowAsync();
+    }
+
+    public async Task HideAsync()
+    {
+        await modal.HideAsync();
+    }
+
+    private bool IsMenuAssigned(int menuId)
+    {
+        return SelectedMenuIds.Contains(menuId);
+    }
+
+    private bool IsMenuExpanded(int menuId)
+    {
+        return ExpandedMenuIds.Contains(menuId);
+    }
+
+    private async Task Close()
+    {
+        await HideAsync();
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task HandleMenuCheckboxChanged(int menuId, string? value)
+    {
+        await OnMenuCheckboxChanged.InvokeAsync((menuId, value));
+    }
+
+    private async Task HandleToggleMenu(int menuId)
+    {
+        await ToggleMenu.InvokeAsync(menuId);
+    }
+
+    private async Task HandleSubmit()
+    {
+        await OnSubmit.InvokeAsync();
+    }
+}

@@ -17,4 +17,5 @@ public class MenusGetAllResponse
     public int? CreatedBy { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public int? UpdatedBy { get; set; }
+    public List<MenusGetAllResponse> Children { get; set; } = new();
 }

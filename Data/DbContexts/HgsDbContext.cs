@@ -18,6 +18,7 @@ namespace Data.DbContexts
         public DbSet<Modules> Modules => Set<Modules>();
         public DbSet<UserModules> UserModules => Set<UserModules>();
         public DbSet<UserMenus> UserMenus => Set<UserMenus>();
+        public DbSet<RoleMenus> RoleMenus => Set<RoleMenus>();
         public DbSet<OrganizationUnits> OrganizationUnits => Set<OrganizationUnits>();
 
         #region CustomerSatisfaction

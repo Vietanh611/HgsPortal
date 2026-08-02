@@ -1,4 +1,5 @@
 using Core.Interfaces;
+using Domain.Entities.FlyOps;
 using Domain.Entities.Identity;
 using Hgs.Share.Requests.Users;
 using Hgs.Share.Responses.ApiResponses;
@@ -39,6 +40,14 @@ public class UsersController : ControllerBase
         }
 
         return Ok(ApiResponse<UsersGetByIdResponse>.SuccessResponse(MapToGetByIdResponse(user), "User retrieved successfully", 200));
+    }
+
+    [HttpGet("bravo")]
+    public async Task<ActionResult<ApiResponse<IEnumerable<NhanVien>>>> GetBravoAll()
+    {
+        var nhanvien = await _usersService.GetAllBravoNhanVienAsync();
+
+        return Ok(ApiResponse<IEnumerable<NhanVien>>.SuccessResponse(nhanvien, "Users retrieved successfully", 200));
     }
 
     [HttpPost]
@@ -93,6 +102,26 @@ public class UsersController : ControllerBase
         return Ok(ApiResponse.SuccessResponse("User deleted successfully", 200));
     }
 
+    [HttpPut("{id:int}/changepassword")]
+    public async Task<ActionResult<ApiResponse>> ChangePassword(int id, [FromBody] UsersChangePasswordRequest request)
+    {
+        try
+        {
+            var changed = await _usersService.ChangePasswordAsync(id, request);
+            if (!changed)
+            {
+                return BadRequest(ApiResponse.FailResponse("Failed to change password. Old password may be incorrect.", 400));
+            }
+
+            _logger.LogInformation("Changed password for user with id '{Id}'.", id);
+            return Ok(ApiResponse.SuccessResponse("Password changed successfully", 200));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ApiResponse.FailResponse(ex.Message, 400));
+        }
+    }
+
     private static UsersGetAllResponse MapToGetAllResponse(Users user) => new()
     {
         Id = user.Id,
@@ -103,6 +132,7 @@ public class UsersController : ControllerBase
         AvatarUrl = user.AvatarUrl,
         BravoId = user.BravoId,
         OrganizationUnitId = user.OrganizationUnitId,
+        OrganizationUnitName = user.OrganizationUnit?.Name,
         IsActive = user.IsActive,
         IsLocked = user.IsLocked,
         LockoutEnd = user.LockoutEnd,
@@ -125,6 +155,7 @@ public class UsersController : ControllerBase
         AvatarUrl = user.AvatarUrl,
         BravoId = user.BravoId,
         OrganizationUnitId = user.OrganizationUnitId,
+        OrganizationUnitName = user.OrganizationUnit?.Name,
         IsActive = user.IsActive,
         IsLocked = user.IsLocked,
         LockoutEnd = user.LockoutEnd,
@@ -147,6 +178,7 @@ public class UsersController : ControllerBase
         AvatarUrl = user.AvatarUrl,
         BravoId = user.BravoId,
         OrganizationUnitId = user.OrganizationUnitId,
+        OrganizationUnitName = user.OrganizationUnit?.Name,
         IsActive = user.IsActive,
         IsLocked = user.IsLocked,
         LockoutEnd = user.LockoutEnd,
@@ -169,6 +201,7 @@ public class UsersController : ControllerBase
         AvatarUrl = user.AvatarUrl,
         BravoId = user.BravoId,
         OrganizationUnitId = user.OrganizationUnitId,
+        OrganizationUnitName = user.OrganizationUnit?.Name,
         IsActive = user.IsActive,
         IsLocked = user.IsLocked,
         LockoutEnd = user.LockoutEnd,

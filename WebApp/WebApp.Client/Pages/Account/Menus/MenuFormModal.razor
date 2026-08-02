@@ -1,0 +1,92 @@
+@using Hgs.Share.Requests.Menus
+@using BlazorBootstrap
+
+<Modal @ref="modal" Title="@(IsEditMode ? "Edit Menu" : "Add Menu")" IsVisible="@IsVisible" OnClose="OnClose">
+    <BodyTemplate>
+        <EditForm Model="@MenuForm" OnValidSubmit="HandleSubmit">
+            <DataAnnotationsValidator />
+            
+            <div class="mb-3">
+                <label class="form-label">Code</label>
+                <InputText class="form-control" @bind-Value="MenuForm.Code" />
+                <ValidationMessage For="() => MenuForm.Code" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Name</label>
+                <InputText class="form-control" @bind-Value="MenuForm.Name" />
+                <ValidationMessage For="() => MenuForm.Name" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Parent Menu</label>
+                <InputSelect class="form-select" @bind-Value="MenuForm.ParentId">
+                    <option value="">-- Root Menu --</option>
+                    @if (ParentMenus != null)
+                    {
+                        @foreach (var parent in ParentMenus)
+                        {
+                            <option value="@parent.Id">@parent.Name</option>
+                        }
+                    }
+                </InputSelect>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Route</label>
+                <InputText class="form-control" @bind-Value="MenuForm.Route" placeholder="/path" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Component</label>
+                <InputText class="form-control" @bind-Value="MenuForm.Component" placeholder="ComponentName" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Icon</label>
+                <InputText class="form-control" @bind-Value="MenuForm.Icon" placeholder="bi-icon-name" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Sort Order</label>
+                <InputNumber class="form-control" @bind-Value="MenuForm.SortOrder" />
+            </div>
+
+            <div class="mb-3 form-check">
+                <InputCheckbox class="form-check-input" id="isVisible" @bind-Value="MenuForm.IsVisible" />
+                <label class="form-check-label" for="isVisible">Visible</label>
+            </div>
+
+            <div class="mb-3 form-check">
+                <InputCheckbox class="form-check-input" id="isActive" @bind-Value="MenuForm.IsActive" />
+                <label class="form-check-label" for="isActive">Active</label>
+            </div>
+        </EditForm>
+    </BodyTemplate>
+    <FooterTemplate>
+        <Button Color="ButtonColor.Secondary" @onclick="OnClose" Disabled="@IsSubmitting">Cancel</Button>
+        <Button Color="ButtonColor.Primary" @onclick="HandleSubmit" Disabled="@IsSubmitting">
+            @if (IsSubmitting)
+            {
+                <Spinner Color="SpinnerColor.Light" Size="SpinnerSize.Small" class="me-2" />
+            }
+            Save
+        </Button>
+    </FooterTemplate>
+</Modal>
+
+@code {
+    private Modal modal = default!;
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public MenusCreateRequest MenuForm { get; set; } = new();
+    [Parameter] public IEnumerable<Hgs.Share.Responses.Menus.MenusGetAllResponse>? ParentMenus { get; set; }
+    [Parameter] public bool IsEditMode { get; set; }
+    [Parameter] public bool IsSubmitting { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnSubmit { get; set; }
+
+    private async Task HandleSubmit()
+    {
+        await OnSubmit.InvokeAsync();
+    }
+}

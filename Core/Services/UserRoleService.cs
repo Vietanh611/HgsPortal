@@ -1,6 +1,7 @@
 using Core.Interfaces;
 using Data.DbContexts;
 using Domain.Entities.Identity;
+using Domain.Entities.System;
 using Hgs.Share.Requests.UserRoles;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,10 +10,12 @@ namespace Core.Services;
 public class UserRoleService : IUserRoleService
 {
     private readonly HgsDbContext _dbContext;
+    private readonly IUserMenuService _userMenuService;
 
-    public UserRoleService(HgsDbContext dbContext)
+    public UserRoleService(HgsDbContext dbContext, IUserMenuService userMenuService)
     {
         _dbContext = dbContext;
+        _userMenuService = userMenuService;
     }
 
     public async Task<IEnumerable<UserRoles>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -95,6 +98,9 @@ public class UserRoleService : IUserRoleService
 
         _dbContext.UserRoles.Add(userRole);
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        // Automatically assign all role menus to the user
+        await AssignRoleMenusToUserAsync(request.RoleId, request.UserId, assignedBy, cancellationToken);
 
         return userRole;
     }
@@ -182,6 +188,12 @@ public class UserRoleService : IUserRoleService
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        // Automatically assign all role menus to the user for each new role
+        foreach (var roleId in newRoleIds)
+        {
+            await AssignRoleMenusToUserAsync(roleId, userId, assignedBy, cancellationToken);
+        }
     }
 
     public async Task RemoveMultipleRolesAsync(int userId, List<int> roleIds, CancellationToken cancellationToken = default)
@@ -211,6 +223,42 @@ public class UserRoleService : IUserRoleService
         }
 
         _dbContext.UserRoles.RemoveRange(rolesToRemove);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task AssignRoleMenusToUserAsync(int roleId, int userId, int assignedBy, CancellationToken cancellationToken = default)
+    {
+        // Get all menus assigned to this role
+        var roleMenuIds = await _dbContext.RoleMenus
+            .Where(rm => rm.RoleId == roleId)
+            .Select(rm => rm.MenuId)
+            .ToListAsync(cancellationToken);
+
+        if (!roleMenuIds.Any())
+            return;
+
+        // Get existing user menu assignments
+        var existingUserMenuIds = await _dbContext.UserMenus
+            .Where(um => um.UserId == userId)
+            .Select(um => um.MenuId)
+            .ToListAsync(cancellationToken);
+
+        // Filter out menus the user already has
+        var newMenuIds = roleMenuIds.Except(existingUserMenuIds).ToList();
+
+        // Assign new menus to user
+        foreach (var menuId in newMenuIds)
+        {
+            var userMenu = new UserMenus
+            {
+                UserId = userId,
+                MenuId = menuId,
+                AssignedAt = DateTime.UtcNow,
+                AssignedBy = assignedBy
+            };
+            _dbContext.UserMenus.Add(userMenu);
+        }
+
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 }

@@ -20,5 +20,6 @@
         public OrganizationUnits? OrganizationUnit { get; set; }
 
         public ICollection<UserRoles> UserRoles { get; set; } = new List<UserRoles>();
+        public ICollection<System.RoleMenus> RoleMenus { get; set; } = new List<System.RoleMenus>();
     }
 }

@@ -1,3 +1,4 @@
+using Core.Helpers;
 using Core.Interfaces;
 using Data.DbContexts;
 using Domain.Entities.Identity;
@@ -9,7 +10,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.IdentityModel.Tokens.Jwt;
-using System.Security.Cryptography;
 
 namespace Core.Services;
 
@@ -48,7 +48,7 @@ public class AuthService : IAuthService
             .Where(u => u.Username == request.Username && !u.IsDeleted)
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (user is null || !VerifyPassword(request.Password, user.PasswordHash))
+        if (user is null || !PasswordHelper.VerifyPassword(request.Password, user.PasswordHash))
         {
             _logger.LogWarning("Invalid login attempt for user '{Username}'.", request.Username);
             throw new UnauthorizedException("Invalid username or password.");
@@ -59,7 +59,8 @@ public class AuthService : IAuthService
             _logger.LogWarning("Inactive user '{Username}' tried to login.", request.Username);
             throw new UnauthorizedException("User is not active.");
         }
-
+        user.LastLoginAt = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync(cancellationToken);
         return await IssueTokensAsync(user, userAgent, ipAddress, cancellationToken);
     }
 
@@ -175,28 +176,11 @@ public class AuthService : IAuthService
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    private static bool VerifyPassword(string password, string storedHash)
+    public async Task<Users?> GetCurrentUserAsync(int userId, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(storedHash))
-        {
-            return false;
-        }
-
-        var hashBytes = Convert.FromBase64String(storedHash);
-        var salt = new byte[16];
-        Buffer.BlockCopy(hashBytes, 0, salt, 0, 16);
-
-        using var pbkdf2 = new Rfc2898DeriveBytes(password, salt, 100_000, HashAlgorithmName.SHA256);
-        var hash = pbkdf2.GetBytes(32);
-
-        for (var i = 0; i < 32; i++)
-        {
-            if (hashBytes[i + 16] != hash[i])
-            {
-                return false;
-            }
-        }
-
-        return true;
+        return await _dbContext.Users
+            .Include(x => x.OrganizationUnit)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == userId && !x.IsDeleted, cancellationToken);
     }
 }

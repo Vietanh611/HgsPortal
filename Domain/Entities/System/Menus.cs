@@ -42,6 +42,8 @@ namespace Domain.Entities.System
         [ForeignKey(nameof(UpdatedBy))]
         public virtual Users? UpdatedByUser { get; set; }
 
+        public virtual ICollection<RoleMenus> RoleMenus { get; set; } = new List<RoleMenus>();
+
         #endregion
     }
 }

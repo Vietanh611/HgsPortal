@@ -1,0 +1,94 @@
+using Core.Interfaces;
+using Hgs.Share.Dtos;
+using Hgs.Share.Requests.UserMenus;
+using Hgs.Share.Responses.ApiResponses;
+using Hgs.Share.Responses.Menus;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+
+namespace API.Controllers;
+
+[ApiController]
+[Authorize]
+[Route("api/[controller]")]
+public class UserMenusController : ControllerBase
+{
+    private readonly IUserMenuService _userMenuService;
+    private readonly ILogger<UserMenusController> _logger;
+
+    public UserMenusController(IUserMenuService userMenuService, ILogger<UserMenusController> logger)
+    {
+        _userMenuService = userMenuService;
+        _logger = logger;
+    }
+
+    private int GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrWhiteSpace(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+        {
+            return 0; // Return 0 if not authenticated, or throw exception
+        }
+        return userId;
+    }
+
+    [HttpGet]
+    public async Task<ActionResult> GetAll(CancellationToken cancellationToken)
+    {
+        var userMenus = await _userMenuService.GetAllAsync(cancellationToken);
+        return Ok(ApiResponse<IEnumerable<UserMenuDto>>.SuccessResponse(userMenus, "User menus retrieved successfully", 200));
+    }
+
+    [HttpGet("user/{userId:int}")]
+    public async Task<ActionResult<ApiResponse<IEnumerable<MenusGetByUserIdResponse>>>> GetByUserId(int userId, CancellationToken cancellationToken)
+    {
+        var menus = await _userMenuService.GetByUserIdAsync(userId, cancellationToken);
+        return Ok(ApiResponse<IEnumerable<MenusGetByUserIdResponse>>.SuccessResponse(menus, "Menus retrieved successfully for user", 200));
+    }
+
+    [HttpGet("user/{userId:int}/menu-ids")]
+    public async Task<ActionResult<ApiResponse<IEnumerable<int>>>> GetMenuIdsByUserId(int userId, CancellationToken cancellationToken)
+    {
+        var menuIds = await _userMenuService.GetMenuIdsByUserIdAsync(userId, cancellationToken);
+        return Ok(ApiResponse<IEnumerable<int>>.SuccessResponse(menuIds, "Menu IDs retrieved successfully for user", 200));
+    }
+
+    [HttpPost]
+    public async Task<ActionResult> Create([FromBody] UserMenusCreateRequest request, CancellationToken cancellationToken)
+    {
+        var currentUserId = GetCurrentUserId();
+        var userMenu = await _userMenuService.CreateAsync(request, currentUserId, cancellationToken);
+        _logger.LogInformation("User {CurrentUserId} assigned menu {MenuId} to user {UserId}", currentUserId, request.MenuId, request.UserId);
+        return Ok(ApiResponse.SuccessResponse("Menu assigned successfully", 201));
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<ActionResult> Delete(int id, CancellationToken cancellationToken)
+    {
+        var deleted = await _userMenuService.DeleteAsync(id, cancellationToken);
+        if (!deleted)
+        {
+            return NotFound(ApiResponse.FailResponse("User menu not found", 404));
+        }
+        _logger.LogInformation("Deleted user menu assignment {Id}", id);
+        return Ok(ApiResponse.SuccessResponse("User menu deleted successfully", 200));
+    }
+
+    [HttpPost("assign-multiple")]
+    public async Task<ActionResult> AssignMultipleMenus([FromBody] UserMenusAssignMultipleRequest request, CancellationToken cancellationToken)
+    {
+        var currentUserId = GetCurrentUserId();
+        await _userMenuService.AssignMultipleMenusAsync(request.UserId, request.MenuIds, currentUserId, cancellationToken);
+        _logger.LogInformation("User {CurrentUserId} assigned multiple menus to user {UserId}", currentUserId, request.UserId);
+        return Ok(ApiResponse.SuccessResponse("Menus assigned successfully", 200));
+    }
+
+    [HttpPost("remove-multiple")]
+    public async Task<ActionResult> RemoveMultipleMenus([FromBody] UserMenusAssignMultipleRequest request, CancellationToken cancellationToken)
+    {
+        await _userMenuService.RemoveMultipleMenusAsync(request.UserId, request.MenuIds, cancellationToken);
+        _logger.LogInformation("Removed multiple menus from user {UserId}", request.UserId);
+        return Ok(ApiResponse.SuccessResponse("Menus removed successfully", 200));
+    }
+}

@@ -1,3 +1,4 @@
+using Domain.Entities.Identity;
 using Hgs.Share.Requests;
 using Hgs.Share.Requests.Users;
 using Hgs.Share.Responses;
@@ -20,5 +21,9 @@ public interface IAuthService
 
     Task LogoutAsync(
         LogoutRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<Users?> GetCurrentUserAsync(
+        int userId,
         CancellationToken cancellationToken = default);
 }

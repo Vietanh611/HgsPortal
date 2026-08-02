@@ -1,0 +1,488 @@
+using Hgs.Share.Requests.UserMenus;
+using Hgs.Share.Requests.UserRoles;
+using Hgs.Share.Requests.Users;
+using Hgs.Share.Responses.ApiResponses;
+using Hgs.Share.Responses.Menus;
+using Hgs.Share.Responses.OrganizationUnits;
+using Hgs.Share.Responses.Roles;
+using Hgs.Share.Responses.UserRoles;
+using Hgs.Share.Responses.Users;
+using Microsoft.AspNetCore.Components;
+using WebApp.Client.Services;
+using BlazorBootstrap;
+using CustomToastService = WebApp.Client.Services.ToastService;
+
+namespace WebApp.Client.Pages.Account.Users;
+
+public partial class Users
+{
+    [Inject] private CustomToastService ToastService { get; set; } = default!;
+    [Inject] private ApiClient ApiClient { get; set; } = default!;
+    [Inject] private DialogService DialogService { get; set; } = default!;
+    private UserFormModal userFormModal = default!;
+    private ChangePasswordModal changePasswordModal = default!;
+    private AssignMenuModal assignMenuModal = default!;
+    private AssignRoleModal assignRoleModal = default!;
+    private IEnumerable<UsersGetAllResponse>? users;
+    private IEnumerable<OrganizationUnitsGetAllResponse>? organizationUnits;
+    private IEnumerable<MenusGetAllResponse>? menus;
+    private IEnumerable<RolesGetAllResponse>? roles;
+    private List<int> assignedMenuIds = new();
+    private List<int> selectedMenuIds = new();
+    private List<int> assignedRoleIds = new();
+    private List<int> selectedRoleIds = new();
+    private HashSet<int> expandedMenuIds = new();
+    private UsersCreateRequest userForm = new();
+    private UsersChangePasswordRequest changePasswordForm = new();
+    private string changePasswordUsername = string.Empty;
+    private int changePasswordUserId = 0;
+    private string assignMenuUsername = string.Empty;
+    private int assignMenuUserId = 0;
+    private string assignRoleUsername = string.Empty;
+    private int assignRoleUserId = 0;
+    private bool isLoading = true;
+    private bool isLoadingMenus = false;
+    private bool isLoadingRoles = false;
+    private bool isEditMode = false;
+    private bool isSubmitting = false;
+    private bool isChangingPassword = false;
+    private bool isAssigningMenus = false;
+    private bool isAssigningRoles = false;
+    private int editingUserId = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(LoadUsers(), LoadOrganizationUnits());
+    }
+
+    private async Task LoadUsers()
+    {
+        isLoading = true;
+        try
+        {
+            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<UsersGetAllResponse>>>("api/users");
+            if (response != null && response.Success && response.Data != null)
+            {
+                users = response.Data;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading users: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadOrganizationUnits()
+    {
+        try
+        {
+            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<OrganizationUnitsGetAllResponse>>>("api/organizationunits");
+            if (response != null && response.Success && response.Data != null)
+            {
+                organizationUnits = response.Data;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading organization units: {ex.Message}");
+        }
+    }
+
+    private async Task LoadMenus()
+    {
+        isLoadingMenus = true;
+        try
+        {
+            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<MenusGetAllResponse>>>("api/menus");
+            if (response != null && response.Success && response.Data != null)
+            {
+                menus = response.Data;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading menus: {ex.Message}");
+        }
+        finally
+        {
+            isLoadingMenus = false;
+        }
+    }
+
+    private async Task LoadUserMenus(int userId)
+    {
+        try
+        {
+            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<int>>>($"api/usermenus/user/{userId}/menu-ids");
+            if (response != null && response.Success && response.Data != null)
+            {
+                assignedMenuIds = response.Data.ToList();
+                selectedMenuIds = new List<int>(assignedMenuIds);
+            }
+            else
+            {
+                assignedMenuIds = new List<int>();
+                selectedMenuIds = new List<int>();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading user menus: {ex.Message}");
+            assignedMenuIds = new List<int>();
+            selectedMenuIds = new List<int>();
+        }
+    }
+
+    private async Task LoadRoles()
+    {
+        isLoadingRoles = true;
+        try
+        {
+            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<RolesGetAllResponse>>>("api/roles");
+            if (response != null && response.Success && response.Data != null)
+            {
+                roles = response.Data;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading roles: {ex.Message}");
+        }
+        finally
+        {
+            isLoadingRoles = false;
+        }
+    }
+
+    private async Task LoadUserRoles(int userId)
+    {
+        try
+        {
+            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<UserRolesGetAllResponse>>>($"api/userroles/by-user/{userId}");
+            if (response != null && response.Success && response.Data != null)
+            {
+                assignedRoleIds = response.Data.Select(ur => ur.RoleId).ToList();
+                selectedRoleIds = new List<int>(assignedRoleIds);
+            }
+            else
+            {
+                assignedRoleIds = new List<int>();
+                selectedRoleIds = new List<int>();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading user roles: {ex.Message}");
+            assignedRoleIds = new List<int>();
+            selectedRoleIds = new List<int>();
+        }
+    }
+
+    private async Task ShowCreateModal()
+    {
+        isEditMode = false;
+        userForm = new UsersCreateRequest();
+        await userFormModal.ShowAsync();
+    }
+
+    private async Task ShowEditModal(UsersGetAllResponse user)
+    {
+        isEditMode = true;
+        editingUserId = user.Id;
+        userForm = new UsersCreateRequest
+        {
+            Username = user.Username,
+            Email = user.Email,
+            FullName = user.FullName,
+            BravoId = user.BravoId,
+            PhoneNumber = user.PhoneNumber,
+            OrganizationUnitId = user.OrganizationUnitId,
+            IsActive = user.IsActive
+        };
+        await userFormModal.ShowAsync();
+    }
+
+    private async Task ShowChangePasswordModal(UsersGetAllResponse user)
+    {
+        changePasswordUserId = user.Id;
+        changePasswordUsername = user.Username;
+        changePasswordForm = new UsersChangePasswordRequest();
+        await changePasswordModal.ShowAsync();
+    }
+
+    private async Task CloseUserFormModal()
+    {
+        await userFormModal.HideAsync();
+    }
+
+    private async Task CloseChangePasswordModal()
+    {
+        await changePasswordModal.HideAsync();
+    }
+
+    private async Task CloseAssignMenuModal()
+    {
+        await assignMenuModal.HideAsync();
+    }
+
+    private async Task CloseAssignRoleModal()
+    {
+        await assignRoleModal.HideAsync();
+    }
+
+    private async Task ShowAssignMenuModal(UsersGetAllResponse user)
+    {
+        assignMenuUserId = user.Id;
+        assignMenuUsername = user.Username;
+        selectedMenuIds = new List<int>();
+        await Task.WhenAll(LoadMenus(), LoadUserMenus(user.Id));
+        await assignMenuModal.ShowAsync();
+    }
+
+    private async Task ShowAssignRoleModal(UsersGetAllResponse user)
+    {
+        assignRoleUserId = user.Id;
+        assignRoleUsername = user.Username;
+        selectedRoleIds = new List<int>();
+        await Task.WhenAll(LoadRoles(), LoadUserRoles(user.Id));
+        await assignRoleModal.ShowAsync();
+    }
+
+    private void OnMenuCheckboxChanged(int menuId, string? value)
+    {
+        if (bool.TryParse(value, out var isChecked))
+        {
+            if (isChecked && !selectedMenuIds.Contains(menuId))
+            {
+                selectedMenuIds.Add(menuId);
+            }
+            else if (!isChecked && selectedMenuIds.Contains(menuId))
+            {
+                selectedMenuIds.Remove(menuId);
+            }
+        }
+    }
+
+    private async Task HandleMenuCheckboxChanged(int menuId, string? value)
+    {
+        OnMenuCheckboxChanged(menuId, value);
+    }
+
+    private void OnRoleCheckboxChanged(int roleId, string? value)
+    {
+        if (bool.TryParse(value, out var isChecked))
+        {
+            if (isChecked && !selectedRoleIds.Contains(roleId))
+            {
+                selectedRoleIds.Add(roleId);
+            }
+            else if (!isChecked && selectedRoleIds.Contains(roleId))
+            {
+                selectedRoleIds.Remove(roleId);
+            }
+        }
+    }
+
+    private void HandleRoleCheckboxChanged(int roleId, string? value)
+    {
+        OnRoleCheckboxChanged(roleId, value);
+    }
+
+    private bool IsMenuAssigned(int menuId)
+    {
+        return selectedMenuIds.Contains(menuId);
+    }
+
+    private void ToggleMenu(int menuId)
+    {
+        if (expandedMenuIds.Contains(menuId))
+        {
+            expandedMenuIds.Remove(menuId);
+        }
+        else
+        {
+            expandedMenuIds.Add(menuId);
+        }
+    }
+
+    private async Task HandleToggleMenu(int menuId)
+    {
+        ToggleMenu(menuId);
+    }
+
+    private bool IsMenuExpanded(int menuId)
+    {
+        return expandedMenuIds.Contains(menuId);
+    }
+
+    private async Task HandleSubmit()
+    {
+        isSubmitting = true;
+        try
+        {
+            if (isEditMode)
+            {
+                var updateRequest = new UsersUpdateRequest
+                {
+                    Email = userForm.Email,
+                    FullName = userForm.FullName,
+                    BravoId = userForm.BravoId,
+                    PhoneNumber = userForm.PhoneNumber,
+                    OrganizationUnitId = userForm.OrganizationUnitId,
+                    IsActive = userForm.IsActive
+                };
+                var success = await ApiClient.PutAsync($"api/users/{editingUserId}", updateRequest);
+                if (success)
+                {
+                    ToastService.ShowSuccess("User updated successfully");
+                    await LoadUsers();
+                    CloseUserFormModal();
+                }
+                else
+                {
+                    ToastService.ShowError("Failed to update user");
+                }
+            }
+            else
+            {
+                var success = await ApiClient.PostAsync("api/users", userForm);
+                if (success)
+                {
+                    ToastService.ShowSuccess("User created successfully");
+                    await LoadUsers();
+                    CloseUserFormModal();
+                }
+                else
+                {
+                    ToastService.ShowError("Failed to create user");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error saving user: {ex.Message}");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task HandleChangePassword()
+    {
+        isChangingPassword = true;
+        try
+        {
+            var success = await ApiClient.PutAsync($"api/users/{changePasswordUserId}/changepassword", changePasswordForm);
+            if (success)
+            {
+                ToastService.ShowSuccess("Password changed successfully");
+                CloseChangePasswordModal();
+            }
+            else
+            {
+                ToastService.ShowError("Failed to change password");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error changing password: {ex.Message}");
+        }
+        finally
+        {
+            isChangingPassword = false;
+        }
+    }
+
+    private async Task HandleAssignMenus()
+    {
+        isAssigningMenus = true;
+        try
+        {
+            var request = new UserMenusAssignMultipleRequest
+            {
+                UserId = assignMenuUserId,
+                MenuIds = selectedMenuIds
+            };
+            var success = await ApiClient.PostAsync("api/usermenus/assign-multiple", request);
+            if (success)
+            {
+                ToastService.ShowSuccess("Menus assigned successfully");
+                CloseAssignMenuModal();
+            }
+            else
+            {
+                ToastService.ShowError("Failed to assign menus");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error assigning menus: {ex.Message}");
+        }
+        finally
+        {
+            isAssigningMenus = false;
+        }
+    }
+
+    private async Task HandleAssignRoles()
+    {
+        isAssigningRoles = true;
+        try
+        {
+            var request = new UserRolesAssignMultipleRequest
+            {
+                UserId = assignRoleUserId,
+                RoleIds = selectedRoleIds
+            };
+            var success = await ApiClient.PostAsync("api/userroles/assign-multiple", request);
+            if (success)
+            {
+                ToastService.ShowSuccess("Roles assigned successfully");
+                CloseAssignRoleModal();
+            }
+            else
+            {
+                ToastService.ShowError("Failed to assign roles");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error assigning roles: {ex.Message}");
+        }
+        finally
+        {
+            isAssigningRoles = false;
+        }
+    }
+
+    private async Task DeleteUser(int id)
+    {
+        var confirmation = await DialogService.ShowDeleteConfirmAsync("this user");
+        
+        if (confirmation)
+        {
+            try
+            {
+                var success = await ApiClient.DeleteAsync($"api/users/{id}");
+                if (success)
+                {
+                    ToastService.ShowSuccess("User deleted successfully");
+                    await LoadUsers();
+                }
+                else
+                {
+                    ToastService.ShowError("Failed to delete user");
+                }
+            }
+            catch (Exception ex)
+            {
+                ToastService.ShowError($"Error deleting user: {ex.Message}");
+            }
+        }
+    }
+}

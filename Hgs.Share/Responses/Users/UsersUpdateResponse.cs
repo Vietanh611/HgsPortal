@@ -10,6 +10,7 @@ public class UsersUpdateResponse
     public string? AvatarUrl { get; set; }
     public int? BravoId { get; set; }
     public int OrganizationUnitId { get; set; }
+    public string? OrganizationUnitName { get; set; }
     public bool IsActive { get; set; }
     public bool IsLocked { get; set; }
     public DateTime? LockoutEnd { get; set; }
