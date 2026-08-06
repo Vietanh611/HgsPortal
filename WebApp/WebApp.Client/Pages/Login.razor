@@ -1,23 +1,28 @@
+@page "/"
 @page "/login"
-@using WebApp.Client.Layout
+@using Microsoft.AspNetCore.Components.Forms
+
 @layout EmptyLayout
 @inject HttpClient Http
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
+@code {
+    private string logoPath => $"{Navigation.BaseUri}assets/hgs/new%20logo/logo.png";
+}
+
 <PageTitle>Login</PageTitle>
 
 <div class="login-container">
     <Card Class="login-card">
-        <CardBody Class="text-center login-header">
-            <h1>HGS Portal</h1>
-            <p>Sign in to your account</p>
+        <CardBody Class="text-center">
+            <img src="@logoPath" alt="HGS Logo" class="login-logo" />
         </CardBody>
         <CardBody>
             <EditForm Model="@loginRequest" OnValidSubmit="HandleLogin">
                 <DataAnnotationsValidator />
 
-                <div class="mb-3">
+                @* <div class="mb-3">
                     <label class="form-label">Username</label>
                     <InputText @bind-Value="loginRequest.Username" class="form-control" placeholder="Enter your username" />
                     <ValidationMessage For="() => loginRequest.Username" class="error-message" />
@@ -27,6 +32,43 @@
                     <label class="form-label">Password</label>
                     <InputText type="password" @bind-Value="loginRequest.Password" class="form-control" placeholder="Enter your password" />
                     <ValidationMessage For="() => loginRequest.Password" class="error-message" />
+                </div> *@
+                <div class="mb-3">
+                    <label class="form-label">Username</label>
+
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-person"></i>
+                        </span>
+
+                        <InputText @bind-Value="loginRequest.Username"
+                                   class="form-control"
+                                   placeholder="Enter your username" />
+                    </div>
+
+                    <ValidationMessage For="() => loginRequest.Username" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-lock"></i>
+                        </span>
+                        <InputText type="@(showPassword ? "text" : "password")"
+                                   class="form-control"
+                                   @bind-Value="loginRequest.Password"
+                                   placeholder="Enter your password" />
+                        <span class="input-group-text" role="button" @onclick="() => showPassword = !showPassword">
+                            <i class="bi @(showPassword ? "bi-eye-slash" : "bi-eye")"></i>
+                        </span>
+                    </div>
+                    <ValidationMessage For="() => loginRequest.Password" />
+                </div>
+
+                <div class="mb-3 form-check">
+                    <InputCheckbox @bind-Value="rememberMe" class="form-check-input" id="rememberMe" />
+                    <label class="form-check-label" for="rememberMe">Remember Me</label>
                 </div>
 
                 @if (!string.IsNullOrEmpty(errorMessage))
@@ -46,7 +88,7 @@
             </EditForm>
         </CardBody>
         <CardFooter Class="text-center login-footer">
-            <p>Don't have an account? <a href="/register">Register</a></p>
+            <a href="forgot-password">Forgot Password?</a>
         </CardFooter>
     </Card>
 </div>
@@ -68,6 +110,13 @@
 
     .login-header {
         margin-bottom: 1.5rem;
+    }
+
+    .login-logo {
+        width: 120px;
+        height: auto;
+        margin: 0 auto;
+        display: block;
     }
 
     .login-header h1 {
@@ -116,6 +165,65 @@
     private AuthenticateRequest loginRequest = new();
     private string errorMessage = string.Empty;
     private bool isLoading = false;
+    private bool showPassword = false;
+    private bool rememberMe = false;
+    private bool hasLoadedCredentials = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !hasLoadedCredentials)
+        {
+            // Load saved username
+            var savedUsername = await JS.InvokeAsync<string>("localStorage.getItem", "rememberedUsername");
+            if (!string.IsNullOrEmpty(savedUsername))
+            {
+                loginRequest.Username = savedUsername;
+            }
+            
+            // Load Remember Me preference
+            var savedRememberMe = await JS.InvokeAsync<string>("localStorage.getItem", "rememberMe");
+            if (!string.IsNullOrEmpty(savedRememberMe))
+            {
+                rememberMe = bool.Parse(savedRememberMe);
+            }
+            
+            hasLoadedCredentials = true;
+            StateHasChanged();
+        }
+    }
+
+     private async Task LoadUserMenus(string accessToken)
+    {
+        try
+        {
+            // Decode JWT to get userId
+            var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+            var jwtToken = tokenHandler.ReadJwtToken(accessToken);
+            var userIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
+            
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            {
+                return;
+            }
+
+            // Fetch user menus
+            var response = await Http.GetAsync($"api/menus/user/{userId}");
+            if (response.IsSuccessStatusCode)
+            {
+                var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse<IEnumerable<Hgs.Share.Responses.Menus.MenusGetByUserIdResponse>>>();
+                if (apiResponse != null && apiResponse.Success && apiResponse.Data != null)
+                {
+                    // Store menus in localStorage for MainLayout to use
+                    var menusJson = System.Text.Json.JsonSerializer.Serialize(apiResponse.Data);
+                    await JS.InvokeVoidAsync("localStorage.setItem", "userMenus", menusJson);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading user menus: {ex.Message}");
+        }
+    }
 
     private async Task HandleLogin()
     {
@@ -132,13 +240,28 @@
                 
                 if (apiResponse != null && apiResponse.Success && apiResponse.Data != null)
                 {
+                    // Handle Remember Me
+                    if (rememberMe)
+                    {
+                        await JS.InvokeVoidAsync("localStorage.setItem", "rememberedUsername", loginRequest.Username);
+                        await JS.InvokeVoidAsync("localStorage.setItem", "rememberMe", "true");
+                    }
+                    else
+                    {
+                        await JS.InvokeVoidAsync("localStorage.removeItem", "rememberedUsername");
+                        await JS.InvokeVoidAsync("localStorage.removeItem", "rememberMe");
+                    }
+
                     // Store tokens in localStorage using JS interop
                     await JS.InvokeVoidAsync("localStorage.setItem", "accessToken", apiResponse.Data.AccessToken);
                     await JS.InvokeVoidAsync("localStorage.setItem", "refreshToken", apiResponse.Data.RefreshToken);
                     await JS.InvokeVoidAsync("localStorage.setItem", "expiresAt", apiResponse.Data.ExpiresAt.ToString());
                     
+                    // Load user menus for sidebar
+                   // await LoadUserMenus(apiResponse.Data.AccessToken);
+
                     // Navigate to home page
-                    Navigation.NavigateTo("/");
+                    Navigation.NavigateTo("home");
                 }
                 else
                 {

@@ -12,11 +12,13 @@ public class UsersService : IUsersService
 {
     private readonly HgsDbContext _dbContext;
     private readonly FlyOpsDbContext _flyOpsDbContext;
+    private readonly IAuditLogService _auditLog;
 
-    public UsersService(HgsDbContext dbContext, FlyOpsDbContext flyOpsDbContext)
+    public UsersService(HgsDbContext dbContext, FlyOpsDbContext flyOpsDbContext, IAuditLogService auditLog)
     {
         _dbContext = dbContext;
         _flyOpsDbContext = flyOpsDbContext;
+        _auditLog = auditLog;
     }
 
     public async Task<IEnumerable<Users>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -74,6 +76,15 @@ public class UsersService : IUsersService
 
         _dbContext.Users.Add(user);
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        _auditLog.Log(
+            action: "CREATE",
+            entityName: "Users",
+            entityId: user.Id,
+            oldValue: null,
+            newValue: user);
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
         return user;
     }
 
@@ -85,6 +96,21 @@ public class UsersService : IUsersService
         {
             return null;
         }
+
+        var oldSnapshot = new
+        {
+            user.Id,
+            user.Username,
+            user.Email,
+            user.FullName,
+            user.PhoneNumber,
+            user.AvatarUrl,
+            user.OrganizationUnitId,
+            user.IsActive,
+            user.IsLocked,
+            user.FailedLoginCount,
+            user.IsDeleted
+        };
 
         if (!string.IsNullOrWhiteSpace(request.Email))
         {
@@ -117,6 +143,14 @@ public class UsersService : IUsersService
         }
 
         user.UpdatedAt = DateTime.UtcNow;
+
+        _auditLog.Log(
+            action: "UPDATE",
+            entityName: "Users",
+            entityId: user.Id,
+            oldValue: oldSnapshot,
+            newValue: user);
+
         await _dbContext.SaveChangesAsync(cancellationToken);
         return user;
     }
@@ -129,6 +163,13 @@ public class UsersService : IUsersService
         {
             return false;
         }
+
+        _auditLog.Log(
+            action: "DELETE",
+            entityName: "Users",
+            entityId: user.Id,
+            oldValue: user,
+            newValue: null);
 
         user.IsDeleted = true;
         user.UpdatedAt = DateTime.UtcNow;

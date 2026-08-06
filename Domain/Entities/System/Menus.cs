@@ -1,4 +1,5 @@
 ﻿using Domain.Entities.Identity;
+using Hgs.Share.Attributes;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -8,7 +9,6 @@ namespace Domain.Entities.System
     {
         [Key]
         public int Id { get; set; }
-        public int ModuleId { get; set; }
         public int? ParentId { get; set; }
         [Required]
         [MaxLength(100)]
@@ -31,17 +31,18 @@ namespace Domain.Entities.System
         public int? UpdatedBy { get; set; }
 
         #region Navigation Properties
-
-        [ForeignKey(nameof(ModuleId))]
-        public virtual Modules Module { get; set; } = null!;
+        [AuditIgnore]
         [ForeignKey(nameof(ParentId))]
         public virtual Menus? Parent { get; set; }
+        [AuditIgnore]
         public virtual ICollection<Menus> Children { get; set; } = new List<Menus>();
+        [AuditIgnore]
         [ForeignKey(nameof(CreatedBy))]
         public virtual Users? CreatedByUser { get; set; }
+        [AuditIgnore]
         [ForeignKey(nameof(UpdatedBy))]
         public virtual Users? UpdatedByUser { get; set; }
-
+        [AuditIgnore]
         public virtual ICollection<RoleMenus> RoleMenus { get; set; } = new List<RoleMenus>();
 
         #endregion

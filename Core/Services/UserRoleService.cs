@@ -11,11 +11,13 @@ public class UserRoleService : IUserRoleService
 {
     private readonly HgsDbContext _dbContext;
     private readonly IUserMenuService _userMenuService;
+    private readonly IAuditLogService _auditLog;
 
-    public UserRoleService(HgsDbContext dbContext, IUserMenuService userMenuService)
+    public UserRoleService(HgsDbContext dbContext, IUserMenuService userMenuService, IAuditLogService auditLog)
     {
         _dbContext = dbContext;
         _userMenuService = userMenuService;
+        _auditLog = auditLog;
     }
 
     public async Task<IEnumerable<UserRoles>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -99,6 +101,15 @@ public class UserRoleService : IUserRoleService
         _dbContext.UserRoles.Add(userRole);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
+        _auditLog.Log(
+            action: "CREATE",
+            entityName: "UserRoles",
+            entityId: userRole.Id,
+            oldValue: null,
+            newValue: userRole);
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
         // Automatically assign all role menus to the user
         await AssignRoleMenusToUserAsync(request.RoleId, request.UserId, assignedBy, cancellationToken);
 
@@ -140,6 +151,13 @@ public class UserRoleService : IUserRoleService
             throw new InvalidOperationException("Cannot remove the last role from a user");
         }
 
+        _auditLog.Log(
+            action: "DELETE",
+            entityName: "UserRoles",
+            entityId: userRole.Id,
+            oldValue: userRole,
+            newValue: null);
+
         _dbContext.UserRoles.Remove(userRole);
         await _dbContext.SaveChangesAsync(cancellationToken);
         return true;
@@ -165,6 +183,7 @@ public class UserRoleService : IUserRoleService
         // Filter out already assigned roles
         var newRoleIds = roleIds.Except(existingRoleIds).ToList();
 
+        var createdUserRoles = new List<UserRoles>();
         foreach (var roleId in newRoleIds)
         {
             // Check if role exists
@@ -185,6 +204,19 @@ public class UserRoleService : IUserRoleService
             };
 
             _dbContext.UserRoles.Add(userRole);
+            createdUserRoles.Add(userRole);
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        foreach (var userRole in createdUserRoles)
+        {
+            _auditLog.Log(
+                action: "CREATE",
+                entityName: "UserRoles",
+                entityId: userRole.Id,
+                oldValue: null,
+                newValue: userRole);
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -220,6 +252,16 @@ public class UserRoleService : IUserRoleService
         if (totalRoleCount <= rolesToRemove.Count)
         {
             throw new InvalidOperationException("Cannot remove the last role from a user");
+        }
+
+        foreach (var userRole in rolesToRemove)
+        {
+            _auditLog.Log(
+                action: "DELETE",
+                entityName: "UserRoles",
+                entityId: userRole.Id,
+                oldValue: userRole,
+                newValue: null);
         }
 
         _dbContext.UserRoles.RemoveRange(rolesToRemove);

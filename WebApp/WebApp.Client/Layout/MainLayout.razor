@@ -1,90 +1,142 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 @using WebApp.Client.Services
 @using BlazorBootstrap
+@using Hgs.Share.Responses.ApiResponses
+@using Hgs.Share.Responses.Menus
 @inject DialogService DialogService
+@inject ApiClient ApiClient
+@inject LocalStorageService LocalStorage
+@inject JwtTokenService JwtService
+@inject NavigationManager Navigation
 
 <div class="bb-page">
-
-    <Sidebar @ref="sidebar" Href="/"
-             
-             Title="HSG PORTAL"
-             DataProvider="SidebarDataProvider"       
-             
-               />
+    @if (!isLoadingMenus)
+    {
+        <Sidebar @ref="sidebar"
+                 DataProvider="SidebarDataProvider"
+                 ImageSrc="@($"{Navigation.BaseUri}assets/hgs/new%20logo/logoWhite.png")"
+                 Title="HGS PORTAL"
+                 IsResponsive="true" />
+    }
+    
 
     <main>
-        <article class="content px-4">
+        <article class="content px-1">
            @Body
         </article>
     </main>
 
 </div>
 @code {
-    IEnumerable<NavItem> navItems;
-    Sidebar sidebar = default!;
+    IEnumerable<NavItem>? navItems;
+    List<MenusGetByUserIdResponse> userMenus = new();
+    Sidebar? sidebar;
+    private bool isLoadingMenus = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUserMenus();
+    }
+
+    private async Task LoadUserMenus()
+    {
+        try
+        {
+            var token = await LocalStorage.GetAccessTokenAsync();
+            var userId = JwtService.ExtractUserId(token);
+
+            if (!userId.HasValue)
+            {
+                userMenus = new List<MenusGetByUserIdResponse>();
+                isLoadingMenus = false;
+                StateHasChanged();
+                return;
+            }
+
+            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<MenusGetByUserIdResponse>>>($"api/menus/user/{userId.Value}");
+            if (response != null && response.Success && response.Data != null)
+            {
+                userMenus = response.Data.ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading user menus: {ex.Message}");
+        }
+        finally
+        {
+            isLoadingMenus = false;
+            StateHasChanged();
+        }
+    }
+  
+
     private async Task<SidebarDataProviderResult> SidebarDataProvider(SidebarDataProviderRequest request)
     {
-        Console.WriteLine($"SidebarDataProvider: {DateTime.Now:HH:mm:ss.fff}");
         if (navItems is null)
             navItems = GetNavItems();
 
         return await Task.FromResult(request.ApplyTo(navItems));
     }
+ 
 
     private IEnumerable<NavItem> GetNavItems()
     {
-        navItems = new List<NavItem>
+        var items = new List<NavItem>
         {
-            new NavItem { Id = "1", Href = "/", IconName = IconName.HouseDoorFill, Text = "Dashboard"},
-
-            new NavItem { Id = "2", IconName = IconName.PersonCircle, Text = "Account", IconColor = IconColor.Primary },
-            new NavItem { Id = "3", Href = "/users", IconName = IconName.PersonSquare, Text = "Users", ParentId="2"},
-            new NavItem { Id = "4", Href = "/menus", IconName = IconName.MenuAppFill, Text = "Menu", ParentId="2"},
-            new NavItem { Id = "5", Href = "/roles", IconName = IconName.ShieldLock, Text = "Roles", ParentId="2"},
-            new NavItem { Id = "6", Href = "/Profile", IconName = IconName.PersonGear, Text = "Profile", ParentId="2"},
-            new NavItem { Id = "7", Href = "/login", IconName = IconName.Lock, Text = "Login", ParentId="2"},
-
-            // new NavItem { Id = "4", IconName = IconName.ExclamationTriangleFill, Text = "Components", IconColor = IconColor.Success },
-            // new NavItem { Id = "5", Href = "/alerts", IconName = IconName.CheckCircleFill, Text = "Alerts", ParentId="4"},
-            // new NavItem { Id = "6", Href = "/breadcrumb", IconName = IconName.SegmentedNav, Text = "Breadcrumb", ParentId="4"},
-            // new NavItem { Id = "7", Href = "/sidebar", IconName = IconName.LayoutSidebarInset, Text = "Sidebar", ParentId="4"},
-
-            new NavItem { Id = "8", IconName = IconName.WindowPlus, Text = "Forms", IconColor = IconColor.Danger },
-            new NavItem { Id = "9", Href = "/autocomplete", IconName = IconName.InputCursorText, Text = "Auto Complete", ParentId="8"},
-            new NavItem { Id = "10", Href = "/currency-input", IconName = IconName.CurrencyDollar, Text = "Currency Input", ParentId="8"},
-            new NavItem { Id = "11", Href = "/number-input", IconName = IconName.InputCursor, Text = "Number Input", ParentId="8"},
-            new NavItem { Id = "12", Href = "/switch", IconName = IconName.ToggleOn, Text = "Switch", ParentId="8"},
+            new NavItem { Id = "1", Href = "home", IconName = IconName.HouseDoorFill, Text = "Dashboard"},
         };
 
+        // Dynamic menu based on user permissions from API
+        if (!isLoadingMenus && userMenus.Any())
+        {
+            // Build menu tree from API data (API already returns hierarchical structure)
+            foreach (var menu in userMenus.Where(m => m.ParentId == null))
+            {
+                var navItem = CreateNavItem(menu);
+                items.Add(navItem);
+                
+                // Add children recursively if has children
+                if (menu.Children != null && menu.Children.Any() && !string.IsNullOrEmpty(navItem.Id))
+                {
+                    AddChildMenus(items, menu, navItem.Id);
+                }
+            }
+        }
+
+        navItems = items;
         return navItems;
     }
-    private void ToggleSidebar() => sidebar.ToggleSidebar();
-}
 
-    @* <style>
-        :root {
-            --bb-sidebar-width: 270px;
-            --bb-sidebar-collapsed-width: 50px;
-            --bb-sidebar-background-color: rgba(234, 234, 234, 1);
-            --bb-sidebar-top-row-background-color: rgba(0,0,0,0.08);
-            --bb-sidebar-top-row-border-color: rgb(194,192,192);
-            --bb-sidebar-title-text-color: rgb(0,0,0);
-            --bb-sidebar-brand-icon-color: #6f42c1;
-            --bb-sidebar-brand-image-width: 24px;
-            --bb-sidebar-brand-image-height: 24px;
-            --bb-sidebar-title-badge-text-color: rgb(255,255,255);
-            --bb-sidebar-title-badge-background-color: rgba(25,135,84,var(--bs-bg-opacity,1));
-            --bb-sidebar-navbar-toggler-icon-color: rgb(0,0,0);
-            --bb-sidebar-navbar-toggler-background-color: rgba(0,0,0,0.08);
-            --bb-sidebar-content-border-color: rgb(194,192,192);
-            --bb-sidebar-nav-item-text-color: rgba(0,0,0,0.9);
-            --bb-sidebar-nav-item-text-active-color-rgb: 0,0,0;
-            --bb-sidebar-nav-item-text-hover-color: rgba(var(--bb-sidebar-nav-item-text-active-color-rgb),0.9);
-            --bb-sidebar-nav-item-text-active-color: rgba(var(--bb-sidebar-nav-item-text-active-color-rgb),0.9);
-            --bb-sidebar-nav-item-background-hover-color: rgba(var(--bb-sidebar-nav-item-text-active-color-rgb),0.08);
-            --bb-sidebar-nav-item-group-background-color: rgba(var(--bb-sidebar-nav-item-text-active-color-rgb),0.08);
+    private NavItem CreateNavItem(MenusGetByUserIdResponse menu)
+    {
+        var route = !string.IsNullOrEmpty(menu.Route) ? menu.Route.TrimStart('/') : "#";
+        return new NavItem
+        {
+            Id = menu.Id.ToString(),
+            Href = route,
+            IconName = !string.IsNullOrEmpty(menu.Icon) && Enum.TryParse<IconName>(menu.Icon, out var iconName) ? iconName : IconName.Circle,
+            Text = menu.Name
+        };
+    }
+
+    private void AddChildMenus(List<NavItem> items, MenusGetByUserIdResponse parentMenu, string parentId)
+    {
+        foreach (var child in parentMenu.Children.Where(c => c.IsVisible && c.IsActive))
+        {
+            var navItem = CreateNavItem(child);
+            navItem.ParentId = parentId;
+            items.Add(navItem);
+            
+            // Recursive for nested children
+            if (!string.IsNullOrEmpty(navItem.Id))
+            {
+                AddChildMenus(items, child, navItem.Id);
+            }
         }
-    </style> *@
+    }
+
+}
     <style>
         :root {
             /* Sidebar */
@@ -97,7 +149,7 @@
             /* Brand */
             --bb-sidebar-title-text-color: #FFFFFF;
             --bb-sidebar-brand-icon-color: #F58220;
-            --bb-sidebar-brand-image-width: 28px;
+            --bb-sidebar-brand-image-width: 70px;
             --bb-sidebar-brand-image-height: 28px;
             /* Badge */
             --bb-sidebar-title-badge-text-color: #FFFFFF;
@@ -111,7 +163,7 @@
             --bb-sidebar-nav-item-text-active-color: #FFFFFF;
             /* Active / Hover */
         --bb-sidebar-nav-item-background-hover-color: #F58220;
-            --bb-sidebar-nav-item-group-background-color: rgba(255,255,255,.08);
+            /* --bb-sidebar-nav-item-group-background-color: rgba(255,255,255,.08); */
             /* Border */
             --bb-sidebar-top-row-border-color: rgba(255,255,255,.15);
         }
@@ -147,11 +199,11 @@
 <ConfirmDialog @ref="confirmDialog" />
 
 @code {
-    private ConfirmDialog confirmDialog;
+    private ConfirmDialog? confirmDialog;
 
     protected override void OnAfterRender(bool firstRender)
     {
-        if (firstRender)
+        if (firstRender && confirmDialog != null)
         {
             DialogService.SetConfirmDialog(confirmDialog);
         }

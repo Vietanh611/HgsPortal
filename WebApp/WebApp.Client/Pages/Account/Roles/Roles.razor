@@ -90,30 +90,22 @@
     </div>
 </div>
 
-@if (isRoleFormModalVisible)
-{
-    <RoleFormModal
-        IsVisible="@isRoleFormModalVisible"
-        RoleForm="roleForm"
-        OrganizationUnits="organizationUnits"
-        IsEditMode="isEditMode"
-        IsSubmitting="isSubmitting"
-        OnClose="CloseRoleFormModal"
-        OnSubmit="HandleSubmit" />
-}
+<RoleFormModal @ref="roleFormModal"
+    RoleForm="roleForm"
+    OrganizationUnits="organizationUnits"
+    IsEditMode="isEditMode"
+    IsSubmitting="isSubmitting"
+    OnClose="CloseRoleFormModal"
+    OnSubmit="HandleSubmit" />
 
-@if (isAssignMenuModalVisible)
-{
-    <AssignMenuModal
-        IsVisible="@isAssignMenuModalVisible"
-        RoleName="@assignMenuRoleName"
-        OnClose="CloseAssignMenuModal"
-        Menus="menus"
-        SelectedMenuIds="selectedMenuIds"
-        ExpandedMenuIds="expandedMenuIds"
-        IsLoadingMenus="isLoadingMenus"
-        IsAssigningMenus="isAssigningMenus"
-        OnMenuCheckboxChanged="HandleMenuCheckboxChanged"
-        ToggleMenu="HandleToggleMenu"
-        OnSubmit="HandleAssignMenus" />
-}
+<AssignMenuModal @ref="assignMenuModal"
+    RoleName="@assignMenuRoleName"
+    OnClose="CloseAssignMenuModal"
+    Menus="menus"
+    SelectedMenuIds="selectedMenuIds"
+    ExpandedMenuIds="expandedMenuIds"
+    IsLoadingMenus="isLoadingMenus"
+    IsAssigningMenus="isAssigningMenus"
+    OnMenuCheckboxChanged="HandleMenuCheckboxChanged"
+    ToggleMenu="HandleToggleMenu"
+    OnSubmit="HandleAssignMenus" />

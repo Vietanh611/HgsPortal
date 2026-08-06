@@ -1,7 +1,7 @@
 @using Hgs.Share.Responses.Menus
 @using BlazorBootstrap
 
-<Modal @ref="modal" Title="@($"Assign Menus - {RoleName}")" IsVisible="@IsVisible" OnClose="OnClose" Size="ModalSize.Large">
+<Modal @ref="modal" Title="@($"Assign Menus - {RoleName}")" OnClose="Close" Size="ModalSize.Large">
     <BodyTemplate>
         @if (IsLoadingMenus)
         {
@@ -16,7 +16,7 @@
                 {
                     <div class="mb-2">
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="role-menu-@menu.Id" value="@menu.Id" @onchange="@(e => HandleMenuCheckboxChanged(menu.Id, e.Value.ToString()))" checked="@IsMenuAssigned(menu.Id)" />
+                            <input class="form-check-input" type="checkbox" id="role-menu-@menu.Id" value="@menu.Id" @onchange="@(e => HandleMenuCheckboxChanged(menu.Id, e.Value?.ToString()))" checked="@IsMenuAssigned(menu.Id)" />
                             <label class="form-check-label fw-bold" for="role-menu-@menu.Id">
                                 @menu.Name
                             </label>
@@ -33,7 +33,7 @@
                                 @foreach (var child in menu.Children.OrderBy(c => c.SortOrder))
                                 {
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="role-menu-@child.Id" value="@child.Id" @onchange="@(e => HandleMenuCheckboxChanged(child.Id, e.Value.ToString()))" checked="@IsMenuAssigned(child.Id)" />
+                                        <input class="form-check-input" type="checkbox" id="role-menu-@child.Id" value="@child.Id" @onchange="@(e => HandleMenuCheckboxChanged(child.Id, e.Value?.ToString()))" checked="@IsMenuAssigned(child.Id)" />
                                         <label class="form-check-label" for="role-menu-@child.Id">
                                             @child.Name
                                         </label>
@@ -60,7 +60,6 @@
 
 @code {
     private Modal modal = default!;
-    [Parameter] public bool IsVisible { get; set; }
     [Parameter] public string RoleName { get; set; } = string.Empty;
     [Parameter] public IEnumerable<MenusGetAllResponse>? Menus { get; set; }
     [Parameter] public List<int> SelectedMenuIds { get; set; } = new();
@@ -71,6 +70,16 @@
     [Parameter] public EventCallback OnSubmit { get; set; }
     [Parameter] public Action<int, string?> OnMenuCheckboxChanged { get; set; } = default!;
     [Parameter] public Action<int> ToggleMenu { get; set; } = default!;
+
+    public async Task ShowAsync()
+    {
+        await modal.ShowAsync();
+    }
+
+    public async Task HideAsync()
+    {
+        await modal.HideAsync();
+    }
 
     private bool IsMenuAssigned(int menuId)
     {
@@ -90,5 +99,11 @@
     private void HandleToggleMenu(int menuId)
     {
         ToggleMenu(menuId);
+    }
+
+    private async Task Close()
+    {
+        await HideAsync();
+        await OnClose.InvokeAsync();
     }
 }

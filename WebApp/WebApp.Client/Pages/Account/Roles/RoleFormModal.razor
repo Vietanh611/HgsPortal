@@ -2,7 +2,7 @@
 @using Hgs.Share.Responses.OrganizationUnits
 @using BlazorBootstrap
 
-<Modal @ref="modal" Title="@(IsEditMode ? "Edit Role" : "Add Role")" IsVisible="@IsVisible" OnClose="OnClose">
+<Modal @ref="modal" Title="@(IsEditMode ? "Edit Role" : "Add Role")" OnClose="Close">
     <BodyTemplate>
         <EditForm Model="@RoleForm" OnValidSubmit="HandleSubmit">
             <DataAnnotationsValidator />
@@ -73,7 +73,6 @@
 
 @code {
     private Modal modal = default!;
-    [Parameter] public bool IsVisible { get; set; }
     [Parameter] public RolesCreateRequest RoleForm { get; set; } = new();
     [Parameter] public IEnumerable<OrganizationUnitsGetAllResponse>? OrganizationUnits { get; set; }
     [Parameter] public bool IsEditMode { get; set; }
@@ -81,8 +80,24 @@
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback OnSubmit { get; set; }
 
+    public async Task ShowAsync()
+    {
+        await modal.ShowAsync();
+    }
+
+    public async Task HideAsync()
+    {
+        await modal.HideAsync();
+    }
+
     private async Task HandleSubmit()
     {
         await OnSubmit.InvokeAsync();
+    }
+
+    private async Task Close()
+    {
+        await HideAsync();
+        await OnClose.InvokeAsync();
     }
 }

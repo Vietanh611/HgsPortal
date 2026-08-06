@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Hgs.Share.Attributes;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Domain.Entities.Identity
@@ -18,6 +19,7 @@ namespace Domain.Entities.Identity
 
         [Required]
         [StringLength(500)]
+        [AuditIgnore]
         public string PasswordHash { get; set; } = string.Empty;
 
         [Required]
@@ -44,9 +46,10 @@ namespace Domain.Entities.Identity
         public bool IsDeleted { get; set; }
 
         #region Navigation Properties
-
+        [AuditIgnore]
         [ForeignKey(nameof(OrganizationUnitId))]
         public virtual OrganizationUnits OrganizationUnit { get; set; } = null!;
+        [AuditIgnore]
         public virtual ICollection<UserRoles> UserRoles { get; set; } = new List<UserRoles>();
 
         #endregion

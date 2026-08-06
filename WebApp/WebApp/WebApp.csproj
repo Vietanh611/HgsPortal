@@ -17,5 +17,16 @@
     <PackageReference Include="Blazor.Bootstrap" Version="3.5.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.29" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Remove="package.json" />
+    <Content Remove="package-lock.json" />
 
+    <None Update="package.json">
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </None>
+
+    <None Update="package-lock.json">
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
 </Project>

@@ -1,6 +1,7 @@
 ﻿using Hgs.Share.Exceptions;
 using Hgs.Share.Responses.ApiResponses;
 using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
 namespace API.Middleware;
@@ -88,9 +89,14 @@ public class ExceptionHandlingMiddleware
                 message = ex.Message;
                 break;
 
-            case SqlException:
+            case DbUpdateException ex when ex.GetBaseException() is SqlException sqlEx:
                 statusCode = StatusCodes.Status500InternalServerError;
-                message = $"A database error occurred.{exception.Message}. Please try again later.";
+                message = $"A database error occurred. {sqlEx.Message}";
+                break;
+
+            case SqlException sqlEx:
+                statusCode = StatusCodes.Status500InternalServerError;
+                message = $"A database error occurred. {sqlEx.Message}";
                 break;
 
             default:

@@ -1,10 +1,14 @@
-﻿<!DOCTYPE html>
+﻿@inject IConfiguration Configuration
+@{
+    var basePath = Configuration["BasePath"] ?? "/";
+}
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <base href="/" />
+    <base href="@basePath" />
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="css/hgsStyle.css" />
     <link rel="stylesheet" href="app.css" />
@@ -12,6 +16,8 @@
     <link rel="icon" type="image/png" href="favicon.png" />
     <link rel="stylesheet" href="lib/bootstrap-icons/font/bootstrap-icons.css" />
     <link href="_content/Blazor.Bootstrap/blazor.bootstrap.css" rel="stylesheet" />
+    <link rel="manifest" href="@($"{basePath}manifest.webmanifest")" />
+    <meta name="theme-color" content="#17479E" />
     <HeadOutlet @rendermode="InteractiveWebAssembly" />
 </head>
 
@@ -20,14 +26,23 @@
     <script src="lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="_content/Blazor.Bootstrap/blazor.bootstrap.js"></script>
     <script src="_framework/blazor.web.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" crossorigin="anonymous"></script>
     <!-- Add chart.js reference if chart components are used in your application. -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.0.1/chart.umd.js" integrity="sha512-gQhCDsnnnUfaRzD8k1L5llCCV6O9HN09zClIzzeJ8OJ9MpGmIlCxm+pdCkqTwqJ4JcjbojFr79rl2F1mzcoLMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <!-- Add chartjs-plugin-datalabels.min.js reference if chart components with data label feature is used in your application. -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js" integrity="sha512-JPcRR8yFa8mmCsfrw4TNte1ZvF1e3+1SdGMslZvmrzDYxS69J7J49vkFL8u6u8PlPJK+H3voElBtUCzaXj+6ig==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <!-- Add sortable.js reference if SortableList component is used in your application. -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    <script src="_content/Blazor.Bootstrap/blazor.bootstrap.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            var basePath = '@(Configuration["BasePath"] ?? "/")';
+            navigator.serviceWorker.register(
+                basePath + 'service-worker.js',
+                {
+                    scope: basePath
+                }
+            );
+        }
+    </script>
 </body>
 
 </html>

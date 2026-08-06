@@ -9,6 +9,6 @@ public class RoleMenusGetAllResponse
     public int MenuId { get; set; }
     public string MenuCode { get; set; } = string.Empty;
     public string MenuName { get; set; } = string.Empty;
-    public DateTime AssignedAt { get; set; }
-    public int? AssignedBy { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public int? CreatedBy { get; set; }
 }

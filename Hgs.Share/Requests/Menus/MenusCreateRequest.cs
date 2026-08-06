@@ -4,8 +4,6 @@ namespace Hgs.Share.Requests.Menus;
 
 public class MenusCreateRequest
 {
-    [Required]
-    public int ModuleId { get; set; }
 
     public int? ParentId { get; set; }
 

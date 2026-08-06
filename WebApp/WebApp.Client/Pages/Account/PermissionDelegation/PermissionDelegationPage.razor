@@ -1,0 +1,128 @@
+@page "/permission-delegation"
+@using Hgs.Share.Responses.PermissionDelegation
+@using BlazorBootstrap
+
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<PageTitle>Quản lý phân quyền</PageTitle>
+
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Quản lý phân quyền</h2>
+            </div>
+
+            <Card>
+                <CardBody>
+                    @if (isLoading)
+                    {
+                        <div class="text-center py-5">
+                            <Spinner Color="SpinnerColor.Primary" />
+                        </div>
+                    }
+                    else if (manageableUsers == null)
+                    {
+                        <Alert Color="AlertColor.Secondary" class="text-center">
+                            Loading manageable users...
+                        </Alert>
+                    }
+                    else if (!manageableUsers.Any())
+                    {
+                        <Alert Color="AlertColor.Warning" class="text-center">
+                            Không có nhân viên nào trong phạm vi quản lý của bạn.
+                        </Alert>
+                    }
+                    else
+                    {
+                        <Grid TItem="ManageableUserResponse" Data="manageableUsers" AllowPaging="true" AllowSorting="true" Responsive="true"
+                              Class="table table-hover table-bordered table-striped" PageSize="10">
+                            <GridColumn TItem="ManageableUserResponse" HeaderText="Username" SortKeyExpression="item => item.Username">
+                                @context.Username
+                            </GridColumn>
+                            <GridColumn TItem="ManageableUserResponse" HeaderText="Email" SortKeyExpression="item => item.Email">
+                                @context.Email
+                            </GridColumn>
+                            <GridColumn TItem="ManageableUserResponse" HeaderText="Full Name" SortKeyExpression="item => item.FullName">
+                                @context.FullName
+                            </GridColumn>
+                            <GridColumn TItem="ManageableUserResponse" HeaderText="Organization Unit" SortKeyExpression="item => item.OrganizationUnitName">
+                                @(context.OrganizationUnitName ?? "N/A")
+                            </GridColumn>
+                            <GridColumn TItem="ManageableUserResponse" HeaderText="Status">
+                                @if (context.IsActive)
+                                {
+                                    <Badge Color="BadgeColor.Success">Active</Badge>
+                                }
+                                else
+                                {
+                                    <Badge Color="BadgeColor.Secondary">Inactive</Badge>
+                                }
+                            </GridColumn>
+                            <GridColumn TItem="ManageableUserResponse" HeaderText="Actions" AllowSorting="false">
+                                <Button Color="ButtonColor.Info" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowPermissionsView(context)">
+                                    <Icon Name="IconName.Eye" />
+                                </Button>
+                            </GridColumn>
+                        </Grid>
+                    }
+                </CardBody>
+            </Card>
+        </div>
+    </div>
+</div>
+
+@if (isPermissionsViewVisible)
+{
+    <Card>
+        <CardBody>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5>Quyền hiện tại của @selectedUsername</h5>
+                <Button Color="ButtonColor.Secondary" Size="ButtonSize.Small" @onclick="ClosePermissionsView">
+                    <Icon Name="IconName.XLg" />
+                </Button>
+            </div>
+            @if (userRoles == null || !userRoles.Any())
+            {
+                <Alert Color="AlertColor.Info">Chưa có quyền nào</Alert>
+            }
+            else
+            {
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    @foreach (var role in userRoles)
+                    {
+                        <Badge Color="BadgeColor.Primary">@role.Name</Badge>
+                    }
+                </div>
+            }
+
+            <div class="d-flex gap-2 mt-3">
+                <Button Color="ButtonColor.Success" Size="ButtonSize.Small" @onclick="async () => await ShowAssignRoleDialog()">
+                    <Icon Name="IconName.PlusLg" /> Gán quyền mới
+                </Button>
+                @if (userRoles != null && userRoles.Any())
+                {
+                    <Button Color="ButtonColor.Warning" Size="ButtonSize.Small" @onclick="async () => await ShowRevokeRoleDialog()">
+                        <Icon Name="IconName.XLg" /> Gỡ quyền
+                    </Button>
+                }
+            </div>
+        </CardBody>
+    </Card>
+}
+
+<AssignRoleDialog @ref="assignRoleDialog"
+    TargetUserId="@selectedUserId"
+    TargetUsername="@selectedUsername"
+    AssignableRoles="assignableRoles"
+    OnClose="CloseAssignRoleDialog"
+    OnSubmit="HandleAssignRole" />
+
+<RevokeRoleDialog @ref="revokeRoleDialog"
+    TargetUserId="@selectedUserId"
+    TargetUsername="@selectedUsername"
+    AssignableRoles="assignableRoles"
+    UserRoles="userRoles"
+    OnClose="CloseRevokeRoleDialog"
+    OnSubmit="HandleRevokeRole" />

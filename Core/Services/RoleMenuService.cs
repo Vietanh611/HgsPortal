@@ -9,10 +9,12 @@ namespace Core.Services;
 public class RoleMenuService : IRoleMenuService
 {
     private readonly HgsDbContext _dbContext;
+    private readonly IAuditLogService _auditLog;
 
-    public RoleMenuService(HgsDbContext dbContext)
+    public RoleMenuService(HgsDbContext dbContext, IAuditLogService auditLog)
     {
         _dbContext = dbContext;
+        _auditLog = auditLog;
     }
 
     public async Task<IEnumerable<RoleMenus>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -21,7 +23,7 @@ public class RoleMenuService : IRoleMenuService
             .Include(rm => rm.Role)
             .Include(rm => rm.Menu)
             .AsNoTracking()
-            .OrderByDescending(rm => rm.AssignedAt)
+            .OrderByDescending(rm => rm.CreatedAt)
             .ToListAsync(cancellationToken);
     }
 
@@ -41,7 +43,7 @@ public class RoleMenuService : IRoleMenuService
             .Include(rm => rm.Menu)
             .Where(rm => rm.RoleId == roleId)
             .AsNoTracking()
-            .OrderByDescending(rm => rm.AssignedAt)
+            .OrderByDescending(rm => rm.CreatedAt)
             .ToListAsync(cancellationToken);
     }
 
@@ -52,7 +54,7 @@ public class RoleMenuService : IRoleMenuService
             .Include(rm => rm.Menu)
             .Where(rm => rm.MenuId == menuId)
             .AsNoTracking()
-            .OrderByDescending(rm => rm.AssignedAt)
+            .OrderByDescending(rm => rm.CreatedAt)
             .ToListAsync(cancellationToken);
     }
 
@@ -89,13 +91,21 @@ public class RoleMenuService : IRoleMenuService
         {
             RoleId = request.RoleId,
             MenuId = request.MenuId,
-            AssignedAt = DateTime.UtcNow,
-            AssignedBy = assignedBy,
+            CreatedAt = DateTime.UtcNow,
+            CreatedBy = assignedBy,
         };
 
         _dbContext.RoleMenus.Add(roleMenu);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
+        _auditLog.Log(
+            action: "CREATE",
+            entityName: "RoleMenus",
+            entityId: roleMenu.Id,
+            oldValue: null,
+            newValue: roleMenu);
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
         return roleMenu;
     }
 
@@ -108,6 +118,13 @@ public class RoleMenuService : IRoleMenuService
         {
             return false;
         }
+
+        _auditLog.Log(
+            action: "DELETE",
+            entityName: "RoleMenus",
+            entityId: roleMenu.Id,
+            oldValue: roleMenu,
+            newValue: null);
 
         _dbContext.RoleMenus.Remove(roleMenu);
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -134,6 +151,7 @@ public class RoleMenuService : IRoleMenuService
         // Filter out already assigned menus
         var newMenuIds = menuIds.Except(existingMenuIds).ToList();
 
+        var createdRoleMenus = new List<RoleMenus>();
         foreach (var menuId in newMenuIds)
         {
             // Check if menu exists
@@ -149,11 +167,24 @@ public class RoleMenuService : IRoleMenuService
             {
                 RoleId = roleId,
                 MenuId = menuId,
-                AssignedAt = DateTime.UtcNow,
-                AssignedBy = assignedBy,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = assignedBy,
             };
 
             _dbContext.RoleMenus.Add(roleMenu);
+            createdRoleMenus.Add(roleMenu);
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        foreach (var roleMenu in createdRoleMenus)
+        {
+            _auditLog.Log(
+                action: "CREATE",
+                entityName: "RoleMenus",
+                entityId: roleMenu.Id,
+                oldValue: null,
+                newValue: roleMenu);
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -173,6 +204,16 @@ public class RoleMenuService : IRoleMenuService
         var roleMenus = await _dbContext.RoleMenus
             .Where(rm => rm.RoleId == roleId && menuIds.Contains(rm.MenuId))
             .ToListAsync(cancellationToken);
+
+        foreach (var roleMenu in roleMenus)
+        {
+            _auditLog.Log(
+                action: "DELETE",
+                entityName: "RoleMenus",
+                entityId: roleMenu.Id,
+                oldValue: roleMenu,
+                newValue: null);
+        }
 
         _dbContext.RoleMenus.RemoveRange(roleMenus);
         await _dbContext.SaveChangesAsync(cancellationToken);

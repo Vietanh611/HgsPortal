@@ -114,8 +114,8 @@ public class RoleMenusController : ControllerBase
         MenuId = roleMenu.MenuId,
         MenuCode = roleMenu.Menu?.Code ?? string.Empty,
         MenuName = roleMenu.Menu?.Name ?? string.Empty,
-        AssignedAt = roleMenu.AssignedAt,
-        AssignedBy = roleMenu.AssignedBy
+        CreatedAt = roleMenu.CreatedAt,
+        CreatedBy = roleMenu.CreatedBy
     };
 
     private static RoleMenusGetByIdResponse MapToGetByIdResponse(RoleMenus roleMenu) => new()
@@ -127,8 +127,8 @@ public class RoleMenusController : ControllerBase
         MenuId = roleMenu.MenuId,
         MenuCode = roleMenu.Menu?.Code ?? string.Empty,
         MenuName = roleMenu.Menu?.Name ?? string.Empty,
-        AssignedAt = roleMenu.AssignedAt,
-        AssignedBy = roleMenu.AssignedBy
+        CreatedAt = roleMenu.CreatedAt,
+        CreatedBy = roleMenu.CreatedBy
     };
 
     private static RoleMenusCreateResponse MapToCreateResponse(RoleMenus roleMenu) => new()
@@ -136,6 +136,6 @@ public class RoleMenusController : ControllerBase
         Id = roleMenu.Id,
         RoleId = roleMenu.RoleId,
         MenuId = roleMenu.MenuId,
-        AssignedAt = roleMenu.AssignedAt
+        CreatedAt = roleMenu.CreatedAt,
     };
 }

@@ -7,6 +7,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
 builder.Services.AddHttpClient();
+builder.Services.AddScoped<LocalStorageService>();
+builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<ApiClient>();
 builder.Services.AddBlazorBootstrap();
 builder.Services.AddScoped<ToastService>();

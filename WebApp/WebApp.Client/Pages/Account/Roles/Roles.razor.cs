@@ -17,6 +17,8 @@ public partial class Roles
     [Inject] private CustomToastService ToastService { get; set; } = default!;
     [Inject] private ApiClient ApiClient { get; set; } = default!;
     [Inject] private DialogService DialogService { get; set; } = default!;
+    private RoleFormModal roleFormModal = default!;
+    private AssignMenuModal assignMenuModal = default!;
     private IEnumerable<RolesGetAllResponse>? roles;
     private IEnumerable<OrganizationUnitsGetAllResponse>? organizationUnits;
     private IEnumerable<MenusGetAllResponse>? menus;
@@ -31,8 +33,6 @@ public partial class Roles
     private bool isSubmitting = false;
     private bool isAssigningMenus = false;
     private int editingRoleId = 0;
-    private bool isRoleFormModalVisible = false;
-    private bool isAssignMenuModalVisible = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -118,14 +118,14 @@ public partial class Roles
         }
     }
 
-    private void ShowCreateModal()
+    private async Task ShowCreateModal()
     {
         isEditMode = false;
         roleForm = new RolesCreateRequest();
-        isRoleFormModalVisible = true;
+        await roleFormModal.ShowAsync();
     }
 
-    private void ShowEditModal(RolesGetAllResponse role)
+    private async Task ShowEditModal(RolesGetAllResponse role)
     {
         isEditMode = true;
         editingRoleId = role.Id;
@@ -139,12 +139,12 @@ public partial class Roles
             IsSystemRole = role.IsSystemRole,
             IsActive = role.IsActive
         };
-        isRoleFormModalVisible = true;
+        await roleFormModal.ShowAsync();
     }
 
-    private void CloseRoleFormModal()
+    private async Task CloseRoleFormModal()
     {
-        isRoleFormModalVisible = false;
+        await roleFormModal.HideAsync();
     }
 
     private async Task ShowAssignMenuModal(RolesGetAllResponse role)
@@ -152,13 +152,14 @@ public partial class Roles
         assignMenuRoleId = role.Id;
         assignMenuRoleName = role.Name;
         selectedMenuIds = new List<int>();
+        expandedMenuIds = new HashSet<int>();
         await Task.WhenAll(LoadMenus(), LoadRoleMenus(role.Id));
-        isAssignMenuModalVisible = true;
+        await assignMenuModal.ShowAsync();
     }
 
-    private void CloseAssignMenuModal()
+    private async Task CloseAssignMenuModal()
     {
-        isAssignMenuModalVisible = false;
+        await assignMenuModal.HideAsync();
     }
 
     private void OnMenuCheckboxChanged(int menuId, string? value)
@@ -220,11 +221,14 @@ public partial class Roles
                 {
                     ToastService.ShowSuccess("Role updated successfully");
                     await LoadRoles();
-                    CloseRoleFormModal();
+                    await CloseRoleFormModal();
                 }
                 else
                 {
-                    ToastService.ShowError("Failed to update role");
+                    var errorMessage = !string.IsNullOrEmpty(ApiClient.LastError) 
+                        ? $"Failed to update role: {ApiClient.LastError}" 
+                        : "Failed to update role";
+                    ToastService.ShowError(errorMessage);
                 }
             }
             else
@@ -234,11 +238,14 @@ public partial class Roles
                 {
                     ToastService.ShowSuccess("Role created successfully");
                     await LoadRoles();
-                    CloseRoleFormModal();
+                    await CloseRoleFormModal();
                 }
                 else
                 {
-                    ToastService.ShowError("Failed to create role");
+                    var errorMessage = !string.IsNullOrEmpty(ApiClient.LastError) 
+                        ? $"Failed to create role: {ApiClient.LastError}" 
+                        : "Failed to create role";
+                    ToastService.ShowError(errorMessage);
                 }
             }
         }
@@ -266,11 +273,14 @@ public partial class Roles
             if (success)
             {
                 ToastService.ShowSuccess("Menus assigned successfully");
-                CloseAssignMenuModal();
+                await CloseAssignMenuModal();
             }
             else
             {
-                ToastService.ShowError("Failed to assign menus");
+                var errorMessage = !string.IsNullOrEmpty(ApiClient.LastError) 
+                    ? $"Failed to assign menus: {ApiClient.LastError}" 
+                    : "Failed to assign menus";
+                ToastService.ShowError(errorMessage);
             }
         }
         catch (Exception ex)
@@ -299,7 +309,10 @@ public partial class Roles
                 }
                 else
                 {
-                    ToastService.ShowError("Failed to delete role");
+                    var errorMessage = !string.IsNullOrEmpty(ApiClient.LastError) 
+                        ? $"Failed to delete role: {ApiClient.LastError}" 
+                        : "Failed to delete role";
+                    ToastService.ShowError(errorMessage);
                 }
             }
             catch (Exception ex)

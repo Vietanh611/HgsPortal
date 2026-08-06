@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Hgs.Share.Attributes;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Domain.Entities.Identity
@@ -17,10 +18,10 @@ namespace Domain.Entities.Identity
         public int? AssignedBy { get; set; }
 
         #region Navigation
-
+        [AuditIgnore]
         [ForeignKey(nameof(UserId))]
         public virtual Users User { get; set; } = null!;
-
+        [AuditIgnore]
         [ForeignKey(nameof(RoleId))]
         public virtual Roles Role { get; set; } = null!;
 
