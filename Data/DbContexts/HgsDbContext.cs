@@ -11,12 +11,11 @@ namespace Data.DbContexts
         }
 
         public DbSet<Users> Users => Set<Users>();
+        public DbSet<AuditLogs> AuditLogs => Set<AuditLogs>();
         public DbSet<Roles> Roles => Set<Roles>();
         public DbSet<UserRoles> UserRoles => Set<UserRoles>();
         public DbSet<RefreshTokens> RefreshTokens => Set<RefreshTokens>();
         public DbSet<Menus> Menus => Set<Menus>();
-        public DbSet<Modules> Modules => Set<Modules>();
-        public DbSet<UserModules> UserModules => Set<UserModules>();
         public DbSet<UserMenus> UserMenus => Set<UserMenus>();
         public DbSet<RoleMenus> RoleMenus => Set<RoleMenus>();
         public DbSet<OrganizationUnits> OrganizationUnits => Set<OrganizationUnits>();

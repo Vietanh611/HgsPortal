@@ -5,12 +5,11 @@ using Hgs.Share.Requests.Users;
 using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.Users;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace API.Controllers;
 
-[ApiController]
-[Route("api/[controller]")]
-public class UsersController : ControllerBase
+public class UsersController : BaseApiController
 {
     private readonly IUsersService _usersService;
     private readonly ILogger<UsersController> _logger;
@@ -48,6 +47,23 @@ public class UsersController : ControllerBase
         var nhanvien = await _usersService.GetAllBravoNhanVienAsync();
 
         return Ok(ApiResponse<IEnumerable<NhanVien>>.SuccessResponse(nhanvien, "Users retrieved successfully", 200));
+    }
+
+    [HttpGet("me")]
+    public async Task<ActionResult<ApiResponse<UsersGetByIdResponse>>> GetCurrentUser()
+    {
+        if (!CurrentUserId.HasValue)
+        {
+            return Unauthorized(ApiResponse<UsersGetByIdResponse>.FailResponse("Invalid user token", 401));
+        }
+
+        var user = await _usersService.GetByIdAsync(CurrentUserId.Value);
+        if (user is null)
+        {
+            return NotFound(ApiResponse<UsersGetByIdResponse>.FailResponse("User not found", 404));
+        }
+
+        return Ok(ApiResponse<UsersGetByIdResponse>.SuccessResponse(MapToGetByIdResponse(user), "User retrieved successfully", 200));
     }
 
     [HttpPost]

@@ -1,4 +1,6 @@
-﻿namespace Domain.Entities.Identity
+﻿using Hgs.Share.Attributes;
+
+namespace Domain.Entities.Identity
 {
     public class Roles
     {
@@ -19,7 +21,9 @@
 
         public OrganizationUnits? OrganizationUnit { get; set; }
 
+        [AuditIgnore]
         public ICollection<UserRoles> UserRoles { get; set; } = new List<UserRoles>();
+        [AuditIgnore]
         public ICollection<System.RoleMenus> RoleMenus { get; set; } = new List<System.RoleMenus>();
     }
 }

@@ -59,6 +59,7 @@ public class AuthService : IAuthService
             _logger.LogWarning("Inactive user '{Username}' tried to login.", request.Username);
             throw new UnauthorizedException("User is not active.");
         }
+
         user.LastLoginAt = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync(cancellationToken);
         return await IssueTokensAsync(user, userAgent, ipAddress, cancellationToken);
@@ -130,11 +131,7 @@ public class AuthService : IAuthService
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    private async Task<AuthenticateResponse> IssueTokensAsync(
-        Users user,
-        string? userAgent,
-        string? ipAddress,
-        CancellationToken cancellationToken)
+    private async Task<AuthenticateResponse> IssueTokensAsync(Users user, string? userAgent, string? ipAddress, CancellationToken cancellationToken)
     {
         var accessToken = _tokenService.GenerateAccessToken(user.Id, user.Username);
         var accessJwtId = new JwtSecurityTokenHandler().ReadJwtToken(accessToken).Id;
@@ -152,13 +149,7 @@ public class AuthService : IAuthService
         ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes)
     };
 
-    private async Task SaveRefreshTokenAsync(
-        int userId,
-        string refreshToken,
-        string jwtId,
-        string? userAgent,
-        string? ipAddress,
-        CancellationToken cancellationToken)
+    private async Task SaveRefreshTokenAsync(int userId, string refreshToken, string jwtId, string? userAgent, string? ipAddress, CancellationToken cancellationToken)
     {
         var tokenEntity = new RefreshTokens
         {
@@ -171,9 +162,31 @@ public class AuthService : IAuthService
             IsRevoked = false,
             CreatedByIp = ipAddress
         };
+        var isMobile = IsMobile(userAgent);
+        var tokens = await _dbContext.RefreshTokens.Where(x => x.UserId == userId && !x.IsRevoked).ToListAsync();
 
+        foreach (var token in tokens)
+        {
+            if (IsMobile(token.UserAgent) == isMobile)
+            {
+                token.IsRevoked = true;
+                token.RevokedAt = DateTime.UtcNow;
+            }
+        }
         await _dbContext.RefreshTokens.AddAsync(tokenEntity, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+    public static bool IsMobile(string? userAgent)
+    {
+        if (string.IsNullOrWhiteSpace(userAgent))
+            return false;
+
+        userAgent = userAgent.ToLowerInvariant();
+
+        return userAgent.Contains("android") ||
+               userAgent.Contains("iphone") ||
+               userAgent.Contains("ipad") ||
+               userAgent.Contains("mobile");
     }
 
     public async Task<Users?> GetCurrentUserAsync(int userId, CancellationToken cancellationToken = default)

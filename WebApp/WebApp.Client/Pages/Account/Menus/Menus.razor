@@ -89,14 +89,10 @@
     </div>
 </div>
 
-@if (isMenuFormModalVisible)
-{
-    <MenuFormModal
-        IsVisible="@isMenuFormModalVisible"
-        MenuForm="menuForm"
-        ParentMenus="parentMenus"
-        IsEditMode="isEditMode"
-        IsSubmitting="isSubmitting"
-        OnClose="CloseMenuFormModal"
-        OnSubmit="HandleSubmit" />
-}
+<MenuFormModal @ref="menuFormModal"
+    MenuForm="menuForm"
+    ParentMenus="parentMenus"
+    IsEditMode="isEditMode"
+    IsSubmitting="isSubmitting"
+    OnClose="CloseMenuFormModal"
+    OnSubmit="HandleSubmit" />

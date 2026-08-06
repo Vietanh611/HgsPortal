@@ -1,3 +1,4 @@
+using BlazorBootstrap;
 using Hgs.Share.Requests.UserMenus;
 using Hgs.Share.Requests.UserRoles;
 using Hgs.Share.Requests.Users;
@@ -9,7 +10,6 @@ using Hgs.Share.Responses.UserRoles;
 using Hgs.Share.Responses.Users;
 using Microsoft.AspNetCore.Components;
 using WebApp.Client.Services;
-using BlazorBootstrap;
 using CustomToastService = WebApp.Client.Services.ToastService;
 
 namespace WebApp.Client.Pages.Account.Users;
@@ -340,7 +340,7 @@ public partial class Users
                 {
                     ToastService.ShowSuccess("User updated successfully");
                     await LoadUsers();
-                    CloseUserFormModal();
+                    await CloseUserFormModal();
                 }
                 else
                 {
@@ -354,7 +354,7 @@ public partial class Users
                 {
                     ToastService.ShowSuccess("User created successfully");
                     await LoadUsers();
-                    CloseUserFormModal();
+                    await CloseUserFormModal();
                 }
                 else
                 {
@@ -381,7 +381,7 @@ public partial class Users
             if (success)
             {
                 ToastService.ShowSuccess("Password changed successfully");
-                CloseChangePasswordModal();
+                await CloseChangePasswordModal();
             }
             else
             {
@@ -412,7 +412,7 @@ public partial class Users
             if (success)
             {
                 ToastService.ShowSuccess("Menus assigned successfully");
-                CloseAssignMenuModal();
+                await CloseAssignMenuModal();
             }
             else
             {
@@ -443,7 +443,7 @@ public partial class Users
             if (success)
             {
                 ToastService.ShowSuccess("Roles assigned successfully");
-                CloseAssignRoleModal();
+                await CloseAssignRoleModal();
             }
             else
             {
@@ -463,7 +463,7 @@ public partial class Users
     private async Task DeleteUser(int id)
     {
         var confirmation = await DialogService.ShowDeleteConfirmAsync("this user");
-        
+
         if (confirmation)
         {
             try

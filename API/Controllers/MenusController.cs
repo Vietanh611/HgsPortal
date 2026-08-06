@@ -3,11 +3,13 @@ using Domain.Entities.System;
 using Hgs.Share.Requests.Menus;
 using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.Menus;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class MenusController : ControllerBase
 {
@@ -25,6 +27,15 @@ public class MenusController : ControllerBase
     {
         var menus = await _menuService.GetAllAsync();
         var response = menus.Select(MapToGetAllResponse).ToList();
+
+        return Ok(ApiResponse<IEnumerable<MenusGetAllResponse>>.SuccessResponse(response, "Menus retrieved successfully", 200));
+    }
+
+    [HttpGet("all")]
+    public async Task<ActionResult<ApiResponse<IEnumerable<MenusGetAllResponse>>>> GetAllFlat()
+    {
+        var menus = await _menuService.GetAllFlatAsync();
+        var response = menus.Select(MapToGetAllResponseFlat).ToList();
 
         return Ok(ApiResponse<IEnumerable<MenusGetAllResponse>>.SuccessResponse(response, "Menus retrieved successfully", 200));
     }
@@ -103,7 +114,6 @@ public class MenusController : ControllerBase
     private static MenusGetAllResponse MapToGetAllResponse(Menus menu) => new()
     {
         Id = menu.Id,
-        ModuleId = menu.ModuleId,
         ParentId = menu.ParentId,
         Code = menu.Code,
         Name = menu.Name,
@@ -120,10 +130,28 @@ public class MenusController : ControllerBase
         Children = menu.Children.Select(MapToGetAllResponse).ToList()
     };
 
+    private static MenusGetAllResponse MapToGetAllResponseFlat(Menus menu) => new()
+    {
+        Id = menu.Id,
+        ParentId = menu.ParentId,
+        Code = menu.Code,
+        Name = menu.Name,
+        Route = menu.Route,
+        Component = menu.Component,
+        Icon = menu.Icon,
+        SortOrder = menu.SortOrder,
+        IsVisible = menu.IsVisible,
+        IsActive = menu.IsActive,
+        CreatedAt = menu.CreatedAt,
+        CreatedBy = menu.CreatedBy,
+        UpdatedAt = menu.UpdatedAt,
+        UpdatedBy = menu.UpdatedBy,
+        Children = new List<MenusGetAllResponse>()
+    };
+
     private static MenusGetByIdResponse MapToGetByIdResponse(Menus menu) => new()
     {
         Id = menu.Id,
-        ModuleId = menu.ModuleId,
         ParentId = menu.ParentId,
         Code = menu.Code,
         Name = menu.Name,
@@ -142,7 +170,6 @@ public class MenusController : ControllerBase
     private static MenusCreateResponse MapToCreateResponse(Menus menu) => new()
     {
         Id = menu.Id,
-        ModuleId = menu.ModuleId,
         ParentId = menu.ParentId,
         Code = menu.Code,
         Name = menu.Name,
@@ -161,7 +188,6 @@ public class MenusController : ControllerBase
     private static MenusUpdateResponse MapToUpdateResponse(Menus menu) => new()
     {
         Id = menu.Id,
-        ModuleId = menu.ModuleId,
         ParentId = menu.ParentId,
         Code = menu.Code,
         Name = menu.Name,

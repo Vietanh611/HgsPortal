@@ -1,0 +1,71 @@
+@page "/audit"
+@using Hgs.Share.Responses.AuditLogs
+@using BlazorBootstrap
+
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<PageTitle>Audit Logs</PageTitle>
+
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Audit Logs</h2>
+            </div>
+
+            <Card>
+                <CardBody>
+                    @if (isLoading)
+                    {
+                        <div class="text-center py-5">
+                            <Spinner Color="SpinnerColor.Primary" />
+                        </div>
+                    }
+                    else if (auditLogs == null)
+                    {
+                        <Alert Color="AlertColor.Secondary" class="text-center">
+                            Loading audit logs...
+                        </Alert>
+                    }
+                    else
+                    {
+                        <Grid TItem="AuditLogsGetAllResponse" Data="auditLogs" AllowPaging="true" AllowSorting="true" Responsive="true"
+                              Class="table table-hover table-bordered table-striped" PageSize="pageSize" TotalItems="totalCount">
+                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="ID" SortKeyExpression="item => item.Id">
+                                @context.Id
+                            </GridColumn>
+                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="User" SortKeyExpression="item => item.Username">
+                                @(context.Username ?? "N/A")
+                            </GridColumn>
+                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Action" SortKeyExpression="item => item.Action">
+                                <Badge Color="@(GetActionBadgeColor(context.Action))">@context.Action</Badge>
+                            </GridColumn>
+                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Entity" SortKeyExpression="item => item.EntityName">
+                                @context.EntityName
+                            </GridColumn>
+                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Entity ID" SortKeyExpression="item => item.EntityId">
+                                @(context.EntityId?.ToString() ?? "N/A")
+                            </GridColumn>
+                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="IP Address" SortKeyExpression="item => item.IpAddress">
+                                @(context.IpAddress ?? "N/A")
+                            </GridColumn>
+                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Created At" SortKeyExpression="item => item.CreatedAt">
+                                @context.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")
+                            </GridColumn>
+                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Actions" AllowSorting="false">
+                                <Button Color="ButtonColor.Info" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowDetailModal(context)">
+                                    <Icon Name="IconName.Eye" />
+                                </Button>
+                            </GridColumn>
+                        </Grid>
+                    }
+                </CardBody>
+            </Card>
+        </div>
+    </div>
+</div>
+
+<AuditDetailModal @ref="auditDetailModal"
+    AuditLog="selectedAuditLog"
+    OnClose="CloseDetailModal" />

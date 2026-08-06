@@ -1,9 +1,9 @@
+using BlazorBootstrap;
 using Hgs.Share.Requests.Menus;
 using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.Menus;
 using Microsoft.AspNetCore.Components;
 using WebApp.Client.Services;
-using BlazorBootstrap;
 using CustomToastService = WebApp.Client.Services.ToastService;
 
 namespace WebApp.Client.Pages.Account.Menus;
@@ -13,6 +13,7 @@ public partial class Menus
     [Inject] private CustomToastService ToastService { get; set; } = default!;
     [Inject] private ApiClient ApiClient { get; set; } = default!;
     [Inject] private DialogService DialogService { get; set; } = default!;
+    private MenuFormModal menuFormModal = default!;
     private IEnumerable<MenusGetAllResponse>? menus;
     private IEnumerable<MenusGetAllResponse>? parentMenus;
     private MenusCreateRequest menuForm = new();
@@ -20,7 +21,6 @@ public partial class Menus
     private bool isEditMode = false;
     private bool isSubmitting = false;
     private int editingMenuId = 0;
-    private bool isMenuFormModalVisible = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -32,7 +32,7 @@ public partial class Menus
         isLoading = true;
         try
         {
-            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<MenusGetAllResponse>>>("api/menus");
+            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<MenusGetAllResponse>>>("api/menus/all");
             if (response != null && response.Success && response.Data != null)
             {
                 menus = response.Data;
@@ -49,20 +49,19 @@ public partial class Menus
         }
     }
 
-    private void ShowCreateModal()
+    private async Task ShowCreateModal()
     {
         isEditMode = false;
         menuForm = new MenusCreateRequest();
-        isMenuFormModalVisible = true;
+        await menuFormModal.ShowAsync();
     }
 
-    private void ShowEditModal(MenusGetAllResponse menu)
+    private async Task ShowEditModal(MenusGetAllResponse menu)
     {
         isEditMode = true;
         editingMenuId = menu.Id;
         menuForm = new MenusCreateRequest
         {
-            ModuleId = menu.ModuleId,
             ParentId = menu.ParentId,
             Code = menu.Code,
             Name = menu.Name,
@@ -73,12 +72,12 @@ public partial class Menus
             IsVisible = menu.IsVisible,
             IsActive = menu.IsActive
         };
-        isMenuFormModalVisible = true;
+        await menuFormModal.ShowAsync();
     }
 
-    private void CloseMenuFormModal()
+    private async Task CloseMenuFormModal()
     {
-        isMenuFormModalVisible = false;
+        await menuFormModal.HideAsync();
     }
 
     private async Task HandleSubmit()
@@ -90,7 +89,6 @@ public partial class Menus
             {
                 var updateRequest = new MenusUpdateRequest
                 {
-                    ModuleId = menuForm.ModuleId,
                     ParentId = menuForm.ParentId,
                     Code = menuForm.Code,
                     Name = menuForm.Name,
@@ -106,7 +104,7 @@ public partial class Menus
                 {
                     ToastService.ShowSuccess("Menu updated successfully");
                     await LoadMenus();
-                    CloseMenuFormModal();
+                    await CloseMenuFormModal();
                 }
                 else
                 {
@@ -120,7 +118,7 @@ public partial class Menus
                 {
                     ToastService.ShowSuccess("Menu created successfully");
                     await LoadMenus();
-                    CloseMenuFormModal();
+                    await CloseMenuFormModal();
                 }
                 else
                 {
@@ -141,7 +139,7 @@ public partial class Menus
     private async Task DeleteMenu(int id)
     {
         var confirmation = await DialogService.ShowDeleteConfirmAsync("this menu");
-        
+
         if (confirmation)
         {
             try

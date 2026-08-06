@@ -8,7 +8,7 @@ using CustomToastService = WebApp.Client.Services.ToastService;
 
 namespace WebApp.Client.Pages.Account.Profile;
 
-public partial class Profile
+public partial class Profile : ComponentBase
 {
     [Inject] private CustomToastService ToastService { get; set; } = default!;
     [Inject] private ApiClient ApiClient { get; set; } = default!;
@@ -29,7 +29,7 @@ public partial class Profile
         isLoading = true;
         try
         {
-            var response = await ApiClient.GetAsync<ApiResponse<UsersGetByIdResponse>>("api/auth/me");
+            var response = await ApiClient.GetAsync<ApiResponse<UsersGetByIdResponse>>("api/users/me");
             if (response != null && response.Success && response.Data != null)
             {
                 currentUser = response.Data;

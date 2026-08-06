@@ -1,0 +1,108 @@
+@using Hgs.Share.Responses.AuditLogs
+@using BlazorBootstrap
+
+<Modal @ref="modal" Title="Audit Log Details" OnClose="Close" Size="ModalSize.Large">
+    <BodyTemplate>
+        @if (AuditLog != null)
+        {
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">ID</label>
+                    <div>@AuditLog.Id</div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">User</label>
+                    <div>@(AuditLog.Username ?? "N/A")</div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Action</label>
+                    <div>
+                        <Badge Color="@(GetActionBadgeColor(AuditLog.Action))">@AuditLog.Action</Badge>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Entity</label>
+                    <div>@AuditLog.EntityName</div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Entity ID</label>
+                    <div>@(AuditLog.EntityId?.ToString() ?? "N/A")</div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">IP Address</label>
+                    <div>@(AuditLog.IpAddress ?? "N/A")</div>
+                </div>
+                <div class="col-12 mb-3">
+                    <label class="form-label fw-bold">Created At</label>
+                    <div>@AuditLog.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</div>
+                </div>
+                @if (!string.IsNullOrEmpty(AuditLog.OldValue))
+                {
+                    <div class="col-12 mb-3">
+                        <label class="form-label fw-bold">Old Value</label>
+                        <pre class="bg-light p-3 rounded" style="max-height: 300px; overflow-y: auto;">@FormatJson(AuditLog.OldValue)</pre>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(AuditLog.NewValue))
+                {
+                    <div class="col-12 mb-3">
+                        <label class="form-label fw-bold">New Value</label>
+                        <pre class="bg-light p-3 rounded" style="max-height: 300px; overflow-y: auto;">@FormatJson(AuditLog.NewValue)</pre>
+                    </div>
+                }
+            </div>
+        }
+    </BodyTemplate>
+    <FooterTemplate>
+        <Button Color="ButtonColor.Secondary" @onclick="OnClose">Close</Button>
+    </FooterTemplate>
+</Modal>
+
+@code {
+    private Modal modal = default!;
+    [Parameter] public AuditLogsGetAllResponse? AuditLog { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    public async Task ShowAsync()
+    {
+        await modal.ShowAsync();
+    }
+
+    public async Task HideAsync()
+    {
+        await modal.HideAsync();
+    }
+
+    private async Task Close()
+    {
+        await HideAsync();
+        await OnClose.InvokeAsync();
+    }
+
+    private string FormatJson(string? json)
+    {
+        if (string.IsNullOrEmpty(json))
+            return string.Empty;
+
+        try
+        {
+            using var document = System.Text.Json.JsonDocument.Parse(json);
+            return System.Text.Json.JsonSerializer.Serialize(document, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+        }
+        catch
+        {
+            return json;
+        }
+    }
+
+    private BadgeColor GetActionBadgeColor(string action)
+    {
+        return action switch
+        {
+            "CREATE" => BadgeColor.Success,
+            "UPDATE" => BadgeColor.Warning,
+            "DELETE" => BadgeColor.Danger,
+            _ => BadgeColor.Secondary
+        };
+    }
+}

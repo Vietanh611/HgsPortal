@@ -1,7 +1,7 @@
 @using Hgs.Share.Requests.Menus
 @using BlazorBootstrap
 
-<Modal @ref="modal" Title="@(IsEditMode ? "Edit Menu" : "Add Menu")" IsVisible="@IsVisible" OnClose="OnClose">
+<Modal @ref="modal" Title="@(IsEditMode ? "Edit Menu" : "Add Menu")" OnClose="Close">
     <BodyTemplate>
         <EditForm Model="@MenuForm" OnValidSubmit="HandleSubmit">
             <DataAnnotationsValidator />
@@ -77,7 +77,6 @@
 
 @code {
     private Modal modal = default!;
-    [Parameter] public bool IsVisible { get; set; }
     [Parameter] public MenusCreateRequest MenuForm { get; set; } = new();
     [Parameter] public IEnumerable<Hgs.Share.Responses.Menus.MenusGetAllResponse>? ParentMenus { get; set; }
     [Parameter] public bool IsEditMode { get; set; }
@@ -85,8 +84,24 @@
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback OnSubmit { get; set; }
 
+    public async Task ShowAsync()
+    {
+        await modal.ShowAsync();
+    }
+
+    public async Task HideAsync()
+    {
+        await modal.HideAsync();
+    }
+
     private async Task HandleSubmit()
     {
         await OnSubmit.InvokeAsync();
+    }
+
+    private async Task Close()
+    {
+        await HideAsync();
+        await OnClose.InvokeAsync();
     }
 }

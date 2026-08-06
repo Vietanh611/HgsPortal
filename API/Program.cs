@@ -1,4 +1,4 @@
-﻿using API.Middleware;
+using API.Middleware;
 using Core.Interfaces;
 using Core.Services;
 using Data.DbContexts;
@@ -24,6 +24,7 @@ builder.Host.UseSerilog();
 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 builder.Services.AddSingleton<ITokenService, TokenService>();
+builder.Services.AddMemoryCache();
 
 builder.Services.AddDbContext<HgsDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("PortalConnection")));
 builder.Services.AddDbContext<AcdmContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("ACDMconnection")));
@@ -40,7 +41,11 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IMenuService, MenuService>();
 builder.Services.AddScoped<IUserMenuService, UserMenuService>();
 builder.Services.AddScoped<IRoleMenuService, RoleMenuService>();
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+builder.Services.AddScoped<IPermissionDelegationService, PermissionDelegationService>();
+builder.Services.AddScoped<ICacheService, CacheService>();
 
+builder.Services.AddHttpContextAccessor();
 var rateLimitSettings = builder.Configuration.GetSection("RateLimiting");
 
 builder.Services.AddRateLimiter(options =>
@@ -87,15 +92,16 @@ builder.Services.AddAuthentication(options =>
     };
 });
 builder.Services.AddAuthorization();
-// ADD CORS policy to allow requests from the localhost
+// Add CORS policy configured via appsettings
+var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
+    ?? new[] { "http://localhost:5201" };
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy", policy =>
     {
         policy
-            .WithOrigins(
-                "http://localhost:5201"
-            )
+            .WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -148,7 +154,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-app.UseCors("CorsPolicy");
+
 app.UseRateLimiter();
 // Add Serilog request logging
 app.Use(async (context, next) =>
@@ -166,7 +172,7 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
-
+app.UseCors("CorsPolicy");
 app.MapControllers();
 
 app.Run();

@@ -1,0 +1,86 @@
+@page "/organizations"
+@using Hgs.Share.Responses.OrganizationUnits
+@inject NavigationManager Navigation
+
+
+<PageTitle>Organization Management</PageTitle>
+
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Organization Management</h2>
+                <Button Color="ButtonColor.Primary" @onclick="ShowCreateModal">
+                    <Icon Name="IconName.PlusLg" /> Add Organization
+                </Button>
+            </div>
+
+            <Card>
+                <CardBody>
+                    @if (isLoading)
+                    {
+                        <div class="text-center py-5">
+                            <Spinner Color="SpinnerColor.Primary" />
+                        </div>
+                    }
+                    else if (organizations == null)
+                    {
+                        <Alert Color="AlertColor.Secondary" class="text-center">
+                            Loading organizations...
+                        </Alert>
+                    }
+                    else
+                    {
+                        <Grid TItem="OrganizationUnitsGetAllResponse" Data="organizations" AllowPaging="true" AllowSorting="true" PageSize="10" Responsive="true"
+                              Class="table table-hover table-bordered table-striped">
+                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Code" SortKeySelector="item => item.Code">
+                                @context.Code
+                            </GridColumn>
+                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Name" SortKeySelector="item => item.Name">
+                                @context.Name
+                            </GridColumn>
+                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Parent" SortKeySelector="item => item.ParentId">
+                                @(context.ParentId?.ToString() ?? "N/A")
+                            </GridColumn>
+                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Level" SortKeySelector="item => item.Level">
+                                @context.Level
+                            </GridColumn>
+                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Sort Order" SortKeySelector="item => item.SortOrder">
+                                @context.SortOrder
+                            </GridColumn>
+                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Status">
+                                @if (context.IsActive)
+                                {
+                                    <Badge Color="BadgeColor.Success">Active</Badge>
+                                }
+                                else
+                                {
+                                    <Badge Color="BadgeColor.Secondary">Inactive</Badge>
+                                }
+                            </GridColumn>
+                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Created At" SortKeyExpression="item => item.CreatedAt">
+                                @context.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                            </GridColumn>
+                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Actions" AllowSorting="false">
+                                <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowEditModal(context)" class="me-1">
+                                    <Icon Name="IconName.Pencil" />
+                                </Button>
+                                <Button Color="ButtonColor.Danger" Outline="true" Size="ButtonSize.Small" @onclick="() => DeleteOrganization(context.Id)">
+                                    <Icon Name="IconName.Trash" />
+                                </Button>
+                            </GridColumn>
+                        </Grid>
+                    }
+                </CardBody>
+            </Card>
+        </div>
+    </div>
+</div>
+
+<OrganizationFormModal @ref="organizationFormModal"
+    OrganizationForm="organizationForm"
+    Organizations="organizations"
+    IsEditMode="isEditMode"
+    IsSubmitting="isSubmitting"
+    OnClose="CloseOrganizationFormModal"
+    OnSubmit="HandleSubmit" />

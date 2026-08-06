@@ -1,17 +1,20 @@
-using Core.Interfaces;
+﻿using Core.Interfaces;
 using Data.DbContexts;
 using Domain.Entities.CustomerSatisfaction;
 using Hgs.Share.Requests.CustomerSatisfaction;
 using Microsoft.EntityFrameworkCore;
+
 namespace Core.Services;
 
 public class CustomerSatisfactionService : ICustomerSatisfactionService
 {
     private readonly HgsDbContext _dbContext;
+    private readonly IAuditLogService _auditLog;
 
-    public CustomerSatisfactionService(HgsDbContext dbContext)
+    public CustomerSatisfactionService(HgsDbContext dbContext, IAuditLogService auditLog)
     {
         _dbContext = dbContext;
+        _auditLog = auditLog;
     }
 
     public async Task<IEnumerable<Devices>> GetDevicesAsync(CancellationToken cancellationToken = default)
@@ -54,6 +57,15 @@ public class CustomerSatisfactionService : ICustomerSatisfactionService
 
         _dbContext.Devices.Add(device);
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        _auditLog.Log(
+            action: "CREATE",
+            entityName: "Devices",
+            entityId: device.Id,
+            oldValue: null,
+            newValue: device);
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
         return device;
     }
 
@@ -64,6 +76,15 @@ public class CustomerSatisfactionService : ICustomerSatisfactionService
         {
             return null;
         }
+
+        var oldSnapshot = new
+        {
+            device.Id,
+            device.DeviceName,
+            device.DeviceIdentifier,
+            device.Status,
+            device.LastSeenAt
+        };
 
         if (!string.IsNullOrWhiteSpace(request.DeviceName))
         {
@@ -93,6 +114,13 @@ public class CustomerSatisfactionService : ICustomerSatisfactionService
             device.LastSeenAt = request.LastSeenAt;
         }
 
+        _auditLog.Log(
+            action: "UPDATE",
+            entityName: "Devices",
+            entityId: device.Id,
+            oldValue: oldSnapshot,
+            newValue: device);
+
         await _dbContext.SaveChangesAsync(cancellationToken);
         return device;
     }
@@ -110,6 +138,13 @@ public class CustomerSatisfactionService : ICustomerSatisfactionService
         {
             throw new InvalidOperationException("Cannot delete device because it is referenced by evaluations");
         }
+
+        _auditLog.Log(
+            action: "DELETE",
+            entityName: "Devices",
+            entityId: device.Id,
+            oldValue: device,
+            newValue: null);
 
         _dbContext.Devices.Remove(device);
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -154,6 +189,15 @@ public class CustomerSatisfactionService : ICustomerSatisfactionService
 
         _dbContext.UnsatisfiedReasons.Add(reason);
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        _auditLog.Log(
+            action: "CREATE",
+            entityName: "UnsatisfiedReasons",
+            entityId: reason.Id,
+            oldValue: null,
+            newValue: reason);
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
         return reason;
     }
 
@@ -164,6 +208,13 @@ public class CustomerSatisfactionService : ICustomerSatisfactionService
         {
             return null;
         }
+
+        var oldSnapshot = new
+        {
+            reason.Id,
+            reason.ReasonName,
+            reason.Status
+        };
 
         if (!string.IsNullOrWhiteSpace(request.ReasonName))
         {
@@ -183,6 +234,13 @@ public class CustomerSatisfactionService : ICustomerSatisfactionService
             reason.Status = request.Status.Trim().ToUpperInvariant();
         }
 
+        _auditLog.Log(
+            action: "UPDATE",
+            entityName: "UnsatisfiedReasons",
+            entityId: reason.Id,
+            oldValue: oldSnapshot,
+            newValue: reason);
+
         await _dbContext.SaveChangesAsync(cancellationToken);
         return reason;
     }
@@ -200,6 +258,13 @@ public class CustomerSatisfactionService : ICustomerSatisfactionService
         {
             throw new InvalidOperationException("Cannot delete reason because it is referenced by evaluations");
         }
+
+        _auditLog.Log(
+            action: "DELETE",
+            entityName: "UnsatisfiedReasons",
+            entityId: reason.Id,
+            oldValue: reason,
+            newValue: null);
 
         _dbContext.UnsatisfiedReasons.Remove(reason);
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -243,9 +308,10 @@ public class CustomerSatisfactionService : ICustomerSatisfactionService
             }
         }
 
+        var reasonIds = new List<int>();
         if (request.ReasonIds is not null && request.ReasonIds.Count > 0)
         {
-            var reasonIds = request.ReasonIds.Distinct().ToList();
+            reasonIds = request.ReasonIds.Distinct().ToList();
             var existingReasonCount = await _dbContext.UnsatisfiedReasons
                 .Where(x => reasonIds.Contains(x.Id))
                 .CountAsync(cancellationToken);
@@ -269,21 +335,33 @@ public class CustomerSatisfactionService : ICustomerSatisfactionService
         _dbContext.Evaluations.Add(evaluation);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        if (request.ReasonIds is not null && request.ReasonIds.Count > 0)
+        foreach (var reasonId in reasonIds)
         {
-            var reasonIds = request.ReasonIds.Distinct().ToList();
-            foreach (var reasonId in reasonIds)
+            _dbContext.EvaluationReasonLinks.Add(new EvaluationReasonLinks
             {
-                _dbContext.EvaluationReasonLinks.Add(new EvaluationReasonLinks
-                {
-                    EvaluationId = evaluation.Id,
-                    ReasonId = reasonId
-                });
-            }
-
-            await _dbContext.SaveChangesAsync(cancellationToken);
+                EvaluationId = evaluation.Id,
+                ReasonId = reasonId
+            });
         }
 
+        _auditLog.Log(
+            action: "CREATE",
+            entityName: "Evaluations",
+            entityId: evaluation.Id,
+            oldValue: null,
+            newValue: new
+            {
+                evaluation.Id,
+                evaluation.FlightId,
+                evaluation.StaffUserId,
+                evaluation.DeviceId,
+                evaluation.CheckinCounterName,
+                evaluation.RatingLevel,
+                evaluation.EvaluationType,
+                ReasonIds = reasonIds
+            });
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
         return evaluation;
     }
 
@@ -297,6 +375,18 @@ public class CustomerSatisfactionService : ICustomerSatisfactionService
         {
             return null;
         }
+
+        var oldSnapshot = new
+        {
+            evaluation.Id,
+            evaluation.FlightId,
+            evaluation.StaffUserId,
+            evaluation.DeviceId,
+            evaluation.CheckinCounterName,
+            evaluation.RatingLevel,
+            evaluation.EvaluationType,
+            ReasonIds = evaluation.EvaluationReasonLinks.Select(x => x.ReasonId).ToList()
+        };
 
         if (request.FlightId.HasValue)
         {
@@ -359,6 +449,23 @@ public class CustomerSatisfactionService : ICustomerSatisfactionService
             }
         }
 
+        _auditLog.Log(
+            action: "UPDATE",
+            entityName: "Evaluations",
+            entityId: evaluation.Id,
+            oldValue: oldSnapshot,
+            newValue: new
+            {
+                evaluation.Id,
+                evaluation.FlightId,
+                evaluation.StaffUserId,
+                evaluation.DeviceId,
+                evaluation.CheckinCounterName,
+                evaluation.RatingLevel,
+                evaluation.EvaluationType,
+                ReasonIds = evaluation.EvaluationReasonLinks.Select(x => x.ReasonId).ToList()
+            });
+
         await _dbContext.SaveChangesAsync(cancellationToken);
         return evaluation;
     }
@@ -373,6 +480,23 @@ public class CustomerSatisfactionService : ICustomerSatisfactionService
         {
             return false;
         }
+
+        _auditLog.Log(
+            action: "DELETE",
+            entityName: "Evaluations",
+            entityId: evaluation.Id,
+            oldValue: new
+            {
+                evaluation.Id,
+                evaluation.FlightId,
+                evaluation.StaffUserId,
+                evaluation.DeviceId,
+                evaluation.CheckinCounterName,
+                evaluation.RatingLevel,
+                evaluation.EvaluationType,
+                ReasonIds = evaluation.EvaluationReasonLinks.Select(x => x.ReasonId).ToList()
+            },
+            newValue: null);
 
         if (evaluation.EvaluationReasonLinks.Count > 0)
         {

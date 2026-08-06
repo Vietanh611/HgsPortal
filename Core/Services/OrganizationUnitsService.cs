@@ -9,10 +9,12 @@ namespace Core.Services;
 public class OrganizationUnitsService : IOrganizationUnitsService
 {
     private readonly HgsDbContext _dbContext;
+    private readonly IAuditLogService _auditLog;
 
-    public OrganizationUnitsService(HgsDbContext dbContext)
+    public OrganizationUnitsService(HgsDbContext dbContext, IAuditLogService auditLog)
     {
         _dbContext = dbContext;
+        _auditLog = auditLog;
     }
 
     public async Task<IEnumerable<OrganizationUnits>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -85,6 +87,15 @@ public class OrganizationUnitsService : IOrganizationUnitsService
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        _auditLog.Log(
+            action: "CREATE",
+            entityName: "OrganizationUnits",
+            entityId: organizationUnit.Id,
+            oldValue: null,
+            newValue: organizationUnit);
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
         return organizationUnit;
     }
 
@@ -96,6 +107,18 @@ public class OrganizationUnitsService : IOrganizationUnitsService
         {
             return null;
         }
+
+        var oldSnapshot = new
+        {
+            organizationUnit.Id,
+            organizationUnit.ParentId,
+            organizationUnit.Code,
+            organizationUnit.Name,
+            organizationUnit.SortOrder,
+            organizationUnit.IsActive,
+            organizationUnit.Level,
+            organizationUnit.Path
+        };
 
         if (request.ParentId.HasValue && request.ParentId.Value == id)
         {
@@ -144,6 +167,14 @@ public class OrganizationUnitsService : IOrganizationUnitsService
         }
 
         organizationUnit.UpdatedAt = DateTime.UtcNow;
+
+        _auditLog.Log(
+            action: "UPDATE",
+            entityName: "OrganizationUnits",
+            entityId: organizationUnit.Id,
+            oldValue: oldSnapshot,
+            newValue: organizationUnit);
+
         await _dbContext.SaveChangesAsync(cancellationToken);
         return organizationUnit;
     }
@@ -174,6 +205,13 @@ public class OrganizationUnitsService : IOrganizationUnitsService
         {
             throw new InvalidOperationException("Cannot delete organization unit because it has child units");
         }
+
+        _auditLog.Log(
+            action: "DELETE",
+            entityName: "OrganizationUnits",
+            entityId: organizationUnit.Id,
+            oldValue: organizationUnit,
+            newValue: null);
 
         _dbContext.OrganizationUnits.Remove(organizationUnit);
         await _dbContext.SaveChangesAsync(cancellationToken);

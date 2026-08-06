@@ -7,6 +7,7 @@ namespace Core.Interfaces;
 public interface IMenuService
 {
     Task<IEnumerable<Menus>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<IEnumerable<Menus>> GetAllFlatAsync(CancellationToken cancellationToken = default);
     Task<Menus?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
     Task<Menus> CreateAsync(MenusCreateRequest request, CancellationToken cancellationToken = default);
     Task<Menus?> UpdateAsync(int id, MenusUpdateRequest request, CancellationToken cancellationToken = default);

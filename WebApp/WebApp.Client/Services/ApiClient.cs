@@ -1,14 +1,15 @@
-using System.Net.Http.Json;
-using System.Text.Json;
+using Hgs.Share.Responses.ApiResponses;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
+using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace WebApp.Client.Services;
 
 public class ApiClient
 {
     private readonly HttpClient _httpClient;
-    private readonly IJSRuntime _jsRuntime;
+    private readonly LocalStorageService _localStorageService;
     private readonly NavigationManager _navigationManager;
     private readonly JsonSerializerOptions _jsonOptions;
     private int _retryCount = 3;
@@ -17,10 +18,10 @@ public class ApiClient
     public bool IsLoading { get; private set; }
     public string? LastError { get; private set; }
 
-    public ApiClient(HttpClient httpClient, IJSRuntime jsRuntime, NavigationManager navigationManager)
+    public ApiClient(HttpClient httpClient, LocalStorageService localStorageService, NavigationManager navigationManager)
     {
         _httpClient = httpClient;
-        _jsRuntime = jsRuntime;
+        _localStorageService = localStorageService;
         _navigationManager = navigationManager;
         _jsonOptions = new JsonSerializerOptions
         {
@@ -33,10 +34,10 @@ public class ApiClient
     {
         try
         {
-            var token = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", "accessToken");
+            var token = await _localStorageService.GetAccessTokenAsync();
             if (!string.IsNullOrEmpty(token))
             {
-                _httpClient.DefaultRequestHeaders.Authorization = 
+                _httpClient.DefaultRequestHeaders.Authorization =
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
             }
         }
@@ -56,18 +57,33 @@ public class ApiClient
         if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
             Console.WriteLine("401 Unauthorized - Redirecting to login");
-            await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", "accessToken");
-            await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", "refreshToken");
-            await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", "expiresAt");
+            await _localStorageService.ClearTokensAsync();
             ClearAuthorizationHeader();
-            _navigationManager.NavigateTo("/login", forceLoad: true);
+            _navigationManager.NavigateTo("login", forceLoad: true);
             return false;
         }
 
         if (!response.IsSuccessStatusCode)
         {
             var errorContent = await response.Content.ReadAsStringAsync();
-            LastError = $"API Error: {response.StatusCode} - {errorContent}";
+
+            try
+            {
+                var apiResponse = JsonSerializer.Deserialize<ApiResponse<object>>(
+                    errorContent,
+                    new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+
+                LastError = apiResponse?.Message
+                            ?? $"API Error: {response.StatusCode}";
+            }
+            catch
+            {
+                LastError = errorContent;
+            }
+
             Console.WriteLine(LastError);
             return false;
         }
@@ -109,11 +125,11 @@ public class ApiClient
     {
         IsLoading = true;
         LastError = null;
-        
+
         try
         {
             await AddAuthorizationHeader();
-            
+
             var result = await ExecuteWithRetry(async () =>
             {
                 var response = await _httpClient.GetAsync(endpoint);
@@ -142,17 +158,17 @@ public class ApiClient
     {
         IsLoading = true;
         LastError = null;
-        
+
         try
         {
             await AddAuthorizationHeader();
-            
+
             var result = await ExecuteWithRetry(async () =>
             {
-                var response = data != null 
+                var response = data != null
                     ? await _httpClient.PostAsJsonAsync(endpoint, data, _jsonOptions)
                     : await _httpClient.PostAsync(endpoint, null);
-                    
+
                 if (await HandleResponse(response))
                 {
                     return await response.Content.ReadFromJsonAsync<T>(_jsonOptions);
@@ -178,11 +194,11 @@ public class ApiClient
     {
         IsLoading = true;
         LastError = null;
-        
+
         try
         {
             await AddAuthorizationHeader();
-            
+
             var result = await ExecuteWithRetry(async () =>
             {
                 var response = await _httpClient.PutAsJsonAsync(endpoint, data, _jsonOptions);
@@ -211,11 +227,11 @@ public class ApiClient
     {
         IsLoading = true;
         LastError = null;
-        
+
         try
         {
             await AddAuthorizationHeader();
-            
+
             var result = await ExecuteWithRetry(async () =>
             {
                 var response = await _httpClient.DeleteAsync(endpoint);
@@ -244,17 +260,17 @@ public class ApiClient
     {
         IsLoading = true;
         LastError = null;
-        
+
         try
         {
             await AddAuthorizationHeader();
-            
+
             var result = await ExecuteWithRetry(async () =>
             {
-                var response = data != null 
+                var response = data != null
                     ? await _httpClient.PostAsJsonAsync(endpoint, data, _jsonOptions)
                     : await _httpClient.PostAsync(endpoint, null);
-                    
+
                 return await HandleResponse(response);
             }, $"POST {endpoint}");
 
@@ -276,11 +292,11 @@ public class ApiClient
     {
         IsLoading = true;
         LastError = null;
-        
+
         try
         {
             await AddAuthorizationHeader();
-            
+
             var result = await ExecuteWithRetry(async () =>
             {
                 var response = await _httpClient.PutAsJsonAsync(endpoint, data, _jsonOptions);
@@ -305,11 +321,11 @@ public class ApiClient
     {
         IsLoading = true;
         LastError = null;
-        
+
         try
         {
             await AddAuthorizationHeader();
-            
+
             var result = await ExecuteWithRetry(async () =>
             {
                 var response = await _httpClient.DeleteAsync(endpoint);

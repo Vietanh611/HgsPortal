@@ -1,4 +1,4 @@
-﻿using Core.Interfaces;
+using Core.Interfaces;
 using Data.DbContexts;
 using Domain.Entities.System;
 using Hgs.Share.Requests.Menus;
@@ -10,10 +10,14 @@ namespace Core.Services;
 public class MenuService : IMenuService
 {
     private readonly HgsDbContext _dbContext;
+    private readonly IAuditLogService _auditLog;
+    private readonly ICacheService _cacheService;
 
-    public MenuService(HgsDbContext dbContext)
+    public MenuService(HgsDbContext dbContext, IAuditLogService auditLog, ICacheService cacheService)
     {
         _dbContext = dbContext;
+        _auditLog = auditLog;
+        _cacheService = cacheService;
     }
 
     public async Task<IEnumerable<Menus>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -29,6 +33,14 @@ public class MenuService : IMenuService
             .ToList();
 
         return BuildMenuHierarchyForGetAll(rootMenus, allMenus);
+    }
+
+    public async Task<IEnumerable<Menus>> GetAllFlatAsync(CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Menus
+            .AsNoTracking()
+            .OrderBy(x => x.SortOrder)
+            .ToListAsync(cancellationToken);
     }
 
     private static List<Menus> BuildMenuHierarchyForGetAll(
@@ -79,7 +91,6 @@ public class MenuService : IMenuService
 
         var menu = new Menus
         {
-            ModuleId = request.ModuleId,
             ParentId = request.ParentId,
             Code = request.Code,
             Name = request.Name,
@@ -94,6 +105,19 @@ public class MenuService : IMenuService
 
         _dbContext.Menus.Add(menu);
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        _auditLog.Log(
+            action: "CREATE",
+            entityName: "Menus",
+            entityId: menu.Id,
+            oldValue: null,
+            newValue: menu);
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        // Clear all menu cache when a new menu is created
+        await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
+
         return menu;
     }
 
@@ -106,10 +130,19 @@ public class MenuService : IMenuService
             return null;
         }
 
-        if (request.ModuleId.HasValue)
+        var oldSnapshot = new
         {
-            menu.ModuleId = request.ModuleId.Value;
-        }
+            menu.Id,
+            menu.ParentId,
+            menu.Code,
+            menu.Name,
+            menu.Route,
+            menu.Component,
+            menu.Icon,
+            menu.SortOrder,
+            menu.IsVisible,
+            menu.IsActive
+        };
 
         if (request.ParentId.HasValue)
         {
@@ -157,7 +190,19 @@ public class MenuService : IMenuService
         }
 
         menu.UpdatedAt = DateTime.UtcNow;
+
+        _auditLog.Log(
+            action: "UPDATE",
+            entityName: "Menus",
+            entityId: menu.Id,
+            oldValue: oldSnapshot,
+            newValue: menu);
+
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        // Clear all menu cache when a menu is updated
+        await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
+
         return menu;
     }
 
@@ -170,8 +215,19 @@ public class MenuService : IMenuService
             return false;
         }
 
+        _auditLog.Log(
+            action: "DELETE",
+            entityName: "Menus",
+            entityId: menu.Id,
+            oldValue: menu,
+            newValue: null);
+
         _dbContext.Menus.Remove(menu);
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        // Clear all menu cache when a menu is deleted
+        await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
+
         return true;
     }
 
@@ -179,8 +235,19 @@ public class MenuService : IMenuService
     int userId,
     CancellationToken cancellationToken = default)
     {
+        var cacheKey = $"menus:user:{userId}";
+
+        // Try to get from cache first
+        var cachedMenus = await _cacheService.GetAsync<List<MenusGetByUserIdResponse>>(cacheKey, cancellationToken);
+        if (cachedMenus != null)
+        {
+            return cachedMenus;
+        }
+
+        // Cache miss - query from database
         // Menu được gán trực tiếp cho user
         var userMenuIds = await _dbContext.UserMenus
+            .AsNoTracking()
             .Where(x => x.UserId == userId)
             .Select(x => x.MenuId)
             .ToListAsync(cancellationToken);
@@ -231,7 +298,12 @@ public class MenuService : IMenuService
             .OrderBy(x => x.SortOrder)
             .ToList();
 
-        return BuildMenuHierarchy(rootMenus, visibleMenus);
+        var result = BuildMenuHierarchy(rootMenus, visibleMenus);
+
+        // Cache the result for 5 minutes
+        // await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(5), cancellationToken);
+
+        return result;
     }
 
     private static List<MenusGetByUserIdResponse> BuildMenuHierarchy(
@@ -259,7 +331,6 @@ public class MenuService : IMenuService
     private static MenusGetByUserIdResponse MapToGetByUserIdResponse(Menus menu) => new()
     {
         Id = menu.Id,
-        ModuleId = menu.ModuleId,
         ParentId = menu.ParentId,
         Code = menu.Code,
         Name = menu.Name,

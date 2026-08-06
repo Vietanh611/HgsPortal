@@ -2,7 +2,6 @@ namespace Hgs.Share.Requests.Menus;
 
 public class MenusUpdateRequest
 {
-    public int? ModuleId { get; set; }
 
     public int? ParentId { get; set; }
 

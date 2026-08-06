@@ -1,0 +1,101 @@
+@using Hgs.Share.Requests.OrganizationUnits
+@using Hgs.Share.Responses.OrganizationUnits
+
+<Modal @ref="modal" Title="@(IsEditMode ? "Edit Organization" : "Add Organization")" OnClose="Close">
+    <BodyTemplate>
+        <EditForm Model="@OrganizationForm" OnValidSubmit="HandleSubmit">
+            <DataAnnotationsValidator />
+            
+            <div class="mb-3">
+                <label class="form-label">Code</label>
+                <InputText @bind-Value="OrganizationForm.Code" class="form-control" />
+                <ValidationMessage For="() => OrganizationForm.Code" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Name</label>
+                <InputText @bind-Value="OrganizationForm.Name" class="form-control" />
+                <ValidationMessage For="() => OrganizationForm.Name" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Parent Organization</label>
+                <select class="form-select" @bind="OrganizationForm.ParentId">
+                    <option value="">Select Parent Organization</option>
+                    @if (Organizations != null)
+                    {
+                        @foreach (var org in Organizations)
+                        {
+                            <option value="@org.Id">@org.Name (@org.Code)</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Sort Order</label>
+                <InputNumber @bind-Value="OrganizationForm.SortOrder" class="form-control" />
+            </div>
+
+            <div class="mb-3 form-check">
+                <InputCheckbox @bind-Value="OrganizationForm.IsActive" class="form-check-input" id="isActive" />
+                <label class="form-check-label" for="isActive">Active</label>
+            </div>
+        </EditForm>
+    </BodyTemplate>
+    <FooterTemplate>
+        <Button Color="ButtonColor.Secondary" @onclick="Close">Cancel</Button>
+        <Button Color="ButtonColor.Primary" @onclick="HandleSubmit" Disabled="@IsSubmitting">
+            @if (IsSubmitting)
+            {
+                <Spinner Color="SpinnerColor.Light" Size="SpinnerSize.Small" class="me-2" />
+            }
+            @(IsEditMode ? "Update" : "Create")
+        </Button>
+    </FooterTemplate>
+</Modal>
+
+@code {
+    private Modal modal = default!;
+    [Parameter]
+    public bool IsVisible { get; set; }
+
+    [Parameter]
+    public OrganizationUnitsCreateRequest OrganizationForm { get; set; } = new();
+
+    [Parameter]
+    public IEnumerable<OrganizationUnitsGetAllResponse>? Organizations { get; set; }
+
+    [Parameter]
+    public bool IsEditMode { get; set; }
+
+    [Parameter]
+    public bool IsSubmitting { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    [Parameter]
+    public EventCallback OnSubmit { get; set; }
+
+    public async Task ShowAsync()
+    {
+        await modal.ShowAsync();
+    }
+
+    public async Task HideAsync()
+    {
+        await modal.HideAsync();
+    }
+
+    private async Task HandleSubmit()
+    {
+        await OnSubmit.InvokeAsync();
+    }
+
+    private async Task Close()
+    {
+        await HideAsync();
+        await OnClose.InvokeAsync();
+    }
+}

@@ -18,4 +18,21 @@
     <ProjectReference Include="..\..\Hgs.Share\Hgs.Share.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Components\" />
+    <Folder Include="Pages\CustomerSatisfaction\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="package.json" />
+    <Content Remove="package-lock.json" />
+
+    <None Update="package.json">
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </None>
+
+    <None Update="package-lock.json">
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
 </Project>

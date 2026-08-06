@@ -11,10 +11,12 @@ namespace Core.Services;
 public class UserMenuService : IUserMenuService
 {
     private readonly HgsDbContext _dbContext;
+    private readonly IAuditLogService _auditLog;
 
-    public UserMenuService(HgsDbContext dbContext)
+    public UserMenuService(HgsDbContext dbContext, IAuditLogService auditLog)
     {
         _dbContext = dbContext;
+        _auditLog = auditLog;
     }
 
     public async Task<IEnumerable<UserMenuDto>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -32,18 +34,21 @@ public class UserMenuService : IUserMenuService
     {
         // Get user-specific menu assignments
         var userMenuIds = await _dbContext.UserMenus
+            .AsNoTracking()
             .Where(x => x.UserId == userId)
             .Select(x => x.MenuId)
             .ToListAsync(cancellationToken);
 
         // Get user's roles
         var userRoleIds = await _dbContext.UserRoles
+            .AsNoTracking()
             .Where(ur => ur.UserId == userId)
             .Select(ur => ur.RoleId)
             .ToListAsync(cancellationToken);
 
         // Get all menus from user's roles
         var roleMenuIds = await _dbContext.RoleMenus
+            .AsNoTracking()
             .Where(rm => userRoleIds.Contains(rm.RoleId))
             .Select(rm => rm.MenuId)
             .ToListAsync(cancellationToken);
@@ -129,7 +134,6 @@ public class UserMenuService : IUserMenuService
     private static MenusGetByUserIdResponse MapToGetByUserIdResponse(Menus menu) => new()
     {
         Id = menu.Id,
-        ModuleId = menu.ModuleId,
         ParentId = menu.ParentId,
         Code = menu.Code,
         Name = menu.Name,
@@ -159,7 +163,6 @@ public class UserMenuService : IUserMenuService
         return new MenuDto
         {
             Id = menu.Id,
-            ModuleId = menu.ModuleId,
             ParentId = menu.ParentId,
             Code = menu.Code,
             Name = menu.Name,
@@ -192,6 +195,15 @@ public class UserMenuService : IUserMenuService
 
         _dbContext.UserMenus.Add(userMenu);
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        _auditLog.Log(
+            action: "CREATE",
+            entityName: "UserMenus",
+            entityId: userMenu.Id,
+            oldValue: null,
+            newValue: userMenu);
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
         return userMenu;
     }
 
@@ -203,6 +215,13 @@ public class UserMenuService : IUserMenuService
         {
             return false;
         }
+
+        _auditLog.Log(
+            action: "DELETE",
+            entityName: "UserMenus",
+            entityId: userMenu.Id,
+            oldValue: userMenu,
+            newValue: null);
 
         _dbContext.UserMenus.Remove(userMenu);
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -218,6 +237,7 @@ public class UserMenuService : IUserMenuService
 
         var newMenuIds = menuIds.Except(existingMenus).ToList();
 
+        var createdUserMenus = new List<UserMenus>();
         foreach (var menuId in newMenuIds)
         {
             var userMenu = new UserMenus
@@ -228,6 +248,19 @@ public class UserMenuService : IUserMenuService
                 AssignedBy = assignedBy
             };
             _dbContext.UserMenus.Add(userMenu);
+            createdUserMenus.Add(userMenu);
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        foreach (var userMenu in createdUserMenus)
+        {
+            _auditLog.Log(
+                action: "CREATE",
+                entityName: "UserMenus",
+                entityId: userMenu.Id,
+                oldValue: null,
+                newValue: userMenu);
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -239,6 +272,16 @@ public class UserMenuService : IUserMenuService
         var userMenus = await _dbContext.UserMenus
             .Where(x => x.UserId == userId && menuIds.Contains(x.MenuId))
             .ToListAsync(cancellationToken);
+
+        foreach (var userMenu in userMenus)
+        {
+            _auditLog.Log(
+                action: "DELETE",
+                entityName: "UserMenus",
+                entityId: userMenu.Id,
+                oldValue: userMenu,
+                newValue: null);
+        }
 
         _dbContext.UserMenus.RemoveRange(userMenus);
         await _dbContext.SaveChangesAsync(cancellationToken);

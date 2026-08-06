@@ -8,10 +8,12 @@ namespace Core.Services;
 public class RolesService : IRolesService
 {
     private readonly HgsDbContext _dbContext;
+    private readonly IAuditLogService _auditLog;
 
-    public RolesService(HgsDbContext dbContext)
+    public RolesService(HgsDbContext dbContext, IAuditLogService auditLog)
     {
         _dbContext = dbContext;
+        _auditLog = auditLog;
     }
 
     public async Task<IEnumerable<Roles>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -47,6 +49,15 @@ public class RolesService : IRolesService
 
         _dbContext.Roles.Add(request);
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        _auditLog.Log(
+            action: "CREATE",
+            entityName: "Roles",
+            entityId: request.Id,
+            oldValue: null,
+            newValue: request);
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
         return request;
     }
 
@@ -58,6 +69,18 @@ public class RolesService : IRolesService
         {
             return null;
         }
+
+        var oldSnapshot = new
+        {
+            role.Id,
+            role.Code,
+            role.Name,
+            role.Description,
+            role.OrganizationUnitId,
+            role.DataScope,
+            role.IsSystemRole,
+            role.IsActive
+        };
 
         if (!string.IsNullOrWhiteSpace(request.Code))
         {
@@ -102,6 +125,13 @@ public class RolesService : IRolesService
             role.IsActive = request.IsActive;
         }
 
+        _auditLog.Log(
+            action: "UPDATE",
+            entityName: "Roles",
+            entityId: role.Id,
+            oldValue: oldSnapshot,
+            newValue: role);
+
         await _dbContext.SaveChangesAsync(cancellationToken);
         return role;
     }
@@ -120,6 +150,13 @@ public class RolesService : IRolesService
         {
             throw new InvalidOperationException("Cannot delete role because it is assigned to users");
         }
+
+        _auditLog.Log(
+            action: "DELETE",
+            entityName: "Roles",
+            entityId: role.Id,
+            oldValue: role,
+            newValue: null);
 
         _dbContext.Roles.Remove(role);
         await _dbContext.SaveChangesAsync(cancellationToken);
