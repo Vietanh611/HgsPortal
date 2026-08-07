@@ -4,12 +4,14 @@ using Hgs.Share.Exceptions;
 using Hgs.Share.Requests.UserRoles;
 using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.UserRoles;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace API.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class UserRolesController : ControllerBase
 {

@@ -3,8 +3,9 @@ using Hgs.Share.Requests.Menus;
 using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.Menus;
 using Microsoft.AspNetCore.Components;
-using WebApp.Client.Services;
-using CustomToastService = WebApp.Client.Services.ToastService;
+using WebApp.Client.Services.Components;
+using WebApp.Client.Services.Network;
+using CustomToastService = WebApp.Client.Services.Components.ToastService;
 
 namespace WebApp.Client.Pages.Account.Menus;
 

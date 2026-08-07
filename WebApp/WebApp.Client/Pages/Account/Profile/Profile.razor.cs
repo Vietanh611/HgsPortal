@@ -3,8 +3,9 @@ using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.Users;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
-using WebApp.Client.Services;
-using CustomToastService = WebApp.Client.Services.ToastService;
+using WebApp.Client.Services.Components;
+using WebApp.Client.Services.Network;
+using CustomToastService = WebApp.Client.Services.Components.ToastService;
 
 namespace WebApp.Client.Pages.Account.Profile;
 

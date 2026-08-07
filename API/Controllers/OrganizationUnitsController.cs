@@ -3,11 +3,13 @@ using Domain.Entities.Identity;
 using Hgs.Share.Requests.OrganizationUnits;
 using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.OrganizationUnits;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class OrganizationUnitsController : ControllerBase
 {

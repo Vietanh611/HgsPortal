@@ -1,4 +1,4 @@
-namespace WebApp.Client.Services;
+namespace WebApp.Client.Services.Components;
 
 using BlazorBootstrap;
 using BlazorBootstrapToastService = BlazorBootstrap.ToastService;

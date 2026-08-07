@@ -12,6 +12,7 @@ namespace API.Controllers;
 
 [ApiController]
 [Route("[controller]")]
+[IgnoreAntiforgeryToken]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;

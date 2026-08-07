@@ -1,15 +1,20 @@
 @inherits LayoutComponentBase
-@using WebApp.Client.Services
+@using WebApp.Client.Services.Auth
+@using WebApp.Client.Services.Data
+@using WebApp.Client.Services.Network
+@using WebApp.Client.Services.Components
 @using BlazorBootstrap
 @using Hgs.Share.Responses.ApiResponses
 @using Hgs.Share.Responses.Menus
+@using Microsoft.AspNetCore.Components.Authorization
 @inject DialogService DialogService
-@inject ApiClient ApiClient
-@inject LocalStorageService LocalStorage
+@inject ITokenStorage TokenStorage
 @inject JwtTokenService JwtService
 @inject NavigationManager Navigation
+@inject IServiceProvider ServiceProvider
 
-<div class="bb-page">
+<CascadingAuthenticationState>
+    <div class="bb-page">
     @if (!isLoadingMenus)
     {
         <Sidebar @ref="sidebar"
@@ -26,7 +31,8 @@
         </article>
     </main>
 
-</div>
+    </div>
+</CascadingAuthenticationState>
 @code {
     IEnumerable<NavItem>? navItems;
     List<MenusGetByUserIdResponse> userMenus = new();
@@ -42,8 +48,18 @@
     {
         try
         {
-            var token = await LocalStorage.GetAccessTokenAsync();
-            var userId = JwtService.ExtractUserId(token);
+            // Skip API calls during server-side prerendering
+            var apiClient = ServiceProvider.GetService<ApiClient>();
+            if (apiClient == null)
+            {
+                userMenus = new List<MenusGetByUserIdResponse>();
+                isLoadingMenus = false;
+                StateHasChanged();
+                return;
+            }
+
+            var token = await TokenStorage.GetAccessTokenAsync();
+            var userId = token != null ? JwtService.ExtractUserId(token) : null;
 
             if (!userId.HasValue)
             {
@@ -53,7 +69,7 @@
                 return;
             }
 
-            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<MenusGetByUserIdResponse>>>($"api/menus/user/{userId.Value}");
+            var response = await apiClient.GetAsync<ApiResponse<IEnumerable<MenusGetByUserIdResponse>>>($"api/menus/user/{userId.Value}");
             if (response != null && response.Success && response.Data != null)
             {
                 userMenus = response.Data.ToList();

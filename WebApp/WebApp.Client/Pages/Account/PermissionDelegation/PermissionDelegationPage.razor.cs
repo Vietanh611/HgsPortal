@@ -3,8 +3,9 @@ using Hgs.Share.Requests.PermissionDelegation;
 using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.PermissionDelegation;
 using Microsoft.AspNetCore.Components;
-using WebApp.Client.Services;
-using CustomToastService = WebApp.Client.Services.ToastService;
+using WebApp.Client.Services.Components;
+using WebApp.Client.Services.Network;
+using CustomToastService = WebApp.Client.Services.Components.ToastService;
 using AssignRoleDialog = WebApp.Client.Pages.Account.PermissionDelegation.AssignRoleDialog;
 using RevokeRoleDialog = WebApp.Client.Pages.Account.PermissionDelegation.RevokeRoleDialog;
 

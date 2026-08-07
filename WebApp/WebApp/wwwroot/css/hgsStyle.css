@@ -318,7 +318,8 @@ article {
 .btn {
     border-radius: var(--radius-sm);
     font-weight: 600;
-    padding: 8px 18px;
+    /*padding: 8px 18px;*/
+    margin:4px;
     transition: var(--transition-fast);
 }
 
@@ -347,12 +348,7 @@ article {
         box-shadow: 0 4px 10px rgba(245,130,32,.3);
     }
 
-/* Full-width buttons on very small screens for easier tapping */
-@media (max-width:480px) {
-    .btn {
-        width: 100%;
-    }
-}
+
 
 /* ==========================================================
    TABLE
@@ -404,7 +400,7 @@ article {
         }
 
         .table td {
-            padding: 10px 14px;
+            padding: 4px 14px;
             text-align: right;
             border-bottom: 1px solid var(--border);
         }
