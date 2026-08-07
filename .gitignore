@@ -16,7 +16,8 @@
 #Docs folder
 docs/*
 # Secrets
-#appsettings.Development.json
+appsettings.Local.json
+appsettings.*.Local.json
 
 # Build
 bin/

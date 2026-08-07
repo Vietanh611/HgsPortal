@@ -51,9 +51,8 @@ public class AuthService
             var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse<AuthenticateResponse>>(_jsonOptions);
             if (apiResponse?.Success == true && apiResponse.Data != null)
             {
-                await _tokenStorage.SetTokensAsync(
+                await _tokenStorage.SetAccessTokenAsync(
                     apiResponse.Data.AccessToken,
-                    apiResponse.Data.RefreshToken,
                     apiResponse.Data.ExpiresAt);
                 return apiResponse.Data;
             }
@@ -71,12 +70,7 @@ public class AuthService
     {
         try
         {
-            var refreshToken = await _tokenStorage.GetRefreshTokenAsync();
-            if (!string.IsNullOrEmpty(refreshToken))
-            {
-                var request = new RefreshTokenRequest { RefreshToken = refreshToken };
-                await CreateHttpClient().PostAsJsonAsync("auth/logout", request, _jsonOptions);
-            }
+            await CreateHttpClient().PostAsync("auth/logout", null!);
         }
         catch (Exception ex)
         {
@@ -93,14 +87,7 @@ public class AuthService
     {
         try
         {
-            var refreshToken = await _tokenStorage.GetRefreshTokenAsync();
-            if (string.IsNullOrEmpty(refreshToken))
-            {
-                return false;
-            }
-
-            var request = new RefreshTokenRequest { RefreshToken = refreshToken };
-            var response = await CreateHttpClient().PostAsJsonAsync("auth/refresh-token", request, _jsonOptions);
+            var response = await CreateHttpClient().PostAsync("auth/refresh-token", null!);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -111,9 +98,8 @@ public class AuthService
             var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse<AuthenticateResponse>>(_jsonOptions);
             if (apiResponse?.Success == true && apiResponse.Data != null)
             {
-                await _tokenStorage.SetTokensAsync(
+                await _tokenStorage.SetAccessTokenAsync(
                     apiResponse.Data.AccessToken,
-                    apiResponse.Data.RefreshToken,
                     apiResponse.Data.ExpiresAt);
                 return true;
             }
