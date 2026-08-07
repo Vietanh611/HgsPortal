@@ -169,10 +169,10 @@ app.Use(async (context, next) =>
 });
 app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
-
+app.UseCors("CorsPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseCors("CorsPolicy");
+
 app.MapControllers();
 
 app.Run();

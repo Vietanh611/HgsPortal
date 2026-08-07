@@ -2,9 +2,10 @@ using Hgs.Share.Requests.OrganizationUnits;
 using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.OrganizationUnits;
 using Microsoft.AspNetCore.Components;
-using WebApp.Client.Services;
+using WebApp.Client.Services.Components;
+using WebApp.Client.Services.Network;
 using BlazorBootstrap;
-using CustomToastService = WebApp.Client.Services.ToastService;
+using CustomToastService = WebApp.Client.Services.Components.ToastService;
 
 namespace WebApp.Client.Pages.Account.Organizations;
 

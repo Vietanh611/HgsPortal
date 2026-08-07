@@ -1,14 +1,52 @@
 @page "/"
 @page "/login"
 @using Microsoft.AspNetCore.Components.Forms
+@using WebApp.Client.Services.Auth
 
 @layout EmptyLayout
-@inject HttpClient Http
+@inject CustomAuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
 @code {
     private string logoPath => $"{Navigation.BaseUri}assets/hgs/new%20logo/logo.png";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Check if user is already authenticated
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated == true)
+            {
+                Navigation.NavigateTo("home", forceLoad: true);
+            }
+            
+            await LoadRememberedCredentials();
+        }
+    }
+
+    private async Task LoadRememberedCredentials()
+    {
+        if (hasLoadedCredentials) return;
+        
+        hasLoadedCredentials = true;
+        // Load saved username
+        var savedUsername = await JS.InvokeAsync<string>("localStorage.getItem", "rememberedUsername");
+        if (!string.IsNullOrEmpty(savedUsername))
+        {
+            loginRequest.Username = savedUsername;
+        }
+        
+        // Load Remember Me preference
+        var savedRememberMe = await JS.InvokeAsync<string>("localStorage.getItem", "rememberMe");
+        if (!string.IsNullOrEmpty(savedRememberMe))
+        {
+            rememberMe = bool.Parse(savedRememberMe);
+        }
+        
+        StateHasChanged();
+    }
 }
 
 <PageTitle>Login</PageTitle>
@@ -169,61 +207,6 @@
     private bool rememberMe = false;
     private bool hasLoadedCredentials = false;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender && !hasLoadedCredentials)
-        {
-            // Load saved username
-            var savedUsername = await JS.InvokeAsync<string>("localStorage.getItem", "rememberedUsername");
-            if (!string.IsNullOrEmpty(savedUsername))
-            {
-                loginRequest.Username = savedUsername;
-            }
-            
-            // Load Remember Me preference
-            var savedRememberMe = await JS.InvokeAsync<string>("localStorage.getItem", "rememberMe");
-            if (!string.IsNullOrEmpty(savedRememberMe))
-            {
-                rememberMe = bool.Parse(savedRememberMe);
-            }
-            
-            hasLoadedCredentials = true;
-            StateHasChanged();
-        }
-    }
-
-     private async Task LoadUserMenus(string accessToken)
-    {
-        try
-        {
-            // Decode JWT to get userId
-            var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
-            var jwtToken = tokenHandler.ReadJwtToken(accessToken);
-            var userIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
-            
-            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
-            {
-                return;
-            }
-
-            // Fetch user menus
-            var response = await Http.GetAsync($"api/menus/user/{userId}");
-            if (response.IsSuccessStatusCode)
-            {
-                var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse<IEnumerable<Hgs.Share.Responses.Menus.MenusGetByUserIdResponse>>>();
-                if (apiResponse != null && apiResponse.Success && apiResponse.Data != null)
-                {
-                    // Store menus in localStorage for MainLayout to use
-                    var menusJson = System.Text.Json.JsonSerializer.Serialize(apiResponse.Data);
-                    await JS.InvokeVoidAsync("localStorage.setItem", "userMenus", menusJson);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading user menus: {ex.Message}");
-        }
-    }
 
     private async Task HandleLogin()
     {
@@ -232,47 +215,28 @@
 
         try
         {
-            var response = await Http.PostAsJsonAsync("auth/login", loginRequest);
+            var loginResult = await AuthStateProvider.LoginAsync(loginRequest.Username, loginRequest.Password);
             
-            if (response.IsSuccessStatusCode)
+            if (loginResult == null)
             {
-                var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse<AuthenticateResponse>>();
-                
-                if (apiResponse != null && apiResponse.Success && apiResponse.Data != null)
-                {
-                    // Handle Remember Me
-                    if (rememberMe)
-                    {
-                        await JS.InvokeVoidAsync("localStorage.setItem", "rememberedUsername", loginRequest.Username);
-                        await JS.InvokeVoidAsync("localStorage.setItem", "rememberMe", "true");
-                    }
-                    else
-                    {
-                        await JS.InvokeVoidAsync("localStorage.removeItem", "rememberedUsername");
-                        await JS.InvokeVoidAsync("localStorage.removeItem", "rememberMe");
-                    }
-
-                    // Store tokens in localStorage using JS interop
-                    await JS.InvokeVoidAsync("localStorage.setItem", "accessToken", apiResponse.Data.AccessToken);
-                    await JS.InvokeVoidAsync("localStorage.setItem", "refreshToken", apiResponse.Data.RefreshToken);
-                    await JS.InvokeVoidAsync("localStorage.setItem", "expiresAt", apiResponse.Data.ExpiresAt.ToString());
-                    
-                    // Load user menus for sidebar
-                   // await LoadUserMenus(apiResponse.Data.AccessToken);
-
-                    // Navigate to home page
-                    Navigation.NavigateTo("home");
-                }
-                else
-                {
-                    errorMessage = apiResponse?.Message ?? "Login failed";
-                }
+                errorMessage = "Invalid username or password.";
+                return;
+            }
+            
+            // Handle Remember Me
+            if (rememberMe)
+            {
+                await JS.InvokeVoidAsync("localStorage.setItem", "rememberedUsername", loginRequest.Username);
+                await JS.InvokeVoidAsync("localStorage.setItem", "rememberMe", "true");
             }
             else
             {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                errorMessage = $"Login failed: {response.StatusCode}";
+                await JS.InvokeVoidAsync("localStorage.removeItem", "rememberedUsername");
+                await JS.InvokeVoidAsync("localStorage.removeItem", "rememberMe");
             }
+
+            // Navigate to home page
+            Navigation.NavigateTo("home");
         }
         catch (Exception ex)
         {

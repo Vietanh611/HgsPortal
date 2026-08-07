@@ -1,15 +1,14 @@
 using Hgs.Share.Responses.ApiResponses;
 using Microsoft.AspNetCore.Components;
-using Microsoft.JSInterop;
 using System.Net.Http.Json;
 using System.Text.Json;
 
-namespace WebApp.Client.Services;
+namespace WebApp.Client.Services.Network;
 
 public class ApiClient
 {
     private readonly HttpClient _httpClient;
-    private readonly LocalStorageService _localStorageService;
+    private readonly Data.ITokenStorage _tokenStorage;
     private readonly NavigationManager _navigationManager;
     private readonly JsonSerializerOptions _jsonOptions;
     private int _retryCount = 3;
@@ -18,10 +17,10 @@ public class ApiClient
     public bool IsLoading { get; private set; }
     public string? LastError { get; private set; }
 
-    public ApiClient(HttpClient httpClient, LocalStorageService localStorageService, NavigationManager navigationManager)
+    public ApiClient(HttpClient httpClient, Data.ITokenStorage tokenStorage, NavigationManager navigationManager)
     {
         _httpClient = httpClient;
-        _localStorageService = localStorageService;
+        _tokenStorage = tokenStorage;
         _navigationManager = navigationManager;
         _jsonOptions = new JsonSerializerOptions
         {
@@ -30,35 +29,12 @@ public class ApiClient
         };
     }
 
-    private async Task AddAuthorizationHeader()
-    {
-        try
-        {
-            var token = await _localStorageService.GetAccessTokenAsync();
-            if (!string.IsNullOrEmpty(token))
-            {
-                _httpClient.DefaultRequestHeaders.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error getting auth token: {ex.Message}");
-        }
-    }
-
-    private void ClearAuthorizationHeader()
-    {
-        _httpClient.DefaultRequestHeaders.Authorization = null;
-    }
-
     private async Task<bool> HandleResponse(HttpResponseMessage response)
     {
         if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
             Console.WriteLine("401 Unauthorized - Redirecting to login");
-            await _localStorageService.ClearTokensAsync();
-            ClearAuthorizationHeader();
+            await _tokenStorage.ClearTokensAsync();
             _navigationManager.NavigateTo("login", forceLoad: true);
             return false;
         }
@@ -128,8 +104,6 @@ public class ApiClient
 
         try
         {
-            await AddAuthorizationHeader();
-
             var result = await ExecuteWithRetry(async () =>
             {
                 var response = await _httpClient.GetAsync(endpoint);
@@ -161,8 +135,6 @@ public class ApiClient
 
         try
         {
-            await AddAuthorizationHeader();
-
             var result = await ExecuteWithRetry(async () =>
             {
                 var response = data != null
@@ -197,8 +169,6 @@ public class ApiClient
 
         try
         {
-            await AddAuthorizationHeader();
-
             var result = await ExecuteWithRetry(async () =>
             {
                 var response = await _httpClient.PutAsJsonAsync(endpoint, data, _jsonOptions);
@@ -230,8 +200,6 @@ public class ApiClient
 
         try
         {
-            await AddAuthorizationHeader();
-
             var result = await ExecuteWithRetry(async () =>
             {
                 var response = await _httpClient.DeleteAsync(endpoint);
@@ -263,8 +231,6 @@ public class ApiClient
 
         try
         {
-            await AddAuthorizationHeader();
-
             var result = await ExecuteWithRetry(async () =>
             {
                 var response = data != null
@@ -295,8 +261,6 @@ public class ApiClient
 
         try
         {
-            await AddAuthorizationHeader();
-
             var result = await ExecuteWithRetry(async () =>
             {
                 var response = await _httpClient.PutAsJsonAsync(endpoint, data, _jsonOptions);
@@ -324,8 +288,6 @@ public class ApiClient
 
         try
         {
-            await AddAuthorizationHeader();
-
             var result = await ExecuteWithRetry(async () =>
             {
                 var response = await _httpClient.DeleteAsync(endpoint);
