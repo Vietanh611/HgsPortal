@@ -92,6 +92,13 @@ builder.Services.AddAuthentication(options =>
     };
 });
 builder.Services.AddAuthorization();
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-CSRF-TOKEN";
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.HttpOnly = true;
+});
 // Add CORS policy configured via appsettings
 var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
     ?? new[] { "http://localhost:5201" };
@@ -170,6 +177,7 @@ app.Use(async (context, next) =>
 app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
 app.UseCors("CorsPolicy");
+app.UseAntiforgery();
 app.UseAuthentication();
 app.UseAuthorization();
 

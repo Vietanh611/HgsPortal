@@ -12,7 +12,6 @@ namespace API.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-[IgnoreAntiforgeryToken]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
@@ -25,6 +24,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
+    [IgnoreAntiforgeryToken]
     public async Task<ActionResult<ApiResponse<AuthenticateResponse>>> Login(
         [FromBody] AuthenticateRequest request,
         CancellationToken cancellationToken)
@@ -35,30 +35,60 @@ public class AuthController : ControllerBase
             HttpContext.Connection.RemoteIpAddress?.ToString(),
             cancellationToken);
 
+        // Set RefreshToken in HttpOnly cookie
+        _authService.SetRefreshTokenCookie(HttpContext, response.RefreshToken);
+
+        // Remove RefreshToken from response (it's now in cookie)
+        response.RefreshToken = null;
+
         _logger.LogInformation("User '{Username}' authenticated successfully.", request.Username);
         return Ok(ApiResponse<AuthenticateResponse>.SuccessResponse(response, "Login successful", 200));
     }
 
     [HttpPost("refresh-token")]
+    [ValidateAntiForgeryToken]
     public async Task<ActionResult<ApiResponse<AuthenticateResponse>>> RefreshToken(
-        [FromBody] RefreshTokenRequest request,
         CancellationToken cancellationToken)
     {
+        // Read RefreshToken from cookie
+        var refreshToken = HttpContext.Request.Cookies["refresh_token"];
+        if (string.IsNullOrWhiteSpace(refreshToken))
+        {
+            return BadRequest(ApiResponse<AuthenticateResponse>.FailResponse("Refresh token cookie not found", 400));
+        }
+
+        var request = new RefreshTokenRequest { RefreshToken = refreshToken };
         var response = await _authService.RefreshTokenAsync(
             request,
             HttpContext.Request.Headers.UserAgent.ToString(),
             HttpContext.Connection.RemoteIpAddress?.ToString(),
             cancellationToken);
 
+        // Set new RefreshToken in HttpOnly cookie
+        _authService.SetRefreshTokenCookie(HttpContext, response.RefreshToken);
+
+        // Remove RefreshToken from response (it's now in cookie)
+        response.RefreshToken = null;
+
         return Ok(ApiResponse<AuthenticateResponse>.SuccessResponse(response, "Token refreshed successfully", 200));
     }
 
     [HttpPost("logout")]
+    [ValidateAntiForgeryToken]
     public async Task<ActionResult<ApiResponse>> Logout(
-        [FromBody] LogoutRequest request,
         CancellationToken cancellationToken)
     {
-        await _authService.LogoutAsync(request, cancellationToken);
+        // Read RefreshToken from cookie
+        var refreshToken = HttpContext.Request.Cookies["refresh_token"];
+        if (!string.IsNullOrWhiteSpace(refreshToken))
+        {
+            var request = new LogoutRequest { RefreshToken = refreshToken };
+            await _authService.LogoutAsync(request, cancellationToken);
+        }
+
+        // Clear RefreshToken cookie
+        _authService.ClearRefreshTokenCookie(HttpContext);
+
         return Ok(ApiResponse.SuccessResponse("Logout successful", 200));
     }
 

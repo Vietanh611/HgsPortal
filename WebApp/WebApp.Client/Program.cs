@@ -28,7 +28,7 @@ builder.Services.AddHttpClient("AuthClient", client =>
 });
 
 // Register token storage
-builder.Services.AddScoped<ITokenStorage, TokenStorage>();
+builder.Services.AddScoped<ITokenStorage, MemoryTokenStorage>();
 
 // Register auth services
 builder.Services.AddScoped<AuthService>();

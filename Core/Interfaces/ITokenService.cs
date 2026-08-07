@@ -4,4 +4,6 @@ public interface ITokenService
 {
     string GenerateAccessToken(int userId, string username, IEnumerable<string>? roles = null);
     string GenerateRefreshToken();
+    string HashRefreshToken(string token);
+    Guid GenerateTokenFamily();
 }

@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.Http;
 
 namespace Core.Services;
 
@@ -76,9 +77,10 @@ public class AuthService : IAuthService
             throw new BadRequestException("Refresh token is required.");
         }
 
+        var tokenHash = _tokenService.HashRefreshToken(request.RefreshToken);
         var tokenEntity = await _dbContext.RefreshTokens
             .Include(rt => rt.User)
-            .Where(rt => rt.Token == request.RefreshToken)
+            .Where(rt => rt.TokenHash == tokenHash)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (tokenEntity is null || tokenEntity.IsRevoked || tokenEntity.ExpiresAt < DateTime.UtcNow)
@@ -100,7 +102,7 @@ public class AuthService : IAuthService
         tokenEntity.RevokedAt = DateTime.UtcNow;
         tokenEntity.ReplacedByToken = newRefreshToken;
 
-        await SaveRefreshTokenAsync(user.Id, newRefreshToken, newJwtId, userAgent, ipAddress, cancellationToken);
+        await SaveRefreshTokenAsync(user.Id, newRefreshToken, newJwtId, userAgent, ipAddress, tokenEntity.TokenFamily, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return BuildAuthenticateResponse(newAccessToken, newRefreshToken);
@@ -113,8 +115,9 @@ public class AuthService : IAuthService
             throw new BadRequestException("Refresh token is required.");
         }
 
+        var tokenHash = _tokenService.HashRefreshToken(request.RefreshToken);
         var tokenEntity = await _dbContext.RefreshTokens
-            .Where(rt => rt.Token == request.RefreshToken)
+            .Where(rt => rt.TokenHash == tokenHash)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (tokenEntity is null)
@@ -137,7 +140,7 @@ public class AuthService : IAuthService
         var accessJwtId = new JwtSecurityTokenHandler().ReadJwtToken(accessToken).Id;
         var refreshToken = _tokenService.GenerateRefreshToken();
 
-        await SaveRefreshTokenAsync(user.Id, refreshToken, accessJwtId, userAgent, ipAddress, cancellationToken);
+        await SaveRefreshTokenAsync(user.Id, refreshToken, accessJwtId, userAgent, ipAddress, null, cancellationToken);
 
         return BuildAuthenticateResponse(accessToken, refreshToken);
     }
@@ -149,18 +152,22 @@ public class AuthService : IAuthService
         ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes)
     };
 
-    private async Task SaveRefreshTokenAsync(int userId, string refreshToken, string jwtId, string? userAgent, string? ipAddress, CancellationToken cancellationToken)
+    private async Task SaveRefreshTokenAsync(int userId, string refreshToken, string jwtId, string? userAgent, string? ipAddress, Guid? tokenFamily, CancellationToken cancellationToken)
     {
+        var tokenHash = _tokenService.HashRefreshToken(refreshToken);
+        var currentTokenFamily = tokenFamily ?? _tokenService.GenerateTokenFamily();
         var tokenEntity = new RefreshTokens
         {
             UserId = userId,
-            Token = refreshToken,
+            TokenHash = tokenHash,
             JwtId = jwtId,
             CreatedAt = DateTime.UtcNow,
             ExpiresAt = DateTime.UtcNow.AddDays(7),
             UserAgent = userAgent,
             IsRevoked = false,
-            CreatedByIp = ipAddress
+            CreatedByIp = ipAddress,
+            TokenFamily = currentTokenFamily,
+            PreviousTokenHash = tokenFamily != null ? tokenHash : null
         };
         var isMobile = IsMobile(userAgent);
         var tokens = await _dbContext.RefreshTokens.Where(x => x.UserId == userId && !x.IsRevoked).ToListAsync();
@@ -195,5 +202,30 @@ public class AuthService : IAuthService
             .Include(x => x.OrganizationUnit)
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == userId && !x.IsDeleted, cancellationToken);
+    }
+
+    public void SetRefreshTokenCookie(HttpContext context, string token)
+    {
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Path = "/",
+            Expires = DateTime.UtcNow.AddDays(7)
+        };
+
+        context.Response.Cookies.Append("refresh_token", token, cookieOptions);
+    }
+
+    public void ClearRefreshTokenCookie(HttpContext context)
+    {
+        context.Response.Cookies.Delete("refresh_token", new CookieOptions
+        {
+            Path = "/",
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict
+        });
     }
 }

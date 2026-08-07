@@ -6,7 +6,7 @@
 
         public int UserId { get; set; }
 
-        public string Token { get; set; } = string.Empty;
+        public string TokenHash { get; set; } = string.Empty;
 
         public string JwtId { get; set; } = string.Empty;
         public string? UserAgent { get; set; }
@@ -22,6 +22,10 @@
         public string? CreatedByIp { get; set; }
 
         public string? ReplacedByToken { get; set; }
+
+        public Guid TokenFamily { get; set; }
+
+        public string? PreviousTokenHash { get; set; }
 
         // Navigation
         public Users User { get; set; } = null!;

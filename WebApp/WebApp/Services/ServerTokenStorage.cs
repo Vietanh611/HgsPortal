@@ -13,17 +13,12 @@ public class ServerTokenStorage : WebApp.Client.Services.Data.ITokenStorage
         return Task.FromResult<string?>(null);
     }
 
-    public Task<string?> GetRefreshTokenAsync()
-    {
-        return Task.FromResult<string?>(null);
-    }
-
     public Task<DateTime?> GetExpiresAtAsync()
     {
         return Task.FromResult<DateTime?>(null);
     }
 
-    public Task SetTokensAsync(string accessToken, string refreshToken, DateTime expiresAt)
+    public Task SetAccessTokenAsync(string accessToken, DateTime expiresAt)
     {
         // No-op on server side
         return Task.CompletedTask;
