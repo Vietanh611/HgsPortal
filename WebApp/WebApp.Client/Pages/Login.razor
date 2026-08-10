@@ -216,13 +216,20 @@
         try
         {
             var loginResult = await AuthStateProvider.LoginAsync(loginRequest.Username, loginRequest.Password);
-            
+
             if (loginResult == null)
             {
                 errorMessage = "Invalid username or password.";
                 return;
             }
-            
+
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated != true)
+            {
+                errorMessage = "Login succeeded but authentication state is not ready yet. Please try again.";
+                return;
+            }
+
             // Handle Remember Me
             if (rememberMe)
             {
@@ -236,7 +243,7 @@
             }
 
             // Navigate to home page
-            Navigation.NavigateTo("home");
+            Navigation.NavigateTo("/home", forceLoad: true);
         }
         catch (Exception ex)
         {

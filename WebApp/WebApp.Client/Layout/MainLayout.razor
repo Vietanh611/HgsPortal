@@ -12,6 +12,7 @@
 @inject JwtTokenService JwtService
 @inject NavigationManager Navigation
 @inject IServiceProvider ServiceProvider
+@inject AuthService AuthService
 
 <CascadingAuthenticationState>
     <div class="bb-page">
@@ -41,7 +42,37 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadUserMenus();
+        isLoadingMenus = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        try
+        {
+            var refreshed = await AuthService.RefreshAccessTokenAsync();
+            if (!refreshed)
+            {
+                await TokenStorage.ClearTokensAsync();
+                userMenus = new List<MenusGetByUserIdResponse>();
+                isLoadingMenus = false;
+                StateHasChanged();
+                return;
+            }
+
+            await LoadUserMenus();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error during initial auth refresh: {ex.Message}");
+            userMenus = new List<MenusGetByUserIdResponse>();
+            isLoadingMenus = false;
+            StateHasChanged();
+        }
     }
 
     private async Task LoadUserMenus()
@@ -59,7 +90,15 @@
             }
 
             var token = await TokenStorage.GetAccessTokenAsync();
-            var userId = token != null ? JwtService.ExtractUserId(token) : null;
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                userMenus = new List<MenusGetByUserIdResponse>();
+                isLoadingMenus = false;
+                StateHasChanged();
+                return;
+            }
+
+            var userId = JwtService.ExtractUserId(token);
 
             if (!userId.HasValue)
             {
@@ -152,6 +191,15 @@
         }
     }
 
+    private ConfirmDialog? confirmDialog;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && confirmDialog != null)
+        {
+            DialogService.SetConfirmDialog(confirmDialog);
+        }
+    }
 }
     <style>
         :root {
@@ -213,15 +261,3 @@
 
 <Toasts AutoHide="true" Delay="4000" Placement="ToastsPlacement.TopRight" />
 <ConfirmDialog @ref="confirmDialog" />
-
-@code {
-    private ConfirmDialog? confirmDialog;
-
-    protected override void OnAfterRender(bool firstRender)
-    {
-        if (firstRender && confirmDialog != null)
-        {
-            DialogService.SetConfirmDialog(confirmDialog);
-        }
-    }
-}

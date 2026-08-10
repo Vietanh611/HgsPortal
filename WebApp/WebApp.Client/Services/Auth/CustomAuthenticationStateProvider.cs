@@ -86,12 +86,13 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
     public async Task<AuthenticateResponse?> LoginAsync(string username, string password)
     {
         var result = await _authService.LoginAsync(username, password);
-        
+
         if (result != null)
         {
-            NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+            var authState = await GetAuthenticationStateAsync();
+            NotifyAuthenticationStateChanged(Task.FromResult(authState));
         }
-        
+
         return result;
     }
 

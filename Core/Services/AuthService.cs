@@ -210,7 +210,7 @@ public class AuthService : IAuthService
         {
             HttpOnly = true,
             Secure = true,
-            SameSite = SameSiteMode.Strict,
+            SameSite = SameSiteMode.None,
             Path = "/",
             Expires = DateTime.UtcNow.AddDays(7)
         };
@@ -225,7 +225,7 @@ public class AuthService : IAuthService
             Path = "/",
             HttpOnly = true,
             Secure = true,
-            SameSite = SameSiteMode.Strict
+            SameSite = SameSiteMode.None
         });
     }
 }
