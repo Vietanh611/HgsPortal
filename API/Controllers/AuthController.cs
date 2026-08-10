@@ -46,7 +46,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("refresh-token")]
-    [ValidateAntiForgeryToken]
+    [IgnoreAntiforgeryToken]
     public async Task<ActionResult<ApiResponse<AuthenticateResponse>>> RefreshToken(
         CancellationToken cancellationToken)
     {
@@ -74,7 +74,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("logout")]
-    [ValidateAntiForgeryToken]
+    [IgnoreAntiforgeryToken]
     public async Task<ActionResult<ApiResponse>> Logout(
         CancellationToken cancellationToken)
     {

@@ -6,6 +6,7 @@ using WebApp.Client.Services.Auth;
 using WebApp.Client.Services.Data;
 using WebApp.Client.Services.Network;
 using WebApp.Client.Services.Components;
+using WebApp.Client.Services.Network;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.Logging.SetMinimumLevel(LogLevel.Warning);
@@ -25,10 +26,10 @@ var apiBaseUrl = builder.Configuration.GetValue<string>("ApiBaseUrl") ?? "http:/
 builder.Services.AddHttpClient("AuthClient", client =>
 {
     client.BaseAddress = new Uri(apiBaseUrl);
-});
+}).AddHttpMessageHandler<CredentialsHandler>();
 
 // Register token storage
-builder.Services.AddScoped<ITokenStorage, MemoryTokenStorage>();
+builder.Services.AddScoped<ITokenStorage, TokenStorage>();
 
 // Register auth services
 builder.Services.AddScoped<AuthService>();
@@ -43,6 +44,7 @@ builder.Services.AddAuthorizationCore();
 // Register DelegatingHandlers
 builder.Services.AddScoped<AuthorizationHandler>();
 builder.Services.AddScoped<TokenRefreshHandler>();
+builder.Services.AddScoped<CredentialsHandler>();
 
 // Register HttpClient with handlers for ApiClient
 builder.Services.AddHttpClient("ApiClient", client =>

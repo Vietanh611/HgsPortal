@@ -79,7 +79,11 @@ public class AuthService
         finally
         {
             await _tokenStorage.ClearTokensAsync();
-            _navigationManager.NavigateTo("login", forceLoad: true);
+            if (!string.Equals(_navigationManager.Uri, _navigationManager.ToAbsoluteUri("/login").ToString(), StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(_navigationManager.Uri, _navigationManager.ToAbsoluteUri("/").ToString(), StringComparison.OrdinalIgnoreCase))
+            {
+                _navigationManager.NavigateTo("/login", forceLoad: true);
+            }
         }
     }
 

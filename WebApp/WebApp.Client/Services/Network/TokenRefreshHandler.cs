@@ -51,7 +51,16 @@ public class TokenRefreshHandler : DelegatingHandler
                             customProvider.NotifyAuthenticationStateChanged();
                         }
                         
-                        _navigationManager.NavigateTo("login", forceLoad: true);
+                        var currentUri = _navigationManager.Uri;
+                        var loginUri = _navigationManager.ToAbsoluteUri("/login").ToString();
+                        var rootUri = _navigationManager.ToAbsoluteUri("/").ToString();
+
+                        if (!string.Equals(currentUri, loginUri, StringComparison.OrdinalIgnoreCase) &&
+                            !string.Equals(currentUri, rootUri, StringComparison.OrdinalIgnoreCase))
+                        {
+                            _navigationManager.NavigateTo("/login", forceLoad: true);
+                        }
+
                         return new HttpResponseMessage(System.Net.HttpStatusCode.Unauthorized);
                     }
                     

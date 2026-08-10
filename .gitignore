@@ -16,6 +16,8 @@
 #Docs folder
 docs/*
 # Secrets
+appsettings.Production.json
+appsettings.Development.json
 appsettings.Local.json
 appsettings.*.Local.json
 
