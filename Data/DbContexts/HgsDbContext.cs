@@ -1,4 +1,5 @@
 ﻿using Domain.Entities.CustomerSatisfaction;
+using Domain.Entities.DisplayDevices;
 using Domain.Entities.Identity;
 using Domain.Entities.System;
 using Microsoft.EntityFrameworkCore;
@@ -19,6 +20,10 @@ namespace Data.DbContexts
         public DbSet<UserMenus> UserMenus => Set<UserMenus>();
         public DbSet<RoleMenus> RoleMenus => Set<RoleMenus>();
         public DbSet<OrganizationUnits> OrganizationUnits => Set<OrganizationUnits>();
+
+        #region DisplayDevices
+        public DbSet<DisplayDevices> DisplayDevices => Set<DisplayDevices>();
+        #endregion
 
         #region CustomerSatisfaction
         public DbSet<Devices> Devices => Set<Devices>();
