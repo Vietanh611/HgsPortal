@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Domain.Entities.DisplayDevices
 {
-    [Table("DisplayDevices", Schema = "DisplayDevices")]
+    [Table("DisplayDevices")]
     public class DisplayDevices
     {
         [Key]
@@ -19,6 +19,7 @@ namespace Domain.Entities.DisplayDevices
 
         [StringLength(20)]
         public string Status { get; set; } = "ACTIVE";
+        public bool IsEnabled { get; set; } = true;
 
         public DateTime? LastSeenAt { get; set; }
     }

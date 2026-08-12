@@ -110,6 +110,22 @@ public class ApiClient
         return default;
     }
 
+    private Uri BuildRequestUri(string endpoint)
+    {
+        if (string.IsNullOrWhiteSpace(endpoint))
+        {
+            throw new ArgumentException("Endpoint cannot be empty.", nameof(endpoint));
+        }
+
+        if (Uri.TryCreate(endpoint, UriKind.Absolute, out var absoluteUri))
+        {
+            return absoluteUri;
+        }
+
+        var baseUri = _httpClient.BaseAddress ?? new Uri(_navigationManager.BaseUri);
+        return new Uri(baseUri, endpoint.TrimStart('/'));
+    }
+
     public async Task<T?> GetAsync<T>(string endpoint)
     {
         IsLoading = true;
@@ -117,9 +133,10 @@ public class ApiClient
 
         try
         {
+            var requestUri = BuildRequestUri(endpoint);
             var result = await ExecuteWithRetry(async () =>
             {
-                var response = await _httpClient.GetAsync(endpoint);
+                var response = await _httpClient.GetAsync(requestUri);
                 if (await HandleResponse(response))
                 {
                     return await response.Content.ReadFromJsonAsync<T>(_jsonOptions);
@@ -148,11 +165,12 @@ public class ApiClient
 
         try
         {
+            var requestUri = BuildRequestUri(endpoint);
             var result = await ExecuteWithRetry(async () =>
             {
                 var response = data != null
-                    ? await _httpClient.PostAsJsonAsync(endpoint, data, _jsonOptions)
-                    : await _httpClient.PostAsync(endpoint, null);
+                    ? await _httpClient.PostAsJsonAsync(requestUri, data, _jsonOptions)
+                    : await _httpClient.PostAsync(requestUri, null);
 
                 if (await HandleResponse(response))
                 {
@@ -182,9 +200,10 @@ public class ApiClient
 
         try
         {
+            var requestUri = BuildRequestUri(endpoint);
             var result = await ExecuteWithRetry(async () =>
             {
-                var response = await _httpClient.PutAsJsonAsync(endpoint, data, _jsonOptions);
+                var response = await _httpClient.PutAsJsonAsync(requestUri, data, _jsonOptions);
                 if (await HandleResponse(response))
                 {
                     return await response.Content.ReadFromJsonAsync<T>(_jsonOptions);
@@ -213,9 +232,10 @@ public class ApiClient
 
         try
         {
+            var requestUri = BuildRequestUri(endpoint);
             var result = await ExecuteWithRetry(async () =>
             {
-                var response = await _httpClient.DeleteAsync(endpoint);
+                var response = await _httpClient.DeleteAsync(requestUri);
                 if (await HandleResponse(response))
                 {
                     return await response.Content.ReadFromJsonAsync<T>(_jsonOptions);

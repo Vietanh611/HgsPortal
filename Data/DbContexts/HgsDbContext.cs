@@ -1,4 +1,5 @@
 ﻿using Domain.Entities.CustomerSatisfaction;
+using Domain.Entities.CoreAssets;
 using Domain.Entities.DisplayDevices;
 using Domain.Entities.Identity;
 using Domain.Entities.System;
@@ -23,6 +24,10 @@ namespace Data.DbContexts
 
         #region DisplayDevices
         public DbSet<DisplayDevices> DisplayDevices => Set<DisplayDevices>();
+        #endregion
+
+        #region CoreAssets
+        public DbSet<CoreAssets> CoreAssets => Set<CoreAssets>();
         #endregion
 
         #region CustomerSatisfaction

@@ -1,0 +1,159 @@
+.arrival-display-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+    table-layout: fixed;
+    /* Không cho CSS table chung ảnh hưởng */
+    margin: 0;
+    padding: 0;
+    font-family: "Times New Roman", serif;
+}
+
+/* HEADER */
+
+.arrival-display-table thead {
+    background-color: #29499b;
+}
+
+html {
+    background-color: white;
+}
+
+.container-fluid {
+    background-color: white;
+}
+
+.card {
+    box-shadow: none !important;
+}
+
+.arrival-display-table thead tr {
+    height: 80px;
+}
+
+.arrival-display-table thead th {
+    background-color: #29499b !important;
+    color: #ffffff !important;
+    border: none !important;
+    /*padding: 8px 15px;*/
+    font-size: 28px;
+    font-weight: 400;
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+/* BODY */
+
+.arrival-display-table tbody tr {
+    height: 90px;
+}
+
+.arrival-display-table tbody td {
+    border: none !important;
+    /*padding: 8px 15px;*/
+    font-size: 26px;
+    font-weight: 500;
+    text-align: center;
+    vertical-align: middle;
+    background-color: #ffffff !important;
+    color: #444444 !important;
+}
+
+/* Không cho Bootstrap table-striped/table-hover can thiệp */
+
+.arrival-display-table tbody tr:nth-of-type(odd) td,
+.arrival-display-table tbody tr:nth-of-type(even) td {
+    background-color: #ffffff !important;
+}
+
+.arrival-display-table tbody tr:hover td {
+    background-color: #ffffff !important;
+}
+
+/* ============================================
+   COLUMN WIDTH
+   ============================================ */
+
+.arrival-display-table th:nth-child(1),
+.arrival-display-table td:nth-child(1) {
+    width: 25%;
+}
+
+.arrival-display-table th:nth-child(2),
+.arrival-display-table td:nth-child(2) {
+    width: 25%;
+}
+
+.arrival-display-table th:nth-child(3),
+.arrival-display-table td:nth-child(3) {
+    width: 25%;
+}
+
+.arrival-display-table th:nth-child(4),
+.arrival-display-table td:nth-child(4) {
+    width: 25%;
+}
+
+.current-flights-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.current-flights-title {
+    margin: 0;
+    color: #29499b;
+    font-size: 42px;
+    font-weight: 900;
+    text-align: center;
+}
+
+.card-header:has(.current-flights-title) {
+    background: transparent;
+    border: none;
+}
+
+.arrival-item {
+    width: 100%;
+    position: relative;
+}
+
+.arrival-logo {
+    display: flex;
+    justify-content: left;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 5px;
+    background-color: white;
+}
+
+    .arrival-logo img {
+        max-height: 80px;
+        max-width: 250px;
+        object-fit: contain;
+    }
+
+.display-image {
+    max-width: 100%;
+    max-height: 100vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+}
+
+.route {
+    font-size: 1.2rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.city {
+    font-size: 0.8rem;
+    font-weight: 400;
+    line-height: 1.2;
+}
+
+.route-city {
+    text-align: center;
+}

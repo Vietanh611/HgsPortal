@@ -1,0 +1,200 @@
+﻿@page "/display/InternationalBaggageArrivalDisplay"
+@layout EmptyLayout
+@using Hgs.Share.Dtos
+@using Hgs.Share.Responses.ApiResponses
+@using Hgs.Share.Responses.CoreAssets
+@using WebApp.Client.Services.Network
+@inject ApiClient ApiClient
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<link href="css/baggage-display.css" rel="stylesheet" />
+
+<div class="container-fluid display-page">
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (errorMessage != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @errorMessage
+        </div>
+    }
+    else
+    {
+        <div>
+            @if (!isLoading)
+            {
+                <Carousel ShowIndicators="true"
+                          Crossfade="true"
+                          Interval="5000"
+                          Autoplay="CarouselAutoPlay.StartOnPageLoad">
+                    @if (images != null && images.Any())
+                    {
+                        @foreach (var image in images)
+                        {
+                            <CarouselItem>
+                                <div class="d-flex justify-content-center align-items-center w-100">
+                                    <img src="@image.StoragePath"
+                                         class="display-image"
+                                         alt="@image.FileName" />
+                                </div>
+                            </CarouselItem>
+                        }
+                    }
+
+                    <CarouselItem class="active">
+                        <div class="arrival-item">
+                            <div class="arrival-logo">
+                                <img src="@($"{Navigation.BaseUri}assets/hgs/new%20logo/logo.png")"
+                                     alt="HGS" />
+                            </div>
+                            <div class="card">
+                                <div class="card-header current-flights-header">
+                                    <h5 class="mb-0 current-flights-title">NOW HANDLING</h5>
+                                </div>
+                                <div class="card-body">
+                                    @if (baggageData != null && baggageData.Any())
+                                    {
+                                        <div class="table-responsive ">
+                                            <table class="arrival-display-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>✈ Carrier</th>
+                                                        <th>✈ Flight</th>
+                                                        <th>🛫 Depart From</th>
+                                                        <th>🧳 Belt No.</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var baggage in baggageData)
+                                                    {
+                                                        <tr>
+                                                            <td>
+                                                                <img src="@($"{Navigation.BaseUri}{baggage.Path}")"
+                                                                     alt="Logo"
+                                                                     class="img-fluid"
+                                                                     style="max-height: 50px;" />
+                                                            </td>
+                                                            <td>@baggage.FlightNo</td>
+                                                            <td>
+                                                                <div class="route-city">
+                                                                    <div class="route">@baggage.Route</div>
+                                                                    <div class="city">@baggage.NameCity</div>
+                                                                </div>
+                                                            </td>
+                                                            <td>
+                                                                @if (!string.IsNullOrEmpty(baggage.Belt))
+                                                                {
+                                                                    <span>@baggage.Belt</span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span class="text-muted">N/A</span>
+                                                                }
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="text-center text-muted py-5">
+                                            <i class="bi bi-info-circle" style="font-size: 3rem;"></i>
+                                            <p class="mt-2">No baggage arrival data available</p>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </CarouselItem>
+                </Carousel>
+            }
+
+        </div>
+    }
+</div>
+
+@code {
+    private List<BaggageArrivalDisplayDto>? baggageData;
+    private List<CoreAssetsGetAllResponse>? images;
+    private bool isLoading = true;
+    private string? errorMessage;
+    private int carouselKey = 0;
+    private PeriodicTimer? timer;
+    private CancellationTokenSource? cts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        cts = new CancellationTokenSource();
+        await LoadData();
+        isLoading = false;
+        timer = new PeriodicTimer(TimeSpan.FromMinutes(1));
+
+        _ = PollAsync(cts.Token);
+    }
+
+    private async Task PollAsync(CancellationToken token)
+    {
+        try
+        {
+            while (await timer!.WaitForNextTickAsync(token))
+            {
+                await InvokeAsync(LoadData);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        cts?.Cancel();
+        timer?.Dispose();
+        cts?.Dispose();
+
+        return ValueTask.CompletedTask;
+    }
+
+    private async Task LoadData()
+    {
+        errorMessage = null;
+
+        try
+        {
+            var baggageResponse = await ApiClient.GetAsync<ApiResponse<IEnumerable<BaggageArrivalDisplayDto>>>("api/display/GetInternationalBaggageArrivalDisplay");
+
+            if (baggageResponse != null && baggageResponse.Success && baggageResponse.Data != null)
+            {
+                baggageData = baggageResponse.Data.ToList();
+            }
+
+            var assetsResponse = await ApiClient.GetAsync<ApiResponse<IEnumerable<CoreAssetsGetAllResponse>>>("api/coreassets");
+            if (assetsResponse != null && assetsResponse.Success && assetsResponse.Data != null)
+            {
+                images = assetsResponse.Data
+                    .Where(a => a.Code == "ARRIVAL_DISPLAY" && a.IsActive)
+                    .ToList();
+            }
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading data: {ex.Message}";
+        }
+        finally
+        {
+            carouselKey++;
+        }
+    }
+
+}

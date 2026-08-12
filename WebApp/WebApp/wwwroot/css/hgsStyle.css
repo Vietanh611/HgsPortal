@@ -518,3 +518,17 @@ article {
         transition-duration: 0.01ms !important;
     }
 }
+
+
+/*FLIGHT DISPLAY PAGE fonT*/
+@font-face {
+    font-family: 'MyFont';
+    src: url('/fonts/PaytoneOne-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+.display-page,
+.display-page * {
+    font-family: 'MyFont', sans-serif !important;
+}

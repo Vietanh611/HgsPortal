@@ -2,11 +2,10 @@ using BlazorBootstrap;
 using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.AuditLogs;
 using Microsoft.AspNetCore.Components;
-using WebApp.Client.Services.Components;
 using WebApp.Client.Services.Network;
-using AuditDetailModal = WebApp.Client.Pages.Audit.AuditDetailModal;
+using AuditDetailModal = WebApp.Client.Pages.SystemPages.Audit.AuditDetailModal;
 
-namespace WebApp.Client.Pages.Audit;
+namespace WebApp.Client.Pages.SystemPages.Audit;
 
 public partial class Audit : ComponentBase
 {

@@ -1,5 +1,6 @@
 @using Hgs.Share.Responses.AuditLogs
 @using BlazorBootstrap
+@using global::System.Text.Json
 
 <Modal @ref="modal" Title="Audit Log Details" OnClose="Close" Size="ModalSize.Large">
     <BodyTemplate>
@@ -86,8 +87,8 @@
 
         try
         {
-            using var document = System.Text.Json.JsonDocument.Parse(json);
-            return System.Text.Json.JsonSerializer.Serialize(document, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+            using var document = JsonDocument.Parse(json);
+            return JsonSerializer.Serialize(document, new JsonSerializerOptions { WriteIndented = true });
         }
         catch
         {

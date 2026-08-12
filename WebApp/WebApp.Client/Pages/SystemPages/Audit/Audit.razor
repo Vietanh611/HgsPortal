@@ -1,9 +1,7 @@
 @page "/audit"
+@namespace WebApp.Client.Pages.SystemPages.Audit
 @using Hgs.Share.Responses.AuditLogs
 @using BlazorBootstrap
-
-@inject HttpClient Http
-@inject NavigationManager Navigation
 
 <PageTitle>Audit Logs</PageTitle>
 
@@ -31,7 +29,7 @@
                     else
                     {
                         <Grid TItem="AuditLogsGetAllResponse" Data="auditLogs" AllowPaging="true" AllowSorting="true" Responsive="true"
-                              Class="table table-hover table-bordered table-striped" PageSize="pageSize" TotalItems="totalCount">
+                              Class="table table-hover table-bordered table-striped" PageSize="@pageSize" TotalItems="@totalCount">
                             <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="ID" SortKeyExpression="item => item.Id">
                                 @context.Id
                             </GridColumn>

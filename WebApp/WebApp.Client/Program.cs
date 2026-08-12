@@ -2,10 +2,10 @@ using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using WebApp.Client.Services;
 using WebApp.Client.Services.Auth;
-using WebApp.Client.Services.Data;
-using WebApp.Client.Services.Network;
 using WebApp.Client.Services.Components;
+using WebApp.Client.Services.Data;
 using WebApp.Client.Services.Network;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -30,6 +30,9 @@ builder.Services.AddHttpClient("AuthClient", client =>
 
 // Register token storage
 builder.Services.AddScoped<ITokenStorage, TokenStorage>();
+
+// Register menu cache service
+builder.Services.AddScoped<IMenuCacheService, MenuCacheService>();
 
 // Register auth services
 builder.Services.AddScoped<AuthService>();

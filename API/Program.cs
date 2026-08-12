@@ -44,6 +44,9 @@ builder.Services.AddScoped<IRoleMenuService, RoleMenuService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<IPermissionDelegationService, PermissionDelegationService>();
 builder.Services.AddScoped<ICacheService, CacheService>();
+builder.Services.AddScoped<IDisplayDevicesService, DisplayDevicesService>();
+builder.Services.AddScoped<ICoreAssetsService, CoreAssetsService>();
+builder.Services.AddScoped<IDisplayService, DisplayService>();
 
 builder.Services.AddHttpContextAccessor();
 var rateLimitSettings = builder.Configuration.GetSection("RateLimiting");

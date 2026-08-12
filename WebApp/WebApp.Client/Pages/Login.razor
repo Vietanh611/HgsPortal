@@ -16,11 +16,11 @@
         if (firstRender)
         {
             // Check if user is already authenticated
-            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-            if (authState.User.Identity?.IsAuthenticated == true)
-            {
-                Navigation.NavigateTo("home", forceLoad: true);
-            }
+            // var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            // if (authState.User.Identity?.IsAuthenticated == true)
+            // {
+            //     Navigation.NavigateTo("home", forceLoad: true);
+            // }
             
             await LoadRememberedCredentials();
         }

@@ -1,11 +1,12 @@
-using WebApp.Client.Services.Auth;
-using WebApp.Client.Services.Data;
-using WebApp.Client.Services.Network;
-using WebApp.Client.Services.Components;
-using WebApp.Components;
-using WebApp.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Serilog;
+using WebApp.Client.Services;
+using WebApp.Client.Services.Auth;
+using WebApp.Client.Services.Components;
+using WebApp.Client.Services.Data;
+using WebApp.Client.Services.Network;
+using WebApp.Components;
+using WebApp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +27,7 @@ builder.Services.AddAntiforgery();
 // Register services needed for prerendering (WebAssembly components)
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<ITokenStorage, ServerTokenStorage>();
+builder.Services.AddScoped<IMenuCacheService, ServerMenuCacheService>();
 builder.Services.AddScoped<AuthenticationStateProvider, ServerAuthenticationStateProvider>();
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<JwtTokenService>();
@@ -48,6 +50,7 @@ builder.Services.AddHttpClient("ApiClient", client =>
 builder.Services.AddScoped<CustomAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<TokenRefreshService>();
+
 builder.Services.AddScoped<LocalStorageService>();
 builder.Services.AddScoped<ApiClient>();
 

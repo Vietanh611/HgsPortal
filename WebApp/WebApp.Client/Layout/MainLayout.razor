@@ -1,4 +1,6 @@
 @inherits LayoutComponentBase
+@implements IAsyncDisposable
+@using WebApp.Client.Services
 @using WebApp.Client.Services.Auth
 @using WebApp.Client.Services.Data
 @using WebApp.Client.Services.Network
@@ -9,148 +11,212 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @inject DialogService DialogService
 @inject ITokenStorage TokenStorage
+@inject IMenuCacheService MenuCacheService
 @inject JwtTokenService JwtService
 @inject NavigationManager Navigation
 @inject IServiceProvider ServiceProvider
 @inject AuthService AuthService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <CascadingAuthenticationState>
     <div class="bb-page">
-    @if (!isLoadingMenus)
-    {
         <Sidebar @ref="sidebar"
                  DataProvider="SidebarDataProvider"
                  ImageSrc="@($"{Navigation.BaseUri}assets/hgs/new%20logo/logoWhite.png")"
                  Title="HGS PORTAL"
                  IsResponsive="true" />
-    }
-    
 
-    <main>
-        <article class="content px-1">
-           @Body
-        </article>
-    </main>
-
+        <main>
+            <article class="content px-1">
+                @Body
+            </article>
+        </main>
     </div>
 </CascadingAuthenticationState>
+
 @code {
-    IEnumerable<NavItem>? navItems;
+    private readonly TaskCompletionSource<bool> _menuLoaded =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
+
     List<MenusGetByUserIdResponse> userMenus = new();
     Sidebar? sidebar;
-    private bool isLoadingMenus = true;
+    private bool _isLoadingMenus = false;
 
     protected override async Task OnInitializedAsync()
     {
-        isLoadingMenus = true;
-    }
+        Console.WriteLine("OnInitializedAsync started");
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (!firstRender)
-        {
-            return;
-        }
+        // Subscribe to authentication state changes
+        AuthenticationStateProvider.AuthenticationStateChanged += OnAuthenticationStateChanged;
 
         try
         {
             var refreshed = await AuthService.RefreshAccessTokenAsync();
             if (!refreshed)
             {
+                Console.WriteLine("RefreshAccessTokenAsync failed, clearing tokens");
                 await TokenStorage.ClearTokensAsync();
                 userMenus = new List<MenusGetByUserIdResponse>();
-                isLoadingMenus = false;
-                StateHasChanged();
+                _menuLoaded.TrySetResult(true);
                 return;
             }
 
+            Console.WriteLine("RefreshAccessTokenAsync succeeded, loading menus");
             await LoadUserMenus();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error during initial auth refresh: {ex.Message}");
             userMenus = new List<MenusGetByUserIdResponse>();
-            isLoadingMenus = false;
-            StateHasChanged();
         }
+        finally
+        {
+            Console.WriteLine("OnInitializedAsync completed, signaling menu loaded");
+            _menuLoaded.TrySetResult(true);
+        }
+    }
+
+    private async void OnAuthenticationStateChanged(Task<AuthenticationState> task)
+    {
+        try
+        {
+            var authState = await task;
+            Console.WriteLine($"AuthenticationStateChanged: IsAuthenticated={authState.User.Identity?.IsAuthenticated}");
+
+            if (authState.User.Identity?.IsAuthenticated == true)
+            {
+                // Avoid duplicate API call if we're already loading menus
+                if (!_isLoadingMenus)
+                {
+                    await LoadUserMenus();
+                }
+            }
+            else
+            {
+                Console.WriteLine("User unauthenticated, clearing menus");
+                userMenus = new List<MenusGetByUserIdResponse>();
+                await MenuCacheService.ClearCachedMenusAsync();
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error handling authentication state change: {ex.Message}");
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        AuthenticationStateProvider.AuthenticationStateChanged -= OnAuthenticationStateChanged;
     }
 
     private async Task LoadUserMenus()
     {
+        if (_isLoadingMenus)
+        {
+            Console.WriteLine("LoadUserMenus already in progress, skipping");
+            return;
+        }
+
+        _isLoadingMenus = true;
+        Console.WriteLine("LoadUserMenus started");
+
         try
         {
+            // Try to get cached menus first
+            var cachedMenus = await MenuCacheService.GetCachedMenusAsync();
+            if (cachedMenus != null && cachedMenus.Any())
+            {
+                Console.WriteLine($"Loaded {cachedMenus.Count} menus from cache");
+                userMenus = cachedMenus;
+                StateHasChanged();
+                return;
+            }
+
+            Console.WriteLine("No cache found, calling API");
+
             // Skip API calls during server-side prerendering
             var apiClient = ServiceProvider.GetService<ApiClient>();
             if (apiClient == null)
             {
+                Console.WriteLine("ApiClient not available (server-side prerendering)");
                 userMenus = new List<MenusGetByUserIdResponse>();
-                isLoadingMenus = false;
-                StateHasChanged();
                 return;
             }
 
             var token = await TokenStorage.GetAccessTokenAsync();
             if (string.IsNullOrWhiteSpace(token))
             {
+                Console.WriteLine("No access token available");
                 userMenus = new List<MenusGetByUserIdResponse>();
-                isLoadingMenus = false;
-                StateHasChanged();
                 return;
             }
 
             var userId = JwtService.ExtractUserId(token);
-
             if (!userId.HasValue)
             {
+                Console.WriteLine("Could not extract userId from token");
                 userMenus = new List<MenusGetByUserIdResponse>();
-                isLoadingMenus = false;
-                StateHasChanged();
                 return;
             }
 
+            Console.WriteLine($"Calling API for user {userId.Value}");
             var response = await apiClient.GetAsync<ApiResponse<IEnumerable<MenusGetByUserIdResponse>>>($"api/menus/user/{userId.Value}");
             if (response != null && response.Success && response.Data != null)
             {
                 userMenus = response.Data.ToList();
+                Console.WriteLine($"Loaded {userMenus.Count} menus from API");
+                // Cache the menus for future use
+                await MenuCacheService.SetCachedMenusAsync(userMenus);
+            }
+            else
+            {
+                Console.WriteLine($"API call failed or returned no data: Success={response?.Success}");
+                userMenus = new List<MenusGetByUserIdResponse>();
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading user menus: {ex.Message}");
+            userMenus = new List<MenusGetByUserIdResponse>();
         }
         finally
         {
-            isLoadingMenus = false;
-            StateHasChanged();
+            _isLoadingMenus = false;
+            Console.WriteLine("LoadUserMenus completed");
         }
     }
-  
 
     private async Task<SidebarDataProviderResult> SidebarDataProvider(SidebarDataProviderRequest request)
     {
-        if (navItems is null)
-            navItems = GetNavItems();
+        await _menuLoaded.Task;
+        var items = GetNavItems().ToList();
 
-        return await Task.FromResult(request.ApplyTo(navItems));
+        return request.ApplyTo(items);
     }
- 
 
     private IEnumerable<NavItem> GetNavItems()
     {
         var items = new List<NavItem>
         {
-            new NavItem { Id = "1", Href = "home", IconName = IconName.HouseDoorFill, Text = "Dashboard"},
+            new NavItem
+            {
+                Id = "dashboard",
+                Href = "home",
+                IconName = IconName.HouseDoorFill,
+                Text = "Dashboard"
+            }
         };
 
         // Dynamic menu based on user permissions from API
-        if (!isLoadingMenus && userMenus.Any())
+        if (userMenus.Any())
         {
             // Build menu tree from API data (API already returns hierarchical structure)
-            foreach (var menu in userMenus.Where(m => m.ParentId == null))
+            foreach (var menu in userMenus.Where(m => m.ParentId == null && m.IsVisible && m.IsActive))
             {
                 var navItem = CreateNavItem(menu);
                 items.Add(navItem);
-                
+
                 // Add children recursively if has children
                 if (menu.Children != null && menu.Children.Any() && !string.IsNullOrEmpty(navItem.Id))
                 {
@@ -159,8 +225,7 @@
             }
         }
 
-        navItems = items;
-        return navItems;
+        return items;
     }
 
     private NavItem CreateNavItem(MenusGetByUserIdResponse menu)
@@ -182,7 +247,7 @@
             var navItem = CreateNavItem(child);
             navItem.ParentId = parentId;
             items.Add(navItem);
-            
+
             // Recursive for nested children
             if (!string.IsNullOrEmpty(navItem.Id))
             {
@@ -201,63 +266,48 @@
         }
     }
 }
-    <style>
-        :root {
-            /* Sidebar */
-            --bb-sidebar-width: 270px;
-            --bb-sidebar-collapsed-width: 60px;
-            /* Background */
-            --bb-sidebar-background-color: #17479E;
-            --bb-sidebar-top-row-background-color: #123A82;
-            --bb-sidebar-content-border-color: rgba(255,255,255,.15);
-            /* Brand */
-            --bb-sidebar-title-text-color: #FFFFFF;
-            --bb-sidebar-brand-icon-color: #F58220;
-            --bb-sidebar-brand-image-width: 70px;
-            --bb-sidebar-brand-image-height: 28px;
-            /* Badge */
-            --bb-sidebar-title-badge-text-color: #FFFFFF;
-            --bb-sidebar-title-badge-background-color: #F58220;
-            /* Toggle */
-            --bb-sidebar-navbar-toggler-icon-color: #FFFFFF;
-            --bb-sidebar-navbar-toggler-background-color: rgba(255,255,255,.1);
-            /* Menu */
-            --bb-sidebar-nav-item-text-color: rgba(255,255,255,.85);
-            --bb-sidebar-nav-item-text-hover-color: #FFFFFF;
-            --bb-sidebar-nav-item-text-active-color: #FFFFFF;
-            /* Active / Hover */
+
+<style>
+    :root {
+        /* Sidebar */
+        --bb-sidebar-width: 270px;
+        --bb-sidebar-collapsed-width: 60px;
+        /* Background */
+        --bb-sidebar-background-color: #17479E;
+        --bb-sidebar-top-row-background-color: #123A82;
+        --bb-sidebar-content-border-color: rgba(255,255,255,.15);
+        /* Brand */
+        --bb-sidebar-title-text-color: #FFFFFF;
+        --bb-sidebar-brand-icon-color: #F58220;
+        --bb-sidebar-brand-image-width: 70px;
+        --bb-sidebar-brand-image-height: 28px;
+        /* Badge */
+        --bb-sidebar-title-badge-text-color: #FFFFFF;
+        --bb-sidebar-title-badge-background-color: #F58220;
+        /* Toggle */
+        --bb-sidebar-navbar-toggler-icon-color: #FFFFFF;
+        --bb-sidebar-navbar-toggler-background-color: rgba(255,255,255,.1);
+        /* Menu */
+        --bb-sidebar-nav-item-text-color: rgba(255,255,255,.85);
+        --bb-sidebar-nav-item-text-hover-color: #FFFFFF;
+        --bb-sidebar-nav-item-text-active-color: #FFFFFF;
+        /* Active / Hover */
         --bb-sidebar-nav-item-background-hover-color: #F58220;
-            /* --bb-sidebar-nav-item-group-background-color: rgba(255,255,255,.08); */
-            /* Border */
-            --bb-sidebar-top-row-border-color: rgba(255,255,255,.15);
-        }
+        /* --bb-sidebar-nav-item-group-background-color: rgba(255,255,255,.08); */
+        /* Border */
+        --bb-sidebar-top-row-border-color: rgba(255,255,255,.15);
+    }
 
-        .bb-top-row {
-            background: #ffffff;
-            border-bottom: 1px solid #D6E4F5;
-        }
+    .bb-top-row {
+        background: #ffffff;
+        border-bottom: 1px solid #D6E4F5;
+    }
 
-        .content {
-            background: #F8F9FA;
-            min-height: 100vh;
-        }
-    </style>
-
-@* <div class="d-flex min-vh-100">
-    <NavMenu />
-
-    <main class="flex-grow-1">
-        <div class="container-fluid py-4 pt-5 mt-5">
-            @Body
-        </div>
-    </main>
-</div>
-
-<div id="blazor-error-ui">
-    An unhandled error has occurred.
-    <a href="" class="reload">Reload</a>
-    <a class="dismiss">🗙</a>
-</div> *@
+    .content {
+        background: #F8F9FA;
+        min-height: 100vh;
+    }
+</style>
 
 <Toasts AutoHide="true" Delay="4000" Placement="ToastsPlacement.TopRight" />
 <ConfirmDialog @ref="confirmDialog" />

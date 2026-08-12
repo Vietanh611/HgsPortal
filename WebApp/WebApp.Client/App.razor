@@ -1,7 +1,7 @@
-﻿@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
 @using WebApp.Client.Components
 
-<Router AppAssembly="typeof(Program).Assembly">
+<Router AppAssembly="@typeof(Program).Assembly">
     <Found Context="routeData">
         @if (routeData.PageType == typeof(WebApp.Client.Pages.Login))
         {
