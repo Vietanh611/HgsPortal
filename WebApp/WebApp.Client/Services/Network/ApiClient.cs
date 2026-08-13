@@ -36,17 +36,22 @@ public class ApiClient
             var currentUri = _navigationManager.Uri;
             var loginUri = _navigationManager.ToAbsoluteUri("/login").ToString();
             var rootUri = _navigationManager.ToAbsoluteUri("/").ToString();
+            var domesticDisplayUri = _navigationManager.ToAbsoluteUri("/display/DomesticBaggageArrivalDisplay").ToString();
+            var internationalDisplayUri = _navigationManager.ToAbsoluteUri("/display/InternationalBaggageArrivalDisplay").ToString();
 
+            // Don't redirect to login if on display pages (public pages)
             if (!string.Equals(currentUri, loginUri, StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(currentUri, rootUri, StringComparison.OrdinalIgnoreCase))
+                !string.Equals(currentUri, rootUri, StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(currentUri, domesticDisplayUri, StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(currentUri, internationalDisplayUri, StringComparison.OrdinalIgnoreCase))
             {
                 Console.WriteLine("401 Unauthorized - Redirecting to login");
                 await _tokenStorage.ClearTokensAsync();
-                _navigationManager.NavigateTo("/login", forceLoad: true);
+                _navigationManager.NavigateTo("login", forceLoad: true);
             }
             else
             {
-                Console.WriteLine("401 Unauthorized - Staying on login page");
+                Console.WriteLine("401 Unauthorized - Staying on current page (login or display page)");
             }
 
             return false;

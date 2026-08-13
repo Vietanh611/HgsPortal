@@ -1,0 +1,22 @@
+{
+  "id": "/portal/display/DomesticBaggageArrivalDisplay",
+  "name": "HGS - Domestic Arrival",
+  "short_name": "Domestic Arrival",
+  "start_url": "/portal/display/DomesticBaggageArrivalDisplay",
+  "scope": "/portal/display/DomesticBaggageArrivalDisplay",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#17479E",
+  "icons": [
+    {
+      "src": "/portal/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/portal/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

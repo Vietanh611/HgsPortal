@@ -1,7 +1,7 @@
+using Hgs.Share.Responses;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using System.Security.Claims;
-using Hgs.Share.Responses;
 
 namespace WebApp.Client.Services.Auth;
 
@@ -39,7 +39,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
             {
                 Console.WriteLine("Access token expired or expiring soon, attempting refresh...");
                 var refreshResult = await _authService.RefreshAccessTokenAsync();
-                
+
                 if (refreshResult)
                 {
                     token = await _tokenStorage.GetAccessTokenAsync();
@@ -53,7 +53,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
                     return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
                 }
             }
-            
+
             if (string.IsNullOrEmpty(token))
             {
                 return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
@@ -73,7 +73,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
 
             var identity = new ClaimsIdentity(claims, "jwt");
             var principal = new ClaimsPrincipal(identity);
-            
+
             return new AuthenticationState(principal);
         }
         catch (Exception ex)
@@ -89,8 +89,8 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
 
         if (result != null)
         {
-            var authState = await GetAuthenticationStateAsync();
-            NotifyAuthenticationStateChanged(Task.FromResult(authState));
+            //var authState = await GetAuthenticationStateAsync();
+            //NotifyAuthenticationStateChanged(Task.FromResult(authState));
         }
 
         return result;

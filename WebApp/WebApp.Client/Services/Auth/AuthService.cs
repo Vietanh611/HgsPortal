@@ -79,10 +79,19 @@ public class AuthService
         finally
         {
             await _tokenStorage.ClearTokensAsync();
-            if (!string.Equals(_navigationManager.Uri, _navigationManager.ToAbsoluteUri("/login").ToString(), StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(_navigationManager.Uri, _navigationManager.ToAbsoluteUri("/").ToString(), StringComparison.OrdinalIgnoreCase))
+            var currentUri = _navigationManager.Uri;
+            var loginUri = _navigationManager.ToAbsoluteUri("/login").ToString();
+            var rootUri = _navigationManager.ToAbsoluteUri("/").ToString();
+            var domesticDisplayUri = _navigationManager.ToAbsoluteUri("/display/DomesticBaggageArrivalDisplay").ToString();
+            var internationalDisplayUri = _navigationManager.ToAbsoluteUri("/display/InternationalBaggageArrivalDisplay").ToString();
+
+            // Don't redirect to login if on display pages (public pages)
+            if (!string.Equals(currentUri, loginUri, StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(currentUri, rootUri, StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(currentUri, domesticDisplayUri, StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(currentUri, internationalDisplayUri, StringComparison.OrdinalIgnoreCase))
             {
-                _navigationManager.NavigateTo("/login", forceLoad: true);
+                _navigationManager.NavigateTo("login", forceLoad: true);
             }
         }
     }

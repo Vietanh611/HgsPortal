@@ -44,8 +44,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        Console.WriteLine("OnInitializedAsync started");
-
         // Subscribe to authentication state changes
         AuthenticationStateProvider.AuthenticationStateChanged += OnAuthenticationStateChanged;
 
@@ -54,24 +52,21 @@
             var refreshed = await AuthService.RefreshAccessTokenAsync();
             if (!refreshed)
             {
-                Console.WriteLine("RefreshAccessTokenAsync failed, clearing tokens");
                 await TokenStorage.ClearTokensAsync();
                 userMenus = new List<MenusGetByUserIdResponse>();
                 _menuLoaded.TrySetResult(true);
                 return;
             }
 
-            Console.WriteLine("RefreshAccessTokenAsync succeeded, loading menus");
             await LoadUserMenus();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error during initial auth refresh: {ex.Message}");
+           
             userMenus = new List<MenusGetByUserIdResponse>();
         }
         finally
         {
-            Console.WriteLine("OnInitializedAsync completed, signaling menu loaded");
             _menuLoaded.TrySetResult(true);
         }
     }
@@ -81,7 +76,6 @@
         try
         {
             var authState = await task;
-            Console.WriteLine($"AuthenticationStateChanged: IsAuthenticated={authState.User.Identity?.IsAuthenticated}");
 
             if (authState.User.Identity?.IsAuthenticated == true)
             {
@@ -93,7 +87,6 @@
             }
             else
             {
-                Console.WriteLine("User unauthenticated, clearing menus");
                 userMenus = new List<MenusGetByUserIdResponse>();
                 await MenuCacheService.ClearCachedMenusAsync();
                 StateHasChanged();
@@ -114,12 +107,10 @@
     {
         if (_isLoadingMenus)
         {
-            Console.WriteLine("LoadUserMenus already in progress, skipping");
             return;
         }
 
         _isLoadingMenus = true;
-        Console.WriteLine("LoadUserMenus started");
 
         try
         {
@@ -127,19 +118,15 @@
             var cachedMenus = await MenuCacheService.GetCachedMenusAsync();
             if (cachedMenus != null && cachedMenus.Any())
             {
-                Console.WriteLine($"Loaded {cachedMenus.Count} menus from cache");
                 userMenus = cachedMenus;
                 StateHasChanged();
                 return;
             }
 
-            Console.WriteLine("No cache found, calling API");
-
             // Skip API calls during server-side prerendering
             var apiClient = ServiceProvider.GetService<ApiClient>();
             if (apiClient == null)
             {
-                Console.WriteLine("ApiClient not available (server-side prerendering)");
                 userMenus = new List<MenusGetByUserIdResponse>();
                 return;
             }
@@ -147,7 +134,6 @@
             var token = await TokenStorage.GetAccessTokenAsync();
             if (string.IsNullOrWhiteSpace(token))
             {
-                Console.WriteLine("No access token available");
                 userMenus = new List<MenusGetByUserIdResponse>();
                 return;
             }
@@ -155,23 +141,19 @@
             var userId = JwtService.ExtractUserId(token);
             if (!userId.HasValue)
             {
-                Console.WriteLine("Could not extract userId from token");
                 userMenus = new List<MenusGetByUserIdResponse>();
                 return;
             }
-
-            Console.WriteLine($"Calling API for user {userId.Value}");
             var response = await apiClient.GetAsync<ApiResponse<IEnumerable<MenusGetByUserIdResponse>>>($"api/menus/user/{userId.Value}");
             if (response != null && response.Success && response.Data != null)
             {
                 userMenus = response.Data.ToList();
-                Console.WriteLine($"Loaded {userMenus.Count} menus from API");
                 // Cache the menus for future use
                 await MenuCacheService.SetCachedMenusAsync(userMenus);
             }
             else
             {
-                Console.WriteLine($"API call failed or returned no data: Success={response?.Success}");
+                userMenus = new List<MenusGetByUserIdResponse>();
                 userMenus = new List<MenusGetByUserIdResponse>();
             }
         }
@@ -183,7 +165,6 @@
         finally
         {
             _isLoadingMenus = false;
-            Console.WriteLine("LoadUserMenus completed");
         }
     }
 

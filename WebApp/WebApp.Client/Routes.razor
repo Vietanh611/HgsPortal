@@ -1,15 +1,17 @@
 ﻿@using Microsoft.AspNetCore.Components.Authorization
 @using WebApp.Client.Components
 
-<Router AppAssembly="typeof(Program).Assembly">
+<Router AppAssembly="@typeof(Program).Assembly">
     <Found Context="routeData">
-        @if (routeData.PageType == typeof(WebApp.Client.Pages.Login))
+        @if (routeData.PageType == typeof(WebApp.Client.Pages.Login) ||
+            routeData.PageType == typeof(WebApp.Client.Pages.Display.DomesticBaggageArrivalDisplay) ||
+            routeData.PageType == typeof(WebApp.Client.Pages.Display.InternationalBaggageArrivalDisplay))
         {
-            <RouteView RouteData="@routeData" DefaultLayout="typeof(Layout.EmptyLayout)" />
+            <RouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.EmptyLayout)" />
         }
         else
         {
-            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="typeof(Layout.MainLayout)">
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
                 <NotAuthorized>
                     <RedirectToLogin />
                 </NotAuthorized>
@@ -27,7 +29,7 @@
     </Found>
     <NotFound>
         <PageTitle>Not found</PageTitle>
-        <LayoutView Layout="typeof(Layout.EmptyLayout)">
+        <LayoutView Layout="@typeof(Layout.EmptyLayout)">
             <p role="alert">Sorry, there's nothing at this address.</p>
         </LayoutView>
     </NotFound>

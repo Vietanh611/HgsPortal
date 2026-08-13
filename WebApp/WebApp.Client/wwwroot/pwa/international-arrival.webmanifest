@@ -1,0 +1,22 @@
+{
+  "id": "/portal/display/InternationalBaggageArrivalDisplay",
+  "name": "HGS - International Arrival",
+  "short_name": "International Arrival",
+  "start_url": "/portal/display/InternationalBaggageArrivalDisplay",
+  "scope": "/portal/display/InternationalBaggageArrivalDisplay",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#17479E",
+  "icons": [
+    {
+      "src": "/portal/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/portal/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

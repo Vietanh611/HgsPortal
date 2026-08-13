@@ -1,49 +1,225 @@
 ﻿@inject IConfiguration Configuration
+
+@inject NavigationManager Navigation
+
+@inject IWebHostEnvironment Environment
+
 @{
+
     var basePath = Configuration["BasePath"] ?? "/";
+
+    var isDevelopment = Environment.IsDevelopment();
+
 }
+
 <!DOCTYPE html>
+
 <html lang="en">
 
+
+
 <head>
+
     <meta charset="utf-8" />
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <base href="@basePath" />
+
+    <script>
+
+        // Override Blazor's NavigationManager BaseUri to match the base tag
+
+        window.addEventListener('load', function() {
+
+            console.log('Base tag href:', document.querySelector('base').href);
+
+            console.log('Current location:', window.location.href);
+
+        });
+
+    </script>
+
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
+
     <link rel="stylesheet" href="css/hgsStyle.css" />
+
     <link rel="stylesheet" href="app.css" />
+
     <link rel="stylesheet" href="WebApp.styles.css" />
+
     <link rel="icon" type="image/png" href="favicon.png" />
+
     <link rel="stylesheet" href="lib/bootstrap-icons/font/bootstrap-icons.css" />
+
     <link href="_content/Blazor.Bootstrap/blazor.bootstrap.css" rel="stylesheet" />
-    @* <link rel="manifest" href="@($"{basePath}manifest.webmanifest")" /> *@
+
     <meta name="theme-color" content="#17479E" />
+
     <HeadOutlet @rendermode="InteractiveWebAssembly" />
+
 </head>
 
+
+
 <body>
+
     <Routes @rendermode="InteractiveWebAssembly" />
+
     <script src="lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
  
+
     <script src="_framework/blazor.web.js"></script>
+
     <script src="_content/Blazor.Bootstrap/blazor.bootstrap.js"></script>
+
     <!-- Add chart.js reference if chart components are used in your application. -->
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.0.1/chart.umd.js" integrity="sha512-gQhCDsnnnUfaRzD8k1L5llCCV6O9HN09zClIzzeJ8OJ9MpGmIlCxm+pdCkqTwqJ4JcjbojFr79rl2F1mzcoLMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
     <!-- Add chartjs-plugin-datalabels.min.js reference if chart components with data label feature is used in your application. -->
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js" integrity="sha512-JPcRR8yFa8mmCsfrw4TNte1ZvF1e3+1SdGMslZvmrzDYxS69J7J49vkFL8u6u8PlPJK+H3voElBtUCzaXj+6ig==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
     <!-- Add sortable.js reference if SortableList component is used in your application. -->
+
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
     <script>
-        if ('serviceWorker' in navigator) {
-            var basePath = '@(Configuration["BasePath"] ?? "/")';
-            navigator.serviceWorker.register(
-                basePath + 'service-worker.js',
-                {
-                    scope: basePath
+
+        // Load appropriate manifest based on current URL
+
+        function loadManifest() {
+
+            const basePath = '@(Configuration["BasePath"] ?? "/")';
+
+            const currentPath = window.location.pathname;
+
+            console.log('BasePath:', basePath);
+
+            console.log('Current path:', currentPath);
+
+            
+
+            let manifestHref = null;
+
+            
+
+            if (currentPath.startsWith(basePath + 'display/DomesticBaggageArrivalDisplay')) {
+
+                manifestHref = basePath + 'pwa/domestic-arrival.webmanifest';
+
+                console.log('Loading domestic arrival manifest');
+
+            } else if (currentPath.startsWith(basePath + 'display/InternationalBaggageArrivalDisplay')) {
+
+                manifestHref = basePath + 'pwa/international-arrival.webmanifest';
+
+                console.log('Loading international arrival manifest');
+
+            } else {
+
+                // Default manifest for all other pages
+                manifestHref = basePath + 'manifest.webmanifest';
+
+                console.log('Loading default manifest');
+
+            }
+
+            
+
+            if (manifestHref) {
+
+                let link = document.querySelector('link[rel="manifest"]');
+
+                if (!link) {
+
+                    link = document.createElement('link');
+
+                    link.rel = 'manifest';
+
+                    document.head.appendChild(link);
+
                 }
-            );
+
+                link.href = manifestHref;
+
+                console.log('Manifest href set to:', link.href);
+
+            } else {
+
+                console.log('No manifest matched for current path');
+
+            }
+
         }
+
+        
+
+        // Run after DOM is ready
+
+        if (document.readyState === 'loading') {
+
+            document.addEventListener('DOMContentLoaded', loadManifest);
+
+        } else {
+
+            loadManifest();
+
+        }
+
+        
+
+        // Register service worker only in Production
+        // In Development, Service Worker is disabled to avoid caching old code during debugging
+
+        if ('serviceWorker' in navigator && !@(isDevelopment.ToString().ToLower())) {
+
+            var basePath = '@(Configuration["BasePath"] ?? "/")';
+
+            console.log('Registering Service Worker in Production mode');
+
+            navigator.serviceWorker.register(
+
+                basePath + 'service-worker.js',
+
+                {
+
+                    scope: basePath
+
+                }
+
+            ).then(function(registration) {
+
+                console.log('Service Worker registered with scope:', registration.scope);
+
+            }).catch(function(error) {
+
+                console.log('Service Worker registration failed:', error);
+
+            });
+
+        } else if ('serviceWorker' in navigator && @(isDevelopment.ToString().ToLower())) {
+
+            console.log('Development mode: Unregistering Service Worker to avoid cache issues');
+
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                registrations.forEach(function(registration) {
+                    registration.unregister().then(function() {
+                        console.log('Service Worker unregistered in Development mode');
+                    });
+                });
+            }).catch(function(error) {
+                console.log('Error unregistering Service Worker:', error);
+            });
+
+        }
+
     </script>
+
 </body>
+
+
 
 </html>

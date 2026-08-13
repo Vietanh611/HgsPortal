@@ -7,6 +7,11 @@
         {
             <RouteView RouteData="@routeData" DefaultLayout="typeof(Layout.EmptyLayout)" />
         }
+        else if (routeData.PageType == typeof(WebApp.Client.Pages.Display.DomesticBaggageArrivalDisplay) ||
+                 routeData.PageType == typeof(WebApp.Client.Pages.Display.InternationalBaggageArrivalDisplay))
+        {
+            <RouteView RouteData="@routeData" DefaultLayout="typeof(Layout.EmptyLayout)" />
+        }
         else
         {
             <AuthorizeRouteView RouteData="@routeData" DefaultLayout="typeof(Layout.MainLayout)">
