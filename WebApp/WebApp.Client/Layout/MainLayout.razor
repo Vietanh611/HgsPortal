@@ -266,8 +266,8 @@
         --bb-sidebar-title-badge-text-color: #FFFFFF;
         --bb-sidebar-title-badge-background-color: #F58220;
         /* Toggle */
-        --bb-sidebar-navbar-toggler-icon-color: #FFFFFF;
-        --bb-sidebar-navbar-toggler-background-color: rgba(255,255,255,.1);
+        --bb-sidebar-navbar-toggler-icon-color: var(--hgs-orange);
+        --bb-sidebar-navbar-toggler-background-color: var(--hgs-blue);
         /* Menu */
         --bb-sidebar-nav-item-text-color: rgba(255,255,255,.85);
         --bb-sidebar-nav-item-text-hover-color: #FFFFFF;
@@ -288,6 +288,32 @@
         background: #F8F9FA;
         min-height: 100vh;
     }
+
+    .bb-sidebar-top-row .navbar-toggler {
+        border: none;
+        border-radius: var(--radius-sm);
+        align-items: center;
+        justify-content: center;
+        transition: var(--transition-fast);
+    }
+
+        .bb-sidebar-top-row .navbar-toggler .navbar-toggler-icon {
+            background-image: none;
+            font-size: 1.5rem;
+            /* width: auto; */
+            height: auto;
+        }
+
+        .bb-sidebar-top-row .navbar-toggler:hover,
+        .bb-sidebar-top-row .navbar-toggler:focus-visible {
+            background-color: var(--hgs-orange);
+            --bb-sidebar-navbar-toggler-icon-color: #FFFFFF;
+            box-shadow: 0 0 0 .2rem rgba(245,130,32,.35);
+        }
+
+        .bb-sidebar-top-row .navbar-toggler:focus {
+            box-shadow: 0 0 0 .2rem rgba(245,130,32,.35);
+        }
 </style>
 
 <Toasts AutoHide="true" Delay="4000" Placement="ToastsPlacement.TopRight" />

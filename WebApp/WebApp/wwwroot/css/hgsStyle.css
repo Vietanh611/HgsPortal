@@ -44,11 +44,6 @@
     --space-sm: clamp(10px, 1.5vw, 16px);
     --space-md: clamp(16px, 2.5vw, 24px);
     --space-lg: clamp(24px, 4vw, 40px);
-    /* Layout */
-    --sidebar-width: 260px;
-    --sidebar-width-tablet: 220px;
-    --topbar-height: 64px;
-    --topbar-height-mobile: 56px;
     /* Fluid type */
     --fs-base: clamp(14px, 1vw + .5rem, 16px);
     --fs-brand: clamp(17px, 1.2vw + .8rem, 20px);
@@ -104,13 +99,6 @@ svg {
    LAYOUT
 ========================================================== */
 
-.page {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    background: var(--bg);
-}
-
 main {
     flex: 1;
     overflow: auto;
@@ -125,170 +113,8 @@ article {
 }
 
 /* ==========================================================
-   SIDEBAR
-   Mobile-first: sidebar collapses above the content by default,
-   becomes a fixed column from tablet (>=641px) upward.
-========================================================== */
-
-.sidebar {
-    background: linear-gradient(180deg, var(--hgs-blue) 0%, var(--hgs-blue-dark) 100%);
-    color: white;
-    box-shadow: var(--shadow);
-    width: 100%;
-}
-
-/* Tablet */
-@media (min-width:641px) and (max-width:1024px) {
-
-    .page {
-        flex-direction: row;
-    }
-
-    .sidebar {
-        width: var(--sidebar-width-tablet);
-        height: 100vh;
-        position: sticky;
-        top: 0;
-        flex-shrink: 0;
-    }
-}
-
-/* Desktop */
-@media (min-width:1025px) {
-
-    .page {
-        flex-direction: row;
-    }
-
-    .sidebar {
-        width: var(--sidebar-width);
-        height: 100vh;
-        position: sticky;
-        top: 0;
-        flex-shrink: 0;
-    }
-}
-
-/* ==========================================================
-   TOP HEADER
-========================================================== */
-
-.top-row {
-    height: var(--topbar-height-mobile);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: rgba(255,255,255,.92);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border-bottom: 1px solid var(--border);
-    padding: 0 var(--space-md);
-    box-shadow: var(--shadow-sm);
-    z-index: 10;
-    gap: var(--space-sm);
-}
-
-    .top-row a,
-    .top-row .btn-link {
-        color: var(--text);
-        font-weight: 500;
-        transition: var(--transition);
-    }
-
-        .top-row a:hover {
-            color: var(--hgs-blue);
-        }
-
-@media(min-width:641px) {
-
-    .top-row {
-        height: var(--topbar-height);
-        position: sticky;
-        top: 0;
-    }
-}
-
-/* Let long header content wrap gracefully on narrow phones */
-@media (max-width:400px) {
-    .top-row {
-        flex-wrap: wrap;
-        height: auto;
-        min-height: var(--topbar-height-mobile);
-        padding: 10px var(--space-sm);
-    }
-}
-
-/* ==========================================================
-   NAVBAR
-========================================================== */
-
-.navbar-brand {
-    color: white;
-    font-size: var(--fs-brand);
-    font-weight: 600;
-    letter-spacing: .2px;
-}
-
-/* ==========================================================
-   MENU ITEMS
-========================================================== */
-
-.nav-item {
-    margin: 4px 10px;
-}
-
-    .nav-item:first-child {
-        margin-top: 16px;
-    }
-
-    .nav-item:last-child {
-        margin-bottom: 16px;
-    }
-
-    .nav-item .nav-link {
-        display: flex;
-        align-items: center;
-        height: 44px;
-        padding: 0 14px;
-        color: #E8EEF8;
-        border-radius: var(--radius);
-        transition: var(--transition);
-        font-size: .95rem;
-    }
-
-        .nav-item .nav-link:hover {
-            background: rgba(255,255,255,.12);
-            color: white;
-            transform: translateX(2px);
-        }
-
-    .nav-item a.active {
-        background: var(--hgs-orange);
-        color: white;
-        font-weight: 600;
-        box-shadow: 0 2px 8px rgba(245,130,32,.35);
-    }
-
-/* ==========================================================
-   ICON
-========================================================== */
-
-/*.bi {
-    width: 20px;
-    height: 20px;
-    margin-right: 12px;
-    background-size: cover;
-    opacity: .9;
-    flex-shrink: 0;
-}*/
-
-.nav-link:hover .bi {
-    opacity: 1;
-}
-
-/* ==========================================================
    CARD
-========================================================== */
+========================================================= */
 
 .card {
     background: white;
@@ -313,7 +139,7 @@ article {
 
 /* ==========================================================
    BUTTON
-========================================================== */
+========================================================= */
 
 .btn {
     border-radius: var(--radius-sm);
@@ -347,13 +173,11 @@ article {
         box-shadow: 0 4px 10px rgba(245,130,32,.3);
     }
 
-
-
 /* ==========================================================
    TABLE
    Wrap tables in a .table-responsive container to enable
    horizontal scrolling on small screens without breaking layout.
-========================================================== */
+========================================================= */
 
 .table {
     background: white;
@@ -381,7 +205,7 @@ article {
 
 /* ==========================================================
    FORM
-========================================================== */
+========================================================= */
 
 .form-control {
     border: 1px solid var(--border);
@@ -410,7 +234,7 @@ article {
 
 /* ==========================================================
    SCROLLBAR
-========================================================== */
+========================================================= */
 
 ::-webkit-scrollbar {
     width: 8px;
@@ -428,7 +252,7 @@ article {
 
 /* ==========================================================
    ERROR UI
-========================================================== */
+========================================================= */
 
 #blazor-error-ui {
     background: #FFF8E5;
@@ -451,7 +275,7 @@ article {
 
 /* ==========================================================
    RESPONSIVE UTILITIES
-========================================================== */
+========================================================= */
 
 .hide-mobile {
     display: none;
@@ -481,11 +305,10 @@ article {
     }
 }
 
-
 /*FLIGHT DISPLAY PAGE fonT*/
 @font-face {
     font-family: 'MyFont';
-    src: url('/fonts/PaytoneOne-Regular.ttf') format('truetype');
+    src: url('../fonts/PaytoneOne-Regular.ttf') format('truetype');
     font-weight: normal;
     font-style: normal;
 }

@@ -171,48 +171,66 @@
 
         
 
-        // Register service worker only in Production
-        // In Development, Service Worker is disabled to avoid caching old code during debugging
+        function isPwaMode() {
+            return window.matchMedia('(display-mode: standalone)').matches
+                || window.matchMedia('(display-mode: minimal-ui)').matches
+                || window.matchMedia('(display-mode: fullscreen)').matches
+                || (window.navigator.standalone === true);
+        }
 
-        if ('serviceWorker' in navigator && !@(isDevelopment.ToString().ToLower())) {
-
-            var basePath = '@(Configuration["BasePath"] ?? "/")';
-
-            console.log('Registering Service Worker in Production mode');
-
-            navigator.serviceWorker.register(
-
-                basePath + 'service-worker.js',
-
-                {
-
-                    scope: basePath
-
-                }
-
-            ).then(function(registration) {
-
-                console.log('Service Worker registered with scope:', registration.scope);
-
-            }).catch(function(error) {
-
-                console.log('Service Worker registration failed:', error);
-
-            });
-
-        } else if ('serviceWorker' in navigator && @(isDevelopment.ToString().ToLower())) {
-
-            console.log('Development mode: Unregistering Service Worker to avoid cache issues');
-
+        function unregisterServiceWorkers() {
             navigator.serviceWorker.getRegistrations().then(function(registrations) {
                 registrations.forEach(function(registration) {
                     registration.unregister().then(function() {
-                        console.log('Service Worker unregistered in Development mode');
+                        console.log('Service Worker unregistered');
                     });
                 });
             }).catch(function(error) {
                 console.log('Error unregistering Service Worker:', error);
             });
+        }
+
+        if ('serviceWorker' in navigator) {
+
+            var basePath = '@(Configuration["BasePath"] ?? "/")';
+
+            if (@(isDevelopment.ToString().ToLower())) {
+
+                console.log('Development mode: Unregistering Service Worker to avoid cache issues');
+
+                unregisterServiceWorkers();
+
+            } else if (isPwaMode()) {
+
+                console.log('PWA mode: Registering Service Worker');
+
+                navigator.serviceWorker.register(
+
+                    basePath + 'service-worker.js',
+
+                    {
+
+                        scope: basePath
+
+                    }
+
+                ).then(function(registration) {
+
+                    console.log('Service Worker registered with scope:', registration.scope);
+
+                }).catch(function(error) {
+
+                    console.log('Service Worker registration failed:', error);
+
+                });
+
+            } else {
+
+                console.log('Browser mode: Unregistering Service Worker');
+
+                unregisterServiceWorkers();
+
+            }
 
         }
 
