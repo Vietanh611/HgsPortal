@@ -20,11 +20,14 @@
                             <Spinner Color="SpinnerColor.Primary" />
                         </div>
                     }
-                    else if (auditLogs == null)
+                    else if (errorMessage != null)
                     {
-                        <Alert Color="AlertColor.Secondary" class="text-center">
-                            Loading audit logs...
-                        </Alert>
+                        <HgsErrorState Message="@errorMessage" RetryClick="@LoadAuditLogs" />
+                    }
+                    else if (auditLogs != null && !auditLogs.Any())
+                    {
+                        <HgsEmptyState Title="No audit logs found"
+                                       Message="Audit events will appear here as they are recorded." />
                     }
                     else
                     {
@@ -52,7 +55,7 @@
                                 @context.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")
                             </GridColumn>
                             <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Actions" AllowSorting="false">
-                                <Button Color="ButtonColor.Info" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowDetailModal(context)">
+                                <Button Color="ButtonColor.Info" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowDetailModal(context)" aria-label="View audit log detail">
                                     <Icon Name="IconName.Eye" />
                                 </Button>
                             </GridColumn>

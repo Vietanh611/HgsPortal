@@ -14,6 +14,7 @@ public partial class Audit : ComponentBase
     private IEnumerable<AuditLogsGetAllResponse>? auditLogs;
     private AuditLogsGetAllResponse? selectedAuditLog;
     private bool isLoading = true;
+    private string? errorMessage;
     private int currentPage = 1;
     private int pageSize = 10;
     private int totalCount = 0;
@@ -26,6 +27,7 @@ public partial class Audit : ComponentBase
     private async Task LoadAuditLogs()
     {
         isLoading = true;
+        errorMessage = null;
         try
         {
             var response = await ApiClient.GetAsync<ApiResponse<PagedResponse<AuditLogsGetAllResponse>>>($"api/audit?pageNumber={currentPage}&pageSize={pageSize}");
@@ -34,10 +36,19 @@ public partial class Audit : ComponentBase
                 auditLogs = response.Data.Items;
                 totalCount = response.Data.TotalCount;
             }
+            else
+            {
+                auditLogs = null;
+                errorMessage = !string.IsNullOrWhiteSpace(ApiClient.LastError)
+                    ? ApiClient.LastError
+                    : "Unable to load audit logs.";
+            }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading audit logs: {ex.Message}");
+            auditLogs = null;
+            errorMessage = "Unable to load audit logs. Please try again.";
         }
         finally
         {

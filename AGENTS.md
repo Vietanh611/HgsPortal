@@ -1,7 +1,14 @@
+## HGS Rules
+
+- Use BlazorBootstrap.
+- Follow HGS frontend skill.
+- Never introduce React/Tailwind/MudBlazor.
+- Preserve existing architecture.
+
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **HgsPortal** (3151 symbols, 6948 relationships, 255 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **HgsPortal** (3623 symbols, 7951 relationships, 293 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
 
@@ -29,19 +36,7 @@ This project is indexed by GitNexus as **HgsPortal** (3151 symbols, 6948 relatio
 | `gitnexus://repo/HgsPortal/clusters` | All functional areas |
 | `gitnexus://repo/HgsPortal/processes` | All execution flows |
 | `gitnexus://repo/HgsPortal/process/{name}` | Step-by-step execution trace |
-## Available Skills
 
-- brainstorming
-
-When a user asks for:
-
-- ideas
-- feature design
-- architecture discussion
-- solution comparison
-- planning
-
-Always use the brainstorming skill before generating the answer.
 ## CLI
 
 | Task | Read this skill file |
@@ -54,3 +49,33 @@ Always use the brainstorming skill before generating the answer.
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
 
 <!-- gitnexus:end -->
+
+## Brainstorming
+**MANDATORY:** Before any creative or non-trivial implementation work:
+- Read `/skills/brainstorming/SKILL.md`
+This applies to:
+- creating features
+- creating components
+- modifying UI/UX
+- adding functionality
+- modifying behavior
+- refactoring
+- architectural changes
+- designing new pages
+Before implementation:
+1. Understand the user's actual goal.
+2. Inspect the existing implementation.
+3. Identify constraints and dependencies.
+4. Consider viable approaches.
+5. Explain the recommended approach and trade-offs.
+6. Only then implement.
+
+For small, purely mechanical changes such as typo fixes,
+formatting, or a single obvious CSS value change,
+brainstorming may be skipped.
+## HGS Frontend Rules
+
+- Read `/skills/hgs-blazorbootstrap-frontend/SKILL.md`
+  for frontend work.
+- Follow HGS design system.
+- Use existing components before creating new ones.

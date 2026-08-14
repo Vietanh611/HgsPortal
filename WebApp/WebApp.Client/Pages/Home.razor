@@ -1,14 +1,277 @@
 ﻿@page "/home"
+@using System.Linq
+@using Hgs.Share.Responses.ApiResponses
+@using Hgs.Share.Responses.Menus
+@using Hgs.Share.Responses.Users
+@using Hgs.Share.Responses.Roles
+@using Hgs.Share.Responses.OrganizationUnits
+@using Hgs.Share.Responses.DisplayDevices
+@using Hgs.Share.Responses.CoreAssets
+@using Hgs.Share.Responses.AuditLogs
+@using WebApp.Client.Services
+@using WebApp.Client.Services.Data
+@using WebApp.Client.Services.Network
+@inject ApiClient ApiClient
+@inject ITokenStorage TokenStorage
+@inject JwtTokenService JwtService
+@inject IMenuCacheService MenuCacheService
 
 <PageTitle>Home</PageTitle>
 
-<button class="btn btn-danger" @onclick="TestClick">
-    TEST
-</button>
+@if (isLoading)
+{
+    <div class="text-center py-5">
+        <Spinner Color="SpinnerColor.Primary" />
+    </div>
+}
+else if (errorMessage != null)
+{
+    <HgsErrorState Message="@errorMessage" RetryClick="@LoadDashboardAsync" />
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">Welcome, @DisplayName</h2>
+            @if (userRoles.Any())
+            {
+                <span class="text-muted">@string.Join(", ", userRoles)</span>
+            }
+        </div>
+    </div>
+
+    @if (!modules.Any() && !canViewAudit)
+    {
+        <HgsEmptyState Title="No dashboard modules available"
+                       Message="You don't have permission to view any modules yet." />
+    }
+    else
+    {
+        @if (modules.Any())
+        {
+            <div class="row g-3 mb-4">
+                @foreach (var module in modules)
+                {
+                    <div class="col-12 col-sm-6 col-xl-3">
+                        <Card>
+                            <CardBody>
+                                <a href="@module.Href" class="text-decoration-none text-reset">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <div class="text-muted small text-uppercase">@module.Title</div>
+                                            <div class="fs-3 fw-bold">@module.Count</div>
+                                        </div>
+                                        <Icon Name="@module.Icon" Color="@module.Color" />
+                                    </div>
+                                </a>
+                            </CardBody>
+                        </Card>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (canViewAudit)
+        {
+            <Card>
+                <CardHeader>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Recent Activity</h5>
+                        <a href="audit" class="btn btn-sm btn-outline-primary">View all</a>
+                    </div>
+                </CardHeader>
+                <CardBody>
+                    @if (recentActivity.Any())
+                    {
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Action</th>
+                                    <th>Entity</th>
+                                    <th>Created At</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var log in recentActivity)
+                                {
+                                    <tr>
+                                        <td>@(log.Username ?? "N/A")</td>
+                                        <td><Badge Color="@(GetActionBadgeColor(log.Action))">@log.Action</Badge></td>
+                                        <td>@log.EntityName</td>
+                                        <td>@log.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">No recent activity.</p>
+                    }
+                </CardBody>
+            </Card>
+        }
+    }
+}
 
 @code {
-    private void TestClick()
+    private class DashboardModule
     {
-        Console.WriteLine("Clicked");
+        public string Route { get; init; } = "";
+        public string Title { get; init; } = "";
+        public IconName Icon { get; init; }
+        public IconColor Color { get; init; }
+        public string Href { get; init; } = "";
+        public int Count { get; set; }
+    }
+
+    private static readonly List<DashboardModule> AllModules = new()
+    {
+        new DashboardModule { Route = "users", Title = "Users", Icon = IconName.PeopleFill, Color = IconColor.Primary, Href = "users" },
+        new DashboardModule { Route = "roles", Title = "Roles", Icon = IconName.PersonBadgeFill, Color = IconColor.Info, Href = "roles" },
+        new DashboardModule { Route = "organizations", Title = "Organizations", Icon = IconName.Building, Color = IconColor.Success, Href = "organizations" },
+        new DashboardModule { Route = "displaydevices", Title = "Display Devices", Icon = IconName.Display, Color = IconColor.Warning, Href = "displaydevices" },
+        new DashboardModule { Route = "coreassets", Title = "Core Assets", Icon = IconName.BoxSeam, Color = IconColor.Danger, Href = "coreassets" }
+    };
+
+    private bool isLoading = true;
+    private string? errorMessage;
+    private UsersGetByIdResponse? currentUser;
+    private List<string> userRoles = new();
+    private List<DashboardModule> modules = new();
+    private bool canViewAudit;
+    private List<AuditLogsGetAllResponse> recentActivity = new();
+    private int recentActivityTotal;
+
+    private string DisplayName =>
+        !string.IsNullOrWhiteSpace(currentUser?.FullName) ? currentUser!.FullName
+        : !string.IsNullOrWhiteSpace(currentUser?.Username) ? currentUser!.Username
+        : "User";
+
+    protected override async Task OnInitializedAsync() => await LoadDashboardAsync();
+
+    private async Task LoadDashboardAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            var token = await TokenStorage.GetAccessTokenAsync();
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                errorMessage = "You are not authenticated.";
+                return;
+            }
+
+            var userId = JwtService.ExtractUserId(token);
+            userRoles = JwtService.ExtractRoles(token).ToList();
+
+            var meResponse = await ApiClient.GetAsync<ApiResponse<UsersGetByIdResponse>>("api/auth/me");
+            if (meResponse != null && meResponse.Success && meResponse.Data != null)
+            {
+                currentUser = meResponse.Data;
+            }
+
+            var menus = await GetUserMenusAsync(userId);
+            var routes = FlattenMenus(menus)
+                .Select(m => m.Route?.TrimStart('/'))
+                .Where(r => !string.IsNullOrWhiteSpace(r))
+                .Select(r => r!.ToLowerInvariant())
+                .ToHashSet();
+
+            modules = AllModules.Where(m => routes.Contains(m.Route)).ToList();
+            canViewAudit = routes.Contains("audit");
+
+            foreach (var module in modules)
+            {
+                module.Count = await LoadModuleCountAsync(module.Route);
+            }
+
+            if (canViewAudit)
+            {
+                var auditResponse = await ApiClient.GetAsync<ApiResponse<PagedResponse<AuditLogsGetAllResponse>>>("api/audit?pageNumber=1&pageSize=5");
+                if (auditResponse != null && auditResponse.Success && auditResponse.Data != null)
+                {
+                    recentActivity = auditResponse.Data.Items.ToList();
+                    recentActivityTotal = auditResponse.Data.TotalCount;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ApiClient.LastError ?? $"Failed to load dashboard: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task<List<MenusGetByUserIdResponse>> GetUserMenusAsync(int? userId)
+    {
+        var cached = await MenuCacheService.GetCachedMenusAsync();
+        if (cached != null && cached.Any())
+        {
+            return cached;
+        }
+
+        if (userId.HasValue)
+        {
+            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<MenusGetByUserIdResponse>>>($"api/menus/user/{userId.Value}");
+            if (response != null && response.Success && response.Data != null)
+            {
+                var menus = response.Data.ToList();
+                await MenuCacheService.SetCachedMenusAsync(menus);
+                return menus;
+            }
+        }
+
+        return new List<MenusGetByUserIdResponse>();
+    }
+
+    private static IEnumerable<MenusGetByUserIdResponse> FlattenMenus(IEnumerable<MenusGetByUserIdResponse> menus)
+    {
+        foreach (var menu in menus)
+        {
+            yield return menu;
+            if (menu.Children != null && menu.Children.Any())
+            {
+                foreach (var child in FlattenMenus(menu.Children))
+                {
+                    yield return child;
+                }
+            }
+        }
+    }
+
+    private async Task<int> LoadModuleCountAsync(string route)
+    {
+        return route switch
+        {
+            "users" => await LoadCountAsync<UsersGetAllResponse>("api/users"),
+            "roles" => await LoadCountAsync<RolesGetAllResponse>("api/roles"),
+            "organizations" => await LoadCountAsync<OrganizationUnitsGetAllResponse>("api/organizationunits"),
+            "displaydevices" => await LoadCountAsync<DisplayDevicesGetAllResponse>("api/displaydevices"),
+            "coreassets" => await LoadCountAsync<CoreAssetsGetAllResponse>("api/coreassets"),
+            _ => 0
+        };
+    }
+
+    private async Task<int> LoadCountAsync<T>(string endpoint)
+    {
+        var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<T>>>(endpoint);
+        return response?.Data?.Count() ?? 0;
+    }
+
+    private BadgeColor GetActionBadgeColor(string action)
+    {
+        return action switch
+        {
+            "CREATE" => BadgeColor.Success,
+            "UPDATE" => BadgeColor.Warning,
+            "DELETE" => BadgeColor.Danger,
+            _ => BadgeColor.Secondary
+        };
     }
 }

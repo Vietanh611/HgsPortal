@@ -1,180 +1,131 @@
 @page "/displaydevices"
 @using Hgs.Share.Requests.DisplayDevices
 @using Hgs.Share.Responses.DisplayDevices
-@using Microsoft.AspNetCore.Components.Authorization
-@inject AuthenticationStateProvider AuthenticationStateProvider
-@inject NavigationManager NavigationManager
+@using BlazorBootstrap
+@inject WebApp.Client.Services.DisplayDevicesService DisplayDevicesService
 
-<div class="container mt-4">
+<PageTitle>Display Devices</PageTitle>
+
+<div class="container">
     <div class="row">
         <div class="col-12">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="mb-0">Display Devices</h3>
-                    <div>
-                        <button class="btn btn-sm btn-primary me-2" @onclick="ShowCreateModal">
-                            <i class="bi bi-plus-lg"></i> Add Device
-                        </button>
-                        <button class="btn btn-sm btn-outline-secondary" @onclick="LoadDevices">
-                            <i class="bi bi-arrow-clockwise"></i> Refresh
-                        </button>
-                    </div>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Display Devices</h2>
+                <div class="d-flex gap-2">
+                    <Button Color="ButtonColor.Secondary" Outline="true" @onclick="LoadDevices" aria-label="Refresh display devices">
+                        <Icon Name="IconName.ArrowClockwise" /> Refresh
+                    </Button>
+                    <Button Color="ButtonColor.Primary" @onclick="ShowCreateModal">
+                        <Icon Name="IconName.PlusLg" /> Add Device
+                    </Button>
                 </div>
-                <div class="card-body">
+            </div>
+
+            <Card>
+                <CardBody>
                     @if (isLoading)
                     {
                         <div class="text-center py-5">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Loading...</span>
-                            </div>
-                            <p class="mt-2">Loading display devices...</p>
+                            <Spinner Color="SpinnerColor.Primary" />
                         </div>
                     }
                     else if (errorMessage != null)
                     {
-                        <div class="alert alert-danger" role="alert">
-                            <i class="bi bi-exclamation-triangle-fill"></i>
-                            @errorMessage
-                        </div>
+                        <HgsErrorState Message="@errorMessage" RetryClick="@LoadDevices" />
                     }
-                    else if (devices == null || !devices.Any())
+                    else if (devices != null && !devices.Any())
                     {
-                        <div class="alert alert-info" role="alert">
-                            <i class="bi bi-info-circle-fill"></i>
-                            No display devices found. Click "Add Device" to create one.
-                        </div>
+                        <HgsEmptyState Title="No display devices found"
+                                       Message="Click Add Device to register the first display device."
+                                       ShowAction="true"
+                                       ActionText="Add Device"
+                                       ActionClick="@ShowCreateModal" />
                     }
                     else
                     {
-                        <div class="table-responsive">
-                            <table class="table table-hover table-bordered table-striped">
-                                <thead class="table-dark">
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Device Name</th>
-                                        <th>Device Identifier</th>
-                                        <th>Status</th>
-                                        <th>Enabled</th>
-                                        <th>Last Seen</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var device in devices)
-                                    {
-                                        <tr>
-                                            <td>@device.Id</td>
-                                            <td>@device.DeviceName</td>
-                                            <td>@device.DeviceIdentifier</td>
-                                            <td>
-                                                <span class="badge @(device.Status == "ACTIVE" ? "bg-success" : "bg-secondary")">
-                                                    @device.Status
-                                                </span>
-                                            </td>
-                                            <td>
-                                                @if (device.IsEnabled)
-                                                {
-                                                    <span class="badge bg-success">Yes</span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="badge bg-danger">No</span>
-                                                }
-                                            </td>
-                                            <td>
-                                                @if (device.LastSeenAt.HasValue)
-                                                {
-                                                    @device.LastSeenAt.Value.ToString("yyyy-MM-dd HH:mm:ss")
-                                                }
-                                                else
-                                                {
-                                                    <span class="text-muted">Never</span>
-                                                }
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="mt-3">
-                            <small class="text-muted">Total: @devices.Count() device(s)</small>
-                        </div>
+                        <Grid TItem="DisplayDevicesGetAllResponse" Data="devices" AllowPaging="true" AllowSorting="true" Responsive="true"
+                              Class="table table-hover table-bordered table-striped" PageSize="10">
+                            <GridColumn TItem="DisplayDevicesGetAllResponse" HeaderText="ID" SortKeyExpression="item => item.Id">
+                                @context.Id
+                            </GridColumn>
+                            <GridColumn TItem="DisplayDevicesGetAllResponse" HeaderText="Device Name" SortKeyExpression="item => item.DeviceName">
+                                @context.DeviceName
+                            </GridColumn>
+                            <GridColumn TItem="DisplayDevicesGetAllResponse" HeaderText="Device Identifier" SortKeyExpression="item => item.DeviceIdentifier">
+                                @context.DeviceIdentifier
+                            </GridColumn>
+                            <GridColumn TItem="DisplayDevicesGetAllResponse" HeaderText="Status" SortKeyExpression="item => item.Status">
+                                <Badge Color="@(context.Status == "ACTIVE" ? BadgeColor.Success : BadgeColor.Secondary)">@context.Status</Badge>
+                            </GridColumn>
+                            <GridColumn TItem="DisplayDevicesGetAllResponse" HeaderText="Enabled">
+                                @if (context.IsEnabled)
+                                {
+                                    <Badge Color="BadgeColor.Success">Yes</Badge>
+                                }
+                                else
+                                {
+                                    <Badge Color="BadgeColor.Danger">No</Badge>
+                                }
+                            </GridColumn>
+                            <GridColumn TItem="DisplayDevicesGetAllResponse" HeaderText="Last Seen" SortKeyExpression="item => item.LastSeenAt">
+                                @(context.LastSeenAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? "Never")
+                            </GridColumn>
+                        </Grid>
                     }
-                </div>
-            </div>
+                </CardBody>
+            </Card>
         </div>
     </div>
 </div>
 
-<!-- Create Device Modal -->
-@if (showCreateModal)
-{
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Add New Display Device</h5>
-                    <button type="button" class="btn-close" @onclick="HideCreateModal"></button>
-                </div>
-                <div class="modal-body">
-                    @if (isCreating)
-                    {
-                        <div class="text-center py-3">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Creating...</span>
-                            </div>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="mb-3">
-                            <label class="form-label">Device Name *</label>
-                            <input class="form-control" @bind="newDevice.DeviceName" placeholder="Enter device name" />
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Device Identifier *</label>
-                            <input class="form-control" @bind="newDevice.DeviceIdentifier" placeholder="Enter device identifier" />
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Status</label>
-                            <input class="form-control" @bind="newDevice.Status" placeholder="ACTIVE" />
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Enabled</label>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" @bind="newDevice.IsEnabled" />
-                                <label class="form-check-label">Enable this device</label>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Last Seen</label>
-                            <input type="datetime-local" class="form-control" @bind="newDevice.LastSeenAt" />
-                        </div>
-                        @if (!string.IsNullOrEmpty(createErrorMessage))
-                        {
-                            <div class="alert alert-danger" role="alert">
-                                @createErrorMessage
-                            </div>
-                        }
-                    }
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" @onclick="HideCreateModal" disabled="@isCreating">Cancel</button>
-                    <button type="button" class="btn btn-primary" @onclick="HandleCreateDevice" disabled="@isCreating">Create Device</button>
-                </div>
-            </div>
+<Modal @ref="createModal" Title="Add New Display Device">
+    <BodyTemplate>
+        <div class="mb-3">
+            <label class="form-label" for="deviceName">Device Name *</label>
+            <InputText id="deviceName" class="form-control" @bind-Value="newDevice.DeviceName" placeholder="Enter device name" />
         </div>
-    </div>
-}
+        <div class="mb-3">
+            <label class="form-label" for="deviceIdentifier">Device Identifier *</label>
+            <InputText id="deviceIdentifier" class="form-control" @bind-Value="newDevice.DeviceIdentifier" placeholder="Enter device identifier" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="deviceStatus">Status</label>
+            <InputText id="deviceStatus" class="form-control" @bind-Value="newDevice.Status" placeholder="ACTIVE" />
+        </div>
+        <div class="mb-3 form-check">
+            <InputCheckbox id="deviceEnabled" class="form-check-input" @bind-Value="newDevice.IsEnabled" />
+            <label class="form-check-label" for="deviceEnabled">Enable this device</label>
+        </div>
+        @if (!string.IsNullOrEmpty(createErrorMessage))
+        {
+            <Alert Color="AlertColor.Danger" role="alert">@createErrorMessage</Alert>
+        }
+    </BodyTemplate>
+    <FooterTemplate>
+        <Button Color="ButtonColor.Secondary" @onclick="HideCreateModal" Disabled="@isCreating">Cancel</Button>
+        <Button Color="ButtonColor.Primary" @onclick="HandleCreateDevice" Disabled="@isCreating">
+            @if (isCreating)
+            {
+                <Spinner Size="SpinnerSize.Small" />
+            }
+            else
+            {
+                <Icon Name="IconName.PlusLg" />
+            }
+            Create Device
+        </Button>
+    </FooterTemplate>
+</Modal>
 
 @code {
     private IEnumerable<DisplayDevicesGetAllResponse>? devices;
     private bool isLoading = true;
     private string? errorMessage;
-    private bool accessDenied = false;
     private bool showCreateModal = false;
     private bool isCreating = false;
     private string? createErrorMessage;
     private DisplayDevicesCreateRequest newDevice = new();
+    private Modal? createModal;
 
     protected override async Task OnInitializedAsync()
     {
@@ -185,26 +136,15 @@
     {
         isLoading = true;
         errorMessage = null;
-        accessDenied = false;
         devices = null;
 
         try
         {
-            // devices = await DisplayDevicesService.GetDisplayDevicesAsync();
-            
+            devices = await DisplayDevicesService.GetDisplayDevicesAsync();
+
             if (devices == null)
             {
-                var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-                var user = authState.User;
-                
-                if (user.Identity?.IsAuthenticated == true)
-                {
-                    accessDenied = true;
-                }
-                else
-                {
-                    errorMessage = "Unable to load display devices. Please try again.";
-                }
+                errorMessage = "Unable to load display devices. Please try again.";
             }
         }
         catch (Exception ex)
@@ -217,18 +157,22 @@
         }
     }
 
-    private void ShowCreateModal()
+    private async Task ShowCreateModal()
     {
-        showCreateModal = true;
         newDevice = new DisplayDevicesCreateRequest();
         createErrorMessage = null;
+        if (createModal != null)
+        {
+            await createModal.ShowAsync();
+        }
     }
 
-    private void HideCreateModal()
+    private async Task HideCreateModal()
     {
-        showCreateModal = false;
-        newDevice = new DisplayDevicesCreateRequest();
-        createErrorMessage = null;
+        if (createModal != null)
+        {
+            await createModal.HideAsync();
+        }
     }
 
     private async Task HandleCreateDevice()
@@ -244,17 +188,17 @@
 
         try
         {
-            // var result = await DisplayDevicesService.CreateDeviceAsync(newDevice);
-            
-            // if (result != null)
-            // {
-            //     HideCreateModal();
-            //     await LoadDevices();
-            // }
-            // else
-            // {
-            //     createErrorMessage = "Failed to create device. Please try again.";
-            // }
+            var result = await DisplayDevicesService.CreateDeviceAsync(newDevice);
+
+            if (result != null)
+            {
+                await HideCreateModal();
+                await LoadDevices();
+            }
+            else
+            {
+                createErrorMessage = "Failed to create device. Please try again.";
+            }
         }
         catch (Exception ex)
         {

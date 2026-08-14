@@ -27,4 +27,24 @@ public class JwtTokenService
             return null;
         }
     }
+
+    public IEnumerable<string> ExtractRoles(string token)
+    {
+        try
+        {
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+
+            return jwtToken.Claims
+                .Where(c => c.Type == ClaimTypes.Role || c.Type == "role")
+                .Select(c => c.Value)
+                .Distinct()
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error extracting roles from token: {ex.Message}");
+            return Array.Empty<string>();
+        }
+    }
 }

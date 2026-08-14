@@ -319,7 +319,6 @@ article {
     border-radius: var(--radius-sm);
     font-weight: 600;
     /*padding: 8px 18px;*/
-    margin:4px;
     transition: var(--transition-fast);
 }
 
@@ -377,45 +376,8 @@ article {
     border-radius: var(--radius);
 }
 
-/* Card-style stacked rows on small screens */
-@media (max-width:640px) {
-
-    .table thead {
-        display: none;
-    }
-
-    .table,
-    .table tbody,
-    .table tr,
-    .table td {
-        display: block;
-        width: 100%;
-    }
-
-        .table tr {
-            margin-bottom: var(--space-sm);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            overflow: hidden;
-        }
-
-        .table td {
-            padding: 4px 14px;
-            text-align: right;
-            border-bottom: 1px solid var(--border);
-        }
-
-            .table td::before {
-                content: attr(data-label);
-                float: left;
-                font-weight: 600;
-                color: var(--text-secondary);
-            }
-
-            .table td:last-child {
-                border-bottom: none;
-            }
-}
+/* Mobile tables use horizontal scrolling (.table-responsive) or
+   BlazorBootstrap Grid responsive mode instead of forced block layout. */
 
 /* ==========================================================
    FORM

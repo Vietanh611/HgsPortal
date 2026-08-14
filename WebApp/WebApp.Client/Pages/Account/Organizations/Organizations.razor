@@ -23,11 +23,17 @@
                             <Spinner Color="SpinnerColor.Primary" />
                         </div>
                     }
-                    else if (organizations == null)
+                    else if (errorMessage != null)
                     {
-                        <Alert Color="AlertColor.Secondary" class="text-center">
-                            Loading organizations...
-                        </Alert>
+                        <HgsErrorState Message="@errorMessage" RetryClick="@LoadOrganizations" />
+                    }
+                    else if (organizations != null && !organizations.Any())
+                    {
+                        <HgsEmptyState Title="No organizations found"
+                                       Message="Click Add Organization to create the first one."
+                                       ShowAction="true"
+                                       ActionText="Add Organization"
+                                       ActionClick="@ShowCreateModal" />
                     }
                     else
                     {
@@ -62,10 +68,10 @@
                                 @context.CreatedAt.ToString("dd/MM/yyyy HH:mm")
                             </GridColumn>
                             <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Actions" AllowSorting="false">
-                                <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowEditModal(context)" class="me-1">
+                                <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowEditModal(context)" class="me-1" aria-label="Edit organization">
                                     <Icon Name="IconName.Pencil" />
                                 </Button>
-                                <Button Color="ButtonColor.Danger" Outline="true" Size="ButtonSize.Small" @onclick="() => DeleteOrganization(context.Id)">
+                                <Button Color="ButtonColor.Danger" Outline="true" Size="ButtonSize.Small" @onclick="() => DeleteOrganization(context.Id)" aria-label="Delete organization">
                                     <Icon Name="IconName.Trash" />
                                 </Button>
                             </GridColumn>

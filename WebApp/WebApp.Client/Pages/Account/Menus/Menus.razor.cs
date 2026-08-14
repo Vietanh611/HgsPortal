@@ -19,6 +19,7 @@ public partial class Menus
     private IEnumerable<MenusGetAllResponse>? parentMenus;
     private MenusCreateRequest menuForm = new();
     private bool isLoading = true;
+    private string? errorMessage;
     private bool isEditMode = false;
     private bool isSubmitting = false;
     private int editingMenuId = 0;
@@ -31,6 +32,7 @@ public partial class Menus
     private async Task LoadMenus()
     {
         isLoading = true;
+        errorMessage = null;
         try
         {
             var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<MenusGetAllResponse>>>("api/menus/all");
@@ -39,10 +41,21 @@ public partial class Menus
                 menus = response.Data;
                 parentMenus = response.Data.Where(m => m.ParentId == null).ToList();
             }
+            else
+            {
+                menus = null;
+                parentMenus = null;
+                errorMessage = !string.IsNullOrWhiteSpace(ApiClient.LastError)
+                    ? ApiClient.LastError
+                    : "Unable to load menus.";
+            }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading menus: {ex.Message}");
+            menus = null;
+            parentMenus = null;
+            errorMessage = "Unable to load menus. Please try again.";
         }
         finally
         {

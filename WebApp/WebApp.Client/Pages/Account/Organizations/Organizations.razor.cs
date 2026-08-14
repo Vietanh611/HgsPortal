@@ -17,6 +17,7 @@ public partial class Organizations : ComponentBase
     private IEnumerable<OrganizationUnitsGetAllResponse>? organizations;
     private OrganizationUnitsCreateRequest organizationForm = new();
     private bool isLoading = true;
+    private string? errorMessage;
     private bool isEditMode = false;
     private bool isSubmitting = false;
     private int editingOrganizationId = 0;
@@ -29,6 +30,7 @@ public partial class Organizations : ComponentBase
     private async Task LoadOrganizations()
     {
         isLoading = true;
+        errorMessage = null;
         try
         {
             var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<OrganizationUnitsGetAllResponse>>>("api/organizationunits");
@@ -36,10 +38,19 @@ public partial class Organizations : ComponentBase
             {
                 organizations = response.Data;
             }
+            else
+            {
+                organizations = null;
+                errorMessage = !string.IsNullOrWhiteSpace(ApiClient.LastError)
+                    ? ApiClient.LastError
+                    : "Unable to load organizations.";
+            }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading organizations: {ex.Message}");
+            organizations = null;
+            errorMessage = "Unable to load organizations. Please try again.";
         }
         finally
         {

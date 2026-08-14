@@ -29,6 +29,7 @@ public partial class Roles
     private string assignMenuRoleName = string.Empty;
     private int assignMenuRoleId = 0;
     private bool isLoading = true;
+    private string? errorMessage;
     private bool isLoadingMenus = false;
     private bool isEditMode = false;
     private bool isSubmitting = false;
@@ -43,6 +44,7 @@ public partial class Roles
     private async Task LoadRoles()
     {
         isLoading = true;
+        errorMessage = null;
         try
         {
             var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<RolesGetAllResponse>>>("api/roles");
@@ -50,10 +52,19 @@ public partial class Roles
             {
                 roles = response.Data;
             }
+            else
+            {
+                roles = null;
+                errorMessage = !string.IsNullOrWhiteSpace(ApiClient.LastError)
+                    ? ApiClient.LastError
+                    : "Unable to load roles.";
+            }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading roles: {ex.Message}");
+            roles = null;
+            errorMessage = "Unable to load roles. Please try again.";
         }
         finally
         {

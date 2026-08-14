@@ -23,6 +23,7 @@ public partial class PermissionDelegationPage : ComponentBase
     private int selectedUserId = 0;
     private string selectedUsername = string.Empty;
     private bool isLoading = true;
+    private string? errorMessage;
     private bool isPermissionsViewVisible = false;
 
     protected override async Task OnInitializedAsync()
@@ -34,6 +35,7 @@ public partial class PermissionDelegationPage : ComponentBase
     private async Task LoadManageableUsers()
     {
         isLoading = true;
+        errorMessage = null;
         try
         {
             var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<ManageableUserResponse>>>("api/permissiondelegation/manageable-users");
@@ -44,12 +46,16 @@ public partial class PermissionDelegationPage : ComponentBase
             else
             {
                 manageableUsers = Enumerable.Empty<ManageableUserResponse>();
+                errorMessage = !string.IsNullOrWhiteSpace(ApiClient.LastError)
+                    ? ApiClient.LastError
+                    : "Unable to load manageable users.";
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading manageable users: {ex.Message}");
             manageableUsers = Enumerable.Empty<ManageableUserResponse>();
+            errorMessage = "Unable to load manageable users. Please try again.";
         }
         finally
         {

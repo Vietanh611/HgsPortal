@@ -15,6 +15,12 @@
 
 #Docs folder
 docs/*
+
+#SKILL folder
+skills/
+#MARKDOWN
+*.md
+
 # Secrets
 appsettings.Production.json
 appsettings.Development.json
@@ -376,3 +382,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/AGENTS.md
+/CLAUDE.md

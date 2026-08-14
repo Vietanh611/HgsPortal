@@ -1,0 +1,27 @@
+@using BlazorBootstrap
+
+<div class="text-center py-5">
+    <div class="mb-3">
+        <Icon Name="@Icon" Size="IconSize.x3" />
+    </div>
+    <h4 class="mb-2">@Title</h4>
+    @if (!string.IsNullOrEmpty(Message))
+    {
+        <p class="text-muted mb-3">@Message</p>
+    }
+    @if (ShowAction)
+    {
+        <Button Color="ButtonColor.Primary" Size="ButtonSize.Small" @onclick="ActionClick">
+            <Icon Name="IconName.PlusLg" /> @ActionText
+        </Button>
+    }
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "No data found";
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public IconName Icon { get; set; } = IconName.Inbox;
+    [Parameter] public bool ShowAction { get; set; }
+    [Parameter] public string ActionText { get; set; } = "Add";
+    [Parameter] public EventCallback ActionClick { get; set; }
+}

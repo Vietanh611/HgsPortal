@@ -53,6 +53,8 @@ builder.Services.AddScoped<TokenRefreshService>();
 
 builder.Services.AddScoped<LocalStorageService>();
 builder.Services.AddScoped<ApiClient>();
+builder.Services.AddScoped<CoreAssetsService>();
+builder.Services.AddScoped<DisplayDevicesService>();
 
 var app = builder.Build();
 

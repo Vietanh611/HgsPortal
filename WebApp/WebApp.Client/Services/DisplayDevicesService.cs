@@ -21,11 +21,11 @@ public class DisplayDevicesService
     {
         try
         {
-            var response = await _apiClient.GetAsync<IEnumerable<DisplayDevicesGetAllResponse>>("api/displaydevices");
+            var response = await _apiClient.GetAsync<ApiResponse<IEnumerable<DisplayDevicesGetAllResponse>>>("api/displaydevices");
             
-            if (response != null)
+            if (response != null && response.Success && response.Data != null)
             {
-                return response;
+                return response.Data;
             }
             
             return null;
@@ -41,11 +41,11 @@ public class DisplayDevicesService
     {
         try
         {
-            var response = await _apiClient.GetAsync<DisplayDevicesGetByIdResponse>($"api/displaydevices/{id}");
+            var response = await _apiClient.GetAsync<ApiResponse<DisplayDevicesGetByIdResponse>>($"api/displaydevices/{id}");
             
-            if (response != null)
+            if (response != null && response.Success && response.Data != null)
             {
-                return response;
+                return response.Data;
             }
             
             return null;
@@ -61,11 +61,11 @@ public class DisplayDevicesService
     {
         try
         {
-            var response = await _apiClient.PostAsync<DisplayDevicesCreateResponse>("api/displaydevices", request);
+            var response = await _apiClient.PostAsync<ApiResponse<DisplayDevicesCreateResponse>>("api/displaydevices", request);
             
-            if (response != null)
+            if (response != null && response.Success && response.Data != null)
             {
-                return response;
+                return response.Data;
             }
             
             return null;

@@ -1,192 +1,148 @@
 @page "/coreassets"
 @using Hgs.Share.Requests.CoreAssets
 @using Hgs.Share.Responses.CoreAssets
-@using Microsoft.AspNetCore.Components.Authorization
+@using BlazorBootstrap
 @inject WebApp.Client.Services.CoreAssetsService CoreAssetsService
-@inject AuthenticationStateProvider AuthenticationStateProvider
-@inject NavigationManager NavigationManager
 
-<div class="container mt-4">
+<PageTitle>Core Assets</PageTitle>
+
+<div class="container">
     <div class="row">
         <div class="col-12">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="mb-0">Core Assets</h3>
-                    <div>
-                        <button class="btn btn-sm btn-primary me-2" @onclick="ShowCreateModal">
-                            <i class="bi bi-plus-lg"></i> Add Asset
-                        </button>
-                        <button class="btn btn-sm btn-outline-secondary" @onclick="LoadAssets">
-                            <i class="bi bi-arrow-clockwise"></i> Refresh
-                        </button>
-                    </div>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Core Assets</h2>
+                <div class="d-flex gap-2">
+                    <Button Color="ButtonColor.Secondary" Outline="true" @onclick="LoadAssets" aria-label="Refresh core assets">
+                        <Icon Name="IconName.ArrowClockwise" /> Refresh
+                    </Button>
+                    <Button Color="ButtonColor.Primary" @onclick="ShowCreateModal">
+                        <Icon Name="IconName.PlusLg" /> Add Asset
+                    </Button>
                 </div>
-                <div class="card-body">
+            </div>
+
+            <Card>
+                <CardBody>
                     @if (isLoading)
                     {
                         <div class="text-center py-5">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Loading...</span>
-                            </div>
-                            <p class="mt-2">Loading core assets...</p>
+                            <Spinner Color="SpinnerColor.Primary" />
                         </div>
                     }
                     else if (errorMessage != null)
                     {
-                        <div class="alert alert-danger" role="alert">
-                            <i class="bi bi-exclamation-triangle-fill"></i>
-                            @errorMessage
-                        </div>
+                        <HgsErrorState Message="@errorMessage" RetryClick="@LoadAssets" />
                     }
-                    else if (accessDenied)
+                    else if (assets != null && !assets.Any())
                     {
-                        <div class="alert alert-warning" role="alert">
-                            <i class="bi bi-shield-lock-fill"></i>
-                            Access Denied: You don't have permission to view core assets.
-                        </div>
-                    }
-                    else if (assets == null || !assets.Any())
-                    {
-                        <div class="alert alert-info" role="alert">
-                            <i class="bi bi-info-circle-fill"></i>
-                            No core assets found. Click "Add Asset" to create one.
-                        </div>
+                        <HgsEmptyState Title="No core assets found"
+                                       Message="Click Add Asset to register the first core asset."
+                                       ShowAction="true"
+                                       ActionText="Add Asset"
+                                       ActionClick="@ShowCreateModal" />
                     }
                     else
                     {
-                        <div class="table-responsive">
-                            <table class="table table-hover table-bordered table-striped">
-                                <thead class="table-dark">
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Code</th>
-                                        <th>File Name</th>
-                                        <th>Content Type</th>
-                                        <th>Asset Type</th>
-                                        <th>Storage Path</th>
-                                        <th>Active</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var asset in assets)
-                                    {
-                                        <tr>
-                                            <td>@asset.Id</td>
-                                            <td>@asset.Code</td>
-                                            <td>@asset.FileName</td>
-                                            <td>@asset.ContentType</td>
-                                            <td>
-                                                <span class="badge bg-info">@asset.AssetType</span>
-                                            </td>
-                                            <td>
-                                                <small class="text-muted">@asset.StoragePath</small>
-                                            </td>
-                                            <td>
-                                                @if (asset.IsActive)
-                                                {
-                                                    <span class="badge bg-success">Yes</span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="badge bg-danger">No</span>
-                                                }
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="mt-3">
-                            <small class="text-muted">Total: @assets.Count() asset(s)</small>
-                        </div>
+                        <Grid TItem="CoreAssetsGetAllResponse" Data="assets" AllowPaging="true" AllowSorting="true" Responsive="true"
+                              Class="table table-hover table-bordered table-striped" PageSize="10">
+                            <GridColumn TItem="CoreAssetsGetAllResponse" HeaderText="ID" SortKeyExpression="item => item.Id">
+                                @context.Id
+                            </GridColumn>
+                            <GridColumn TItem="CoreAssetsGetAllResponse" HeaderText="Code" SortKeyExpression="item => item.Code">
+                                @context.Code
+                            </GridColumn>
+                            <GridColumn TItem="CoreAssetsGetAllResponse" HeaderText="File Name" SortKeyExpression="item => item.FileName">
+                                @(context.FileName ?? "N/A")
+                            </GridColumn>
+                            <GridColumn TItem="CoreAssetsGetAllResponse" HeaderText="Content Type" SortKeyExpression="item => item.ContentType">
+                                @(context.ContentType ?? "N/A")
+                            </GridColumn>
+                            <GridColumn TItem="CoreAssetsGetAllResponse" HeaderText="Asset Type" SortKeyExpression="item => item.AssetType">
+                                <Badge Color="BadgeColor.Info">@context.AssetType</Badge>
+                            </GridColumn>
+                            <GridColumn TItem="CoreAssetsGetAllResponse" HeaderText="Storage Path" SortKeyExpression="item => item.StoragePath">
+                                <small class="text-muted">@context.StoragePath</small>
+                            </GridColumn>
+                            <GridColumn TItem="CoreAssetsGetAllResponse" HeaderText="Active">
+                                @if (context.IsActive)
+                                {
+                                    <Badge Color="BadgeColor.Success">Yes</Badge>
+                                }
+                                else
+                                {
+                                    <Badge Color="BadgeColor.Danger">No</Badge>
+                                }
+                            </GridColumn>
+                        </Grid>
                     }
-                </div>
-            </div>
+                </CardBody>
+            </Card>
         </div>
     </div>
 </div>
 
-<!-- Create Asset Modal -->
-@if (showCreateModal)
-{
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Add New Core Asset</h5>
-                    <button type="button" class="btn-close" @onclick="HideCreateModal"></button>
-                </div>
-                <div class="modal-body">
-                    @if (isCreating)
-                    {
-                        <div class="text-center py-3">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Creating...</span>
-                            </div>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="mb-3">
-                            <label class="form-label">Code *</label>
-                            <input class="form-control" @bind="newAsset.Code" placeholder="Enter asset code" />
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">File Name</label>
-                            <input class="form-control" @bind="newAsset.FileName" placeholder="Enter file name" />
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Content Type</label>
-                            <input class="form-control" @bind="newAsset.ContentType" placeholder="e.g., image/png" />
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Storage Path *</label>
-                            <input class="form-control" @bind="newAsset.StoragePath" placeholder="Enter storage path" />
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Asset Type *</label>
-                            <select class="form-select" @bind="newAsset.AssetType">
-                                <option value="">Select type...</option>
-                                <option value="Logo">Logo</option>
-                                <option value="Image">Image</option>
-                                <option value="Icon">Icon</option>
-                                <option value="Document">Document</option>
-                                <option value="Video">Video</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Active</label>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" @bind="newAsset.IsActive" />
-                                <label class="form-check-label">Enable this asset</label>
-                            </div>
-                        </div>
-                        @if (!string.IsNullOrEmpty(createErrorMessage))
-                        {
-                            <div class="alert alert-danger" role="alert">
-                                @createErrorMessage
-                            </div>
-                        }
-                    }
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" @onclick="HideCreateModal" disabled="@isCreating">Cancel</button>
-                    <button type="button" class="btn btn-primary" @onclick="HandleCreateAsset" disabled="@isCreating">Create Asset</button>
-                </div>
-            </div>
+<Modal @ref="createModal" Title="Add New Core Asset">
+    <BodyTemplate>
+        <div class="mb-3">
+            <label class="form-label" for="assetCode">Code *</label>
+            <InputText id="assetCode" class="form-control" @bind-Value="newAsset.Code" placeholder="Enter asset code" />
         </div>
-    </div>
-}
+        <div class="mb-3">
+            <label class="form-label" for="assetFileName">File Name</label>
+            <InputText id="assetFileName" class="form-control" @bind-Value="newAsset.FileName" placeholder="Enter file name" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="assetContentType">Content Type</label>
+            <InputText id="assetContentType" class="form-control" @bind-Value="newAsset.ContentType" placeholder="e.g., image/png" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="assetStoragePath">Storage Path *</label>
+            <InputText id="assetStoragePath" class="form-control" @bind-Value="newAsset.StoragePath" placeholder="Enter storage path" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="assetType">Asset Type *</label>
+            <select id="assetType" class="form-select" @bind="newAsset.AssetType">
+                <option value="">Select type...</option>
+                <option value="Logo">Logo</option>
+                <option value="Image">Image</option>
+                <option value="Icon">Icon</option>
+                <option value="Document">Document</option>
+                <option value="Video">Video</option>
+            </select>
+        </div>
+        <div class="mb-3 form-check">
+            <InputCheckbox id="assetActive" class="form-check-input" @bind-Value="newAsset.IsActive" />
+            <label class="form-check-label" for="assetActive">Enable this asset</label>
+        </div>
+        @if (!string.IsNullOrEmpty(createErrorMessage))
+        {
+            <Alert Color="AlertColor.Danger" role="alert">@createErrorMessage</Alert>
+        }
+    </BodyTemplate>
+    <FooterTemplate>
+        <Button Color="ButtonColor.Secondary" @onclick="HideCreateModal" Disabled="@isCreating">Cancel</Button>
+        <Button Color="ButtonColor.Primary" @onclick="HandleCreateAsset" Disabled="@isCreating">
+            @if (isCreating)
+            {
+                <Spinner Color="SpinnerColor.Light" Size="SpinnerSize.Small" class="me-2" />
+            }
+            else
+            {
+                <Icon Name="IconName.PlusLg" />
+            }
+            Create Asset
+        </Button>
+    </FooterTemplate>
+</Modal>
 
 @code {
     private IEnumerable<CoreAssetsGetAllResponse>? assets;
     private bool isLoading = true;
     private string? errorMessage;
-    private bool accessDenied = false;
-    private bool showCreateModal = false;
     private bool isCreating = false;
     private string? createErrorMessage;
     private CoreAssetsCreateRequest newAsset = new();
+    private Modal? createModal;
 
     protected override async Task OnInitializedAsync()
     {
@@ -197,26 +153,15 @@
     {
         isLoading = true;
         errorMessage = null;
-        accessDenied = false;
         assets = null;
 
         try
         {
             assets = await CoreAssetsService.GetCoreAssetsAsync();
-            
+
             if (assets == null)
             {
-                var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-                var user = authState.User;
-                
-                if (user.Identity?.IsAuthenticated == true)
-                {
-                    accessDenied = true;
-                }
-                else
-                {
-                    errorMessage = "Unable to load core assets. Please try again.";
-                }
+                errorMessage = "Unable to load core assets. Please try again.";
             }
         }
         catch (Exception ex)
@@ -229,18 +174,22 @@
         }
     }
 
-    private void ShowCreateModal()
+    private async Task ShowCreateModal()
     {
-        showCreateModal = true;
         newAsset = new CoreAssetsCreateRequest();
         createErrorMessage = null;
+        if (createModal != null)
+        {
+            await createModal.ShowAsync();
+        }
     }
 
-    private void HideCreateModal()
+    private async Task HideCreateModal()
     {
-        showCreateModal = false;
-        newAsset = new CoreAssetsCreateRequest();
-        createErrorMessage = null;
+        if (createModal != null)
+        {
+            await createModal.HideAsync();
+        }
     }
 
     private async Task HandleCreateAsset()
@@ -257,10 +206,10 @@
         try
         {
             var result = await CoreAssetsService.CreateAssetAsync(newAsset);
-            
+
             if (result != null)
             {
-                HideCreateModal();
+                await HideCreateModal();
                 await LoadAssets();
             }
             else

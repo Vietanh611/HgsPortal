@@ -1,0 +1,21 @@
+@using BlazorBootstrap
+
+<div class="text-center py-5" role="alert">
+    <div class="mb-3">
+        <Icon Name="IconName.ExclamationTriangleFill" Size="IconSize.x3" Color="IconColor.Danger" />
+    </div>
+    <h4 class="mb-2">@Title</h4>
+    @if (!string.IsNullOrEmpty(Message))
+    {
+        <p class="text-muted mb-3">@Message</p>
+    }
+    <Button Color="ButtonColor.Primary" Size="ButtonSize.Small" @onclick="RetryClick">
+        <Icon Name="IconName.ArrowClockwise" /> Retry
+    </Button>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Unable to load data";
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public EventCallback RetryClick { get; set; }
+}

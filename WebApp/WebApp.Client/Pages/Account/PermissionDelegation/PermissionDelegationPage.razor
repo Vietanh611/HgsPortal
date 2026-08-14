@@ -2,9 +2,6 @@
 @using Hgs.Share.Responses.PermissionDelegation
 @using BlazorBootstrap
 
-@inject HttpClient Http
-@inject NavigationManager Navigation
-
 <PageTitle>Quản lý phân quyền</PageTitle>
 
 <div class="container">
@@ -22,17 +19,14 @@
                             <Spinner Color="SpinnerColor.Primary" />
                         </div>
                     }
-                    else if (manageableUsers == null)
+                    else if (errorMessage != null)
                     {
-                        <Alert Color="AlertColor.Secondary" class="text-center">
-                            Loading manageable users...
-                        </Alert>
+                        <HgsErrorState Message="@errorMessage" RetryClick="@LoadManageableUsers" />
                     }
                     else if (!manageableUsers.Any())
                     {
-                        <Alert Color="AlertColor.Warning" class="text-center">
-                            Không có nhân viên nào trong phạm vi quản lý của bạn.
-                        </Alert>
+                        <HgsEmptyState Title="Không có nhân viên trong phạm vi quản lý"
+                                       Message="Không có nhân viên nào trong phạm vi quản lý của bạn." />
                     }
                     else
                     {
@@ -61,7 +55,7 @@
                                 }
                             </GridColumn>
                             <GridColumn TItem="ManageableUserResponse" HeaderText="Actions" AllowSorting="false">
-                                <Button Color="ButtonColor.Info" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowPermissionsView(context)">
+                                <Button Color="ButtonColor.Info" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowPermissionsView(context)" aria-label="View permissions">
                                     <Icon Name="IconName.Eye" />
                                 </Button>
                             </GridColumn>
@@ -79,7 +73,7 @@
         <CardBody>
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5>Quyền hiện tại của @selectedUsername</h5>
-                <Button Color="ButtonColor.Secondary" Size="ButtonSize.Small" @onclick="ClosePermissionsView">
+                <Button Color="ButtonColor.Secondary" Size="ButtonSize.Small" @onclick="ClosePermissionsView" aria-label="Close permissions view">
                     <Icon Name="IconName.XLg" />
                 </Button>
             </div>

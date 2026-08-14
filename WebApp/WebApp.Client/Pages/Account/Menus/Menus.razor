@@ -2,9 +2,6 @@
 @using Hgs.Share.Responses.Menus
 @using BlazorBootstrap
 
-@inject HttpClient Http
-@inject NavigationManager Navigation
-
 <PageTitle>Menu Management</PageTitle>
 
 <div class="container">
@@ -25,11 +22,17 @@
                             <Spinner Color="SpinnerColor.Primary" />
                         </div>
                     }
-                    else if (menus == null)
+                    else if (errorMessage != null)
                     {
-                        <Alert Color="AlertColor.Secondary" class="text-center">
-                            Loading menus...
-                        </Alert>
+                        <HgsErrorState Message="@errorMessage" RetryClick="@LoadMenus" />
+                    }
+                    else if (menus != null && !menus.Any())
+                    {
+                        <HgsEmptyState Title="No menus found"
+                                       Message="Click Add Menu to create the first menu."
+                                       ShowAction="true"
+                                       ActionText="Add Menu"
+                                       ActionClick="@ShowCreateModal" />
                     }
                     else
                     {
@@ -74,10 +77,10 @@
                                 }
                             </GridColumn>
                             <GridColumn TItem="MenusGetAllResponse" HeaderText="Actions" AllowSorting="false">
-                                <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowEditModal(context)" class="me-1">
+                                <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowEditModal(context)" class="me-1" aria-label="Edit menu">
                                     <Icon Name="IconName.Pencil" />
                                 </Button>
-                                <Button Color="ButtonColor.Danger" Outline="true" Size="ButtonSize.Small" @onclick="() => DeleteMenu(context.Id)">
+                                <Button Color="ButtonColor.Danger" Outline="true" Size="ButtonSize.Small" @onclick="() => DeleteMenu(context.Id)" aria-label="Delete menu">
                                     <Icon Name="IconName.Trash" />
                                 </Button>
                             </GridColumn>

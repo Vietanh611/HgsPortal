@@ -42,6 +42,7 @@ public partial class Users
     private string assignRoleUsername = string.Empty;
     private int assignRoleUserId = 0;
     private bool isLoading = true;
+    private string? errorMessage;
     private bool isLoadingMenus = false;
     private bool isLoadingRoles = false;
     private bool isEditMode = false;
@@ -59,6 +60,7 @@ public partial class Users
     private async Task LoadUsers()
     {
         isLoading = true;
+        errorMessage = null;
         try
         {
             var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<UsersGetAllResponse>>>("api/users");
@@ -66,10 +68,19 @@ public partial class Users
             {
                 users = response.Data;
             }
+            else
+            {
+                users = null;
+                errorMessage = !string.IsNullOrWhiteSpace(ApiClient.LastError)
+                    ? ApiClient.LastError
+                    : "Unable to load users.";
+            }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading users: {ex.Message}");
+            users = null;
+            errorMessage = "Unable to load users. Please try again.";
         }
         finally
         {

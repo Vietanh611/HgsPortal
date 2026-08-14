@@ -2,9 +2,6 @@
 @using Hgs.Share.Responses.Roles
 @using BlazorBootstrap
 
-@inject HttpClient Http
-@inject NavigationManager Navigation
-
 <PageTitle>Role Management</PageTitle>
 
 <div class="container">
@@ -25,11 +22,17 @@
                             <Spinner Color="SpinnerColor.Primary" />
                         </div>
                     }
-                    else if (roles == null)
+                    else if (errorMessage != null)
                     {
-                        <Alert Color="AlertColor.Secondary" class="text-center">
-                            Loading roles...
-                        </Alert>
+                        <HgsErrorState Message="@errorMessage" RetryClick="@LoadRoles" />
+                    }
+                    else if (roles != null && !roles.Any())
+                    {
+                        <HgsEmptyState Title="No roles found"
+                                       Message="Click Add Role to create the first role."
+                                       ShowAction="true"
+                                       ActionText="Add Role"
+                                       ActionClick="@ShowCreateModal" />
                     }
                     else
                     {
@@ -72,13 +75,13 @@
                                 }
                             </GridColumn>
                             <GridColumn TItem="RolesGetAllResponse" HeaderText="Actions" AllowSorting="false">
-                                <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowEditModal(context)" class="me-1">
+                                <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowEditModal(context)" class="me-1" aria-label="Edit role">
                                     <Icon Name="IconName.Pencil" />
                                 </Button>
-                                <Button Color="ButtonColor.Info" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowAssignMenuModal(context)" class="me-1">
+                                <Button Color="ButtonColor.Info" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowAssignMenuModal(context)" class="me-1" aria-label="Assign menus">
                                     <Icon Name="IconName.ListCheck" />
                                 </Button>
-                                <Button Color="ButtonColor.Danger" Outline="true" Size="ButtonSize.Small" @onclick="() => DeleteRole(context.Id)">
+                                <Button Color="ButtonColor.Danger" Outline="true" Size="ButtonSize.Small" @onclick="() => DeleteRole(context.Id)" aria-label="Delete role">
                                     <Icon Name="IconName.Trash" />
                                 </Button>
                             </GridColumn>

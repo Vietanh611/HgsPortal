@@ -9,13 +9,6 @@ using WebApp.Client.Services.Data;
 using WebApp.Client.Services.Network;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
-builder.Logging.SetMinimumLevel(LogLevel.Warning);
-
-builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
-builder.Logging.AddFilter("System.Net.Http.HttpClient.API", LogLevel.None);
-builder.Logging.AddFilter("Microsoft", LogLevel.Warning);
-builder.Logging.AddFilter("System", LogLevel.Warning);
-
 // Add Blazored.LocalStorage
 builder.Services.AddBlazoredLocalStorage();
 
@@ -68,5 +61,7 @@ builder.Services.AddScoped<ApiClient>(sp =>
 builder.Services.AddBlazorBootstrap();
 builder.Services.AddScoped<ToastService>();
 builder.Services.AddScoped<DialogService>();
+builder.Services.AddScoped<CoreAssetsService>();
+builder.Services.AddScoped<DisplayDevicesService>();
 
 await builder.Build().RunAsync();
