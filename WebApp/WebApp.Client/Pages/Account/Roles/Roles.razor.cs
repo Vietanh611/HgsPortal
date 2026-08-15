@@ -76,7 +76,7 @@ public partial class Roles
     {
         try
         {
-            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<OrganizationUnitsGetAllResponse>>>("api/organizationunits");
+            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<OrganizationUnitsGetAllResponse>>>("api/organizationunits", silent: true);
             if (response != null && response.Success && response.Data != null)
             {
                 organizationUnits = response.Data;
@@ -93,7 +93,7 @@ public partial class Roles
         isLoadingMenus = true;
         try
         {
-            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<MenusGetAllResponse>>>("api/menus");
+            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<MenusGetAllResponse>>>("api/menus", silent: true);
             if (response != null && response.Success && response.Data != null)
             {
                 menus = response.Data;

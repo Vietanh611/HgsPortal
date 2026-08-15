@@ -4,7 +4,7 @@ namespace WebApp.Client.Services;
 
 public interface IMenuCacheService
 {
-    Task<List<MenusGetByUserIdResponse>?> GetCachedMenusAsync();
-    Task SetCachedMenusAsync(List<MenusGetByUserIdResponse> menus);
-    Task ClearCachedMenusAsync();
+    Task<List<MenusGetByUserIdResponse>?> GetCachedMenusAsync(int userId);
+    Task SetCachedMenusAsync(int userId, List<MenusGetByUserIdResponse> menus);
+    Task ClearCachedMenusAsync(int? userId = null);
 }

@@ -363,11 +363,23 @@ public class MenuService : IMenuService
 
     public async Task<bool> IsSuperAdminAsync(int userId, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.UserRoles
+        var cacheKey = $"users:superadmin:{userId}";
+
+        var cached = await _cacheService.GetAsync<bool?>(cacheKey, cancellationToken);
+        if (cached.HasValue)
+        {
+            return cached.Value;
+        }
+
+        var isSuperAdmin = await _dbContext.UserRoles
             .AsNoTracking()
             .AnyAsync(x => x.UserId == userId
                 && x.Role.Code == RoleCodes.SuperAdmin
                 && x.Role.IsActive, cancellationToken);
+
+        await _cacheService.SetAsync(cacheKey, (bool?)isSuperAdmin, cancellationToken: cancellationToken);
+
+        return isSuperAdmin;
     }
 
     private static List<MenusGetByUserIdResponse> BuildMenuHierarchy(

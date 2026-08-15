@@ -79,6 +79,11 @@ public class ExceptionHandlingMiddleware
                 message = ex.Message;
                 break;
 
+            case UnauthorizedAccessException:
+                statusCode = StatusCodes.Status403Forbidden;
+                message = "Bạn không có quyền thực hiện thao tác này";
+                break;
+
             case ForbiddenException ex:
                 statusCode = ex.StatusCode;
                 message = ex.Message;

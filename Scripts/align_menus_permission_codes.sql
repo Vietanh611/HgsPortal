@@ -12,8 +12,10 @@ UPDATE Menus SET Code = 'PERMISSIONDELEGATION' WHERE Id = 18; -- MANAGE_PERMISSI
 UPDATE Menus SET Code = 'AUDIT'                WHERE Id = 7;  -- SYSTEM_AUDIT
 UPDATE Menus SET Code = 'DISPLAYDEVICES'       WHERE Id = 20; -- SYSTEM_DEVICE
 
--- 2) USER_CHANGE_PASSWORD là sub-action của USERS (không phải trang, giữ ẩn)
-UPDATE Menus SET ParentId = 8, IsVisible = 0, IsActive = 0 WHERE Id = 9;
+-- 2) USER_CHANGE_PASSWORD là sub-action của USERS (không phải trang, giữ ẩn).
+--    Route NULL để tránh route 'roles' (typo cũ) kích hoạt nhầm module Roles trên Home
+--    (gây 403 vì user chưa có quyền ROLES).
+UPDATE Menus SET ParentId = 8, Route = NULL, IsVisible = 0, IsActive = 0 WHERE Id = 9;
 
 -- 3) Thêm menu COREASSETS (trang /coreassets) dưới nhóm CORE_DISPLAY (Id 21)
 INSERT INTO Menus (ParentId, Code, Name, Route, Component, Icon, SortOrder, IsVisible, IsActive, CreatedAt)

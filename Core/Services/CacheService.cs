@@ -5,9 +5,10 @@ namespace Core.Services;
 
 public class CacheService : ICacheService
 {
-    private readonly IMemoryCache _memoryCache;
+private readonly IMemoryCache _memoryCache;
     private static readonly object _lock = new object();
     private static readonly List<string> _menuCacheKeys = new List<string>();
+    private static readonly TimeSpan DefaultTtl = TimeSpan.FromMinutes(5);
 
     public CacheService(IMemoryCache memoryCache)
     {
@@ -23,13 +24,13 @@ public class CacheService : ICacheService
     {
         var options = new MemoryCacheEntryOptions
         {
-            AbsoluteExpirationRelativeToNow = absoluteExpiration ?? TimeSpan.FromMinutes(5)
+            AbsoluteExpirationRelativeToNow = absoluteExpiration ?? DefaultTtl
         };
 
         _memoryCache.Set(key, value, options);
 
-        // Track menu cache keys for invalidation
-        if (key.StartsWith("menus:user:"))
+        // Track cache keys for invalidation
+        if (key.StartsWith("menus:user:") || key.StartsWith("users:superadmin:"))
         {
             lock (_lock)
             {
@@ -73,10 +74,12 @@ public class CacheService : ICacheService
     {
         await RemoveAsync($"menus:user:{userId}", cancellationToken);
         await RemoveAsync($"menus:user:codes:{userId}", cancellationToken);
+        await RemoveAsync($"users:superadmin:{userId}", cancellationToken);
     }
 
     public async Task ClearAllMenuCacheAsync(CancellationToken cancellationToken = default)
     {
         await RemoveByPrefixAsync("menus:user:", cancellationToken);
+        await RemoveByPrefixAsync("users:superadmin:", cancellationToken);
     }
 }

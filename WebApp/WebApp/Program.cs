@@ -26,6 +26,7 @@ builder.Services.AddAntiforgery();
 
 // Register services needed for prerendering (WebAssembly components)
 builder.Services.AddHttpClient();
+builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ITokenStorage, ServerTokenStorage>();
 builder.Services.AddScoped<IMenuCacheService, ServerMenuCacheService>();
 builder.Services.AddScoped<AuthenticationStateProvider, ServerAuthenticationStateProvider>();
@@ -51,7 +52,6 @@ builder.Services.AddScoped<CustomAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<TokenRefreshService>();
 
-builder.Services.AddScoped<LocalStorageService>();
 builder.Services.AddScoped<ApiClient>();
 builder.Services.AddScoped<CoreAssetsService>();
 builder.Services.AddScoped<DisplayDevicesService>();

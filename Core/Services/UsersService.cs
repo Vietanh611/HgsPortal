@@ -13,20 +13,54 @@ public class UsersService : IUsersService
     private readonly HgsDbContext _dbContext;
     private readonly FlyOpsDbContext _flyOpsDbContext;
     private readonly IAuditLogService _auditLog;
+    private readonly IOrgScopeService _orgScope;
 
-    public UsersService(HgsDbContext dbContext, FlyOpsDbContext flyOpsDbContext, IAuditLogService auditLog)
+    public UsersService(
+        HgsDbContext dbContext,
+        FlyOpsDbContext flyOpsDbContext,
+        IAuditLogService auditLog,
+        IOrgScopeService orgScope)
     {
         _dbContext = dbContext;
         _flyOpsDbContext = flyOpsDbContext;
         _auditLog = auditLog;
+        _orgScope = orgScope;
+    }
+
+    private static void EnsureScope(bool inScope)
+    {
+        if (!inScope)
+        {
+            throw new UnauthorizedAccessException("Bạn không có quyền thực hiện thao tác này");
+        }
     }
 
     public async Task<IEnumerable<Users>> GetAllAsync(CancellationToken cancellationToken = default)
     {
+        var scopePaths = await _orgScope.GetCallerScopePathsAsync(cancellationToken);
+
+        if (scopePaths is null)
+        {
+            return await _dbContext.Users
+                .Include(x => x.OrganizationUnit)
+                .Where(x => !x.IsDeleted)
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+        }
+
+        if (!scopePaths.Any())
+        {
+            return Enumerable.Empty<Users>();
+        }
+
         return await _dbContext.Users
             .Include(x => x.OrganizationUnit)
-            .Where(x => !x.IsDeleted)
             .AsNoTracking()
+            .Where(x => !x.IsDeleted)
+            .Where(u => u.OrganizationUnit != null &&
+                        u.OrganizationUnit.Path != null &&
+                        scopePaths.Any(path => u.OrganizationUnit.Path == path ||
+                                               u.OrganizationUnit.Path.StartsWith(path + "/")))
             .ToListAsync(cancellationToken);
     }
     public async Task<IEnumerable<NhanVien>> GetAllBravoNhanVienAsync(CancellationToken cancellationToken = default)
@@ -38,10 +72,22 @@ public class UsersService : IUsersService
 
     public async Task<Users?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.Users
+        var user = await _dbContext.Users
             .Include(x => x.OrganizationUnit)
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted, cancellationToken);
+
+        if (user is null)
+        {
+            return null;
+        }
+
+        if (!await _orgScope.IsUserInScopeAsync(id, cancellationToken))
+        {
+            return null;
+        }
+
+        return user;
     }
 
     public async Task<Users> CreateAsync(UsersCreateRequest request, CancellationToken cancellationToken = default)
@@ -49,6 +95,11 @@ public class UsersService : IUsersService
         if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
         {
             throw new ArgumentException("Username and password are required");
+        }
+
+        if (!await _orgScope.IsOrgUnitInScopeAsync(request.OrganizationUnitId, cancellationToken))
+        {
+            throw new UnauthorizedAccessException("Bạn không có quyền thực hiện thao tác này");
         }
 
         var exists = await _dbContext.Users
@@ -95,6 +146,14 @@ public class UsersService : IUsersService
         if (user is null || user.IsDeleted)
         {
             return null;
+        }
+
+        EnsureScope(await _orgScope.IsUserInScopeAsync(id, cancellationToken));
+
+        if (request.OrganizationUnitId.HasValue &&
+            !await _orgScope.IsOrgUnitInScopeAsync(request.OrganizationUnitId.Value, cancellationToken))
+        {
+            throw new UnauthorizedAccessException("Bạn không có quyền thực hiện thao tác này");
         }
 
         var oldSnapshot = new
@@ -163,6 +222,8 @@ public class UsersService : IUsersService
         {
             return false;
         }
+
+        EnsureScope(await _orgScope.IsUserInScopeAsync(id, cancellationToken));
 
         _auditLog.Log(
             action: "DELETE",

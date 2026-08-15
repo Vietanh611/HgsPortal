@@ -94,7 +94,7 @@ public partial class Users
     {
         try
         {
-            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<OrganizationUnitsGetAllResponse>>>("api/organizationunits");
+            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<OrganizationUnitsGetAllResponse>>>("api/organizationunits", silent: true);
             if (response != null && response.Success && response.Data != null)
             {
                 organizationUnits = response.Data;
@@ -111,7 +111,7 @@ public partial class Users
         isLoadingMenus = true;
         try
         {
-            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<MenusGetAllResponse>>>("api/menus");
+            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<MenusGetAllResponse>>>("api/menus", silent: true);
             if (response != null && response.Success && response.Data != null)
             {
                 menus = response.Data;
@@ -159,7 +159,7 @@ public partial class Users
         isLoadingRoles = true;
         try
         {
-            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<RolesGetAllResponse>>>("api/roles");
+            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<RolesGetAllResponse>>>("api/roles", silent: true);
             if (response != null && response.Success && response.Data != null)
             {
                 roles = response.Data;

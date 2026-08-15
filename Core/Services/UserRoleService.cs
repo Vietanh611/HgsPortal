@@ -13,13 +13,15 @@ public class UserRoleService : IUserRoleService
     private readonly IUserMenuService _userMenuService;
     private readonly IAuditLogService _auditLog;
     private readonly ICacheService _cacheService;
+    private readonly IOrgScopeService _orgScope;
 
-    public UserRoleService(HgsDbContext dbContext, IUserMenuService userMenuService, IAuditLogService auditLog, ICacheService cacheService)
+    public UserRoleService(HgsDbContext dbContext, IUserMenuService userMenuService, IAuditLogService auditLog, ICacheService cacheService, IOrgScopeService orgScope)
     {
         _dbContext = dbContext;
         _userMenuService = userMenuService;
         _auditLog = auditLog;
         _cacheService = cacheService;
+        _orgScope = orgScope;
     }
 
     public async Task<IEnumerable<UserRoles>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -74,6 +76,11 @@ public class UserRoleService : IUserRoleService
             throw new KeyNotFoundException($"User with ID {request.UserId} not found");
         }
 
+        if (!await _orgScope.IsUserInScopeAsync(request.UserId, cancellationToken))
+        {
+            throw new UnauthorizedAccessException("Bạn không có quyền thực hiện thao tác này");
+        }
+
         // Check if role exists
         var role = await _dbContext.Roles
             .AsNoTracking()
@@ -81,6 +88,11 @@ public class UserRoleService : IUserRoleService
         if (role is null)
         {
             throw new KeyNotFoundException($"Role with ID {request.RoleId} not found");
+        }
+
+        if (!await _orgScope.IsRoleAssignableAsync(request.RoleId, cancellationToken))
+        {
+            throw new UnauthorizedAccessException("Role is not assignable");
         }
 
         // Check if user already has this role
@@ -178,6 +190,11 @@ public class UserRoleService : IUserRoleService
             throw new KeyNotFoundException($"User with ID {userId} not found");
         }
 
+        if (!await _orgScope.IsUserInScopeAsync(userId, cancellationToken))
+        {
+            throw new UnauthorizedAccessException("Bạn không có quyền thực hiện thao tác này");
+        }
+
         // Get existing role assignments
         var existingRoleIds = await _dbContext.UserRoles
             .Where(ur => ur.UserId == userId)
@@ -197,6 +214,11 @@ public class UserRoleService : IUserRoleService
             if (role is null)
             {
                 throw new KeyNotFoundException($"Role with ID {roleId} not found");
+            }
+
+            if (!await _orgScope.IsRoleAssignableAsync(roleId, cancellationToken))
+            {
+                throw new UnauthorizedAccessException("Role is not assignable");
             }
 
             var userRole = new UserRoles
@@ -243,6 +265,11 @@ public class UserRoleService : IUserRoleService
         if (user is null)
         {
             throw new KeyNotFoundException($"User with ID {userId} not found");
+        }
+
+        if (!await _orgScope.IsUserInScopeAsync(userId, cancellationToken))
+        {
+            throw new UnauthorizedAccessException("Bạn không có quyền thực hiện thao tác này");
         }
 
         // Get total role count

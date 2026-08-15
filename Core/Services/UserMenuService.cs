@@ -14,12 +14,14 @@ public class UserMenuService : IUserMenuService
     private readonly HgsDbContext _dbContext;
     private readonly IAuditLogService _auditLog;
     private readonly ICacheService _cacheService;
+    private readonly IOrgScopeService _orgScope;
 
-    public UserMenuService(HgsDbContext dbContext, IAuditLogService auditLog, ICacheService cacheService)
+    public UserMenuService(HgsDbContext dbContext, IAuditLogService auditLog, ICacheService cacheService, IOrgScopeService orgScope)
     {
         _dbContext = dbContext;
         _auditLog = auditLog;
         _cacheService = cacheService;
+        _orgScope = orgScope;
     }
 
     public async Task<IEnumerable<UserMenuDto>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -208,6 +210,11 @@ public class UserMenuService : IUserMenuService
 
     public async Task<UserMenus> CreateAsync(UserMenusCreateRequest request, int assignedBy, CancellationToken cancellationToken = default)
     {
+        if (!await _orgScope.IsUserInScopeAsync(request.UserId, cancellationToken))
+        {
+            throw new UnauthorizedAccessException("Bạn không có quyền thực hiện thao tác này");
+        }
+
         var existing = await _dbContext.UserMenus
             .AnyAsync(x => x.UserId == request.UserId && x.MenuId == request.MenuId, cancellationToken);
         if (existing)
@@ -262,6 +269,11 @@ public class UserMenuService : IUserMenuService
 
     public async Task<bool> AssignMultipleMenusAsync(int userId, List<int> menuIds, int assignedBy, CancellationToken cancellationToken = default)
     {
+        if (!await _orgScope.IsUserInScopeAsync(userId, cancellationToken))
+        {
+            throw new UnauthorizedAccessException("Bạn không có quyền thực hiện thao tác này");
+        }
+
         var existingMenus = await _dbContext.UserMenus
             .Where(x => x.UserId == userId)
             .Select(x => x.MenuId)
@@ -302,6 +314,11 @@ public class UserMenuService : IUserMenuService
 
     public async Task<bool> RemoveMultipleMenusAsync(int userId, List<int> menuIds, CancellationToken cancellationToken = default)
     {
+        if (!await _orgScope.IsUserInScopeAsync(userId, cancellationToken))
+        {
+            throw new UnauthorizedAccessException("Bạn không có quyền thực hiện thao tác này");
+        }
+
         var userMenus = await _dbContext.UserMenus
             .Where(x => x.UserId == userId && menuIds.Contains(x.MenuId))
             .ToListAsync(cancellationToken);

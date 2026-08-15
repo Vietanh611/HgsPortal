@@ -29,7 +29,7 @@ public class ApiClient
         };
     }
 
-    private async Task<bool> HandleResponse(HttpResponseMessage response)
+    private async Task<bool> HandleResponse(HttpResponseMessage response, bool silent = false)
     {
         if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
@@ -61,14 +61,19 @@ public class ApiClient
         {
             LastError = "You do not have permission to access this resource.";
 
-            var currentUri = _navigationManager.Uri;
-            var forbiddenUri = _navigationManager.ToAbsoluteUri("/forbidden").ToString();
-
-            // Don't redirect if already on the forbidden page (avoid reload loop)
-            if (!string.Equals(currentUri, forbiddenUri, StringComparison.OrdinalIgnoreCase))
+            // Trong chế độ silent: không redirect sang trang forbidden (dùng cho
+            // các request tùy chọn/nền như đếm module, chỉ trả về mặc định).
+            if (!silent)
             {
-                Console.WriteLine("403 Forbidden - Redirecting to forbidden page");
-                _navigationManager.NavigateTo("forbidden", forceLoad: true);
+                var currentUri = _navigationManager.Uri;
+                var forbiddenUri = _navigationManager.ToAbsoluteUri("/forbidden").ToString();
+
+                // Don't redirect if already on the forbidden page (avoid reload loop)
+                if (!string.Equals(currentUri, forbiddenUri, StringComparison.OrdinalIgnoreCase))
+                {
+                    Console.WriteLine("403 Forbidden - Redirecting to forbidden page");
+                    _navigationManager.NavigateTo("forbidden", forceLoad: true);
+                }
             }
 
             return false;
@@ -148,7 +153,7 @@ public class ApiClient
         return new Uri(baseUri, endpoint.TrimStart('/'));
     }
 
-    public async Task<T?> GetAsync<T>(string endpoint)
+    public async Task<T?> GetAsync<T>(string endpoint, bool silent = false)
     {
         IsLoading = true;
         LastError = null;
@@ -159,7 +164,7 @@ public class ApiClient
             var result = await ExecuteWithRetry(async () =>
             {
                 var response = await _httpClient.GetAsync(requestUri);
-                if (await HandleResponse(response))
+                if (await HandleResponse(response, silent))
                 {
                     return await response.Content.ReadFromJsonAsync<T>(_jsonOptions);
                 }

@@ -1,0 +1,13 @@
+{
+  "name": "hgsportal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "HGS Portal - documentation tooling",
+  "scripts": {
+    "docs:lint": "markdownlint-cli2 \"Docs/**/*.md\"",
+    "docs:lint:fix": "markdownlint-cli2 --fix \"Docs/**/*.md\""
+  },
+  "devDependencies": {
+    "markdownlint-cli2": "^0.17.2"
+  }
+}

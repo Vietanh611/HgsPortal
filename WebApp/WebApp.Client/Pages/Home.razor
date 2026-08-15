@@ -174,14 +174,19 @@ else
             }
 
             var menus = await GetUserMenusAsync(userId);
-            var routes = FlattenMenus(menus)
+            var flatMenus = FlattenMenus(menus).ToList();
+            var routes = flatMenus
                 .Select(m => m.Route?.TrimStart('/'))
                 .Where(r => !string.IsNullOrWhiteSpace(r))
                 .Select(r => r!.ToLowerInvariant())
                 .ToHashSet();
+            var menuCodes = flatMenus
+                .Select(m => m.Code?.ToUpperInvariant())
+                .Where(c => !string.IsNullOrWhiteSpace(c))
+                .ToHashSet();
 
-            modules = AllModules.Where(m => routes.Contains(m.Route)).ToList();
-            canViewAudit = routes.Contains("audit");
+            modules = AllModules.Where(m => routes.Contains(m.Route) && menuCodes.Contains(m.Route.ToUpperInvariant())).ToList();
+            canViewAudit = routes.Contains("audit") && menuCodes.Contains("AUDIT");
 
             foreach (var module in modules)
             {
@@ -210,19 +215,19 @@ else
 
     private async Task<List<MenusGetByUserIdResponse>> GetUserMenusAsync(int? userId)
     {
-        var cached = await MenuCacheService.GetCachedMenusAsync();
-        if (cached != null && cached.Any())
-        {
-            return cached;
-        }
-
         if (userId.HasValue)
         {
-            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<MenusGetByUserIdResponse>>>($"api/menus/user/{userId.Value}");
+            var cached = await MenuCacheService.GetCachedMenusAsync(userId.Value);
+            if (cached != null && cached.Any())
+            {
+                return cached;
+            }
+
+            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<MenusGetByUserIdResponse>>>("api/my-menus");
             if (response != null && response.Success && response.Data != null)
             {
                 var menus = response.Data.ToList();
-                await MenuCacheService.SetCachedMenusAsync(menus);
+                await MenuCacheService.SetCachedMenusAsync(userId.Value, menus);
                 return menus;
             }
         }
@@ -260,7 +265,7 @@ else
 
     private async Task<int> LoadCountAsync<T>(string endpoint)
     {
-        var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<T>>>(endpoint);
+        var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<T>>>(endpoint, silent: true);
         return response?.Data?.Count() ?? 0;
     }
 

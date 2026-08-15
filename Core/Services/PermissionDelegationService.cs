@@ -18,19 +18,22 @@ public class PermissionDelegationService : IPermissionDelegationService
     private readonly ILogger<PermissionDelegationService> _logger;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ICacheService _cacheService;
+    private readonly IOrgScopeService _orgScope;
 
     public PermissionDelegationService(
         HgsDbContext dbContext,
         IAuditLogService auditLog,
         ILogger<PermissionDelegationService> logger,
         IHttpContextAccessor httpContextAccessor,
-        ICacheService cacheService)
+        ICacheService cacheService,
+        IOrgScopeService orgScope)
     {
         _dbContext = dbContext;
         _auditLog = auditLog;
         _logger = logger;
         _httpContextAccessor = httpContextAccessor;
         _cacheService = cacheService;
+        _orgScope = orgScope;
     }
 
     private int GetCurrentUserId()
@@ -42,32 +45,42 @@ public class PermissionDelegationService : IPermissionDelegationService
     public async Task<IEnumerable<ManageableUserResponse>> GetManageableUsersAsync(CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
-        
-        // Get organization units the current user manages through their roles
-        var userRoleOrgUnits = await _dbContext.UserRoles
-            .Include(ur => ur.Role)
-            .Where(ur => ur.UserId == currentUserId && ur.Role.IsActive)
-            .Select(ur => ur.Role.OrganizationUnitId)
-            .Distinct()
-            .ToListAsync(cancellationToken);
-
-        if (!userRoleOrgUnits.Any())
+        if (currentUserId <= 0)
+        {
             return Enumerable.Empty<ManageableUserResponse>();
+        }
 
-        // Get all organization unit paths for these org units
-        var orgUnitPaths = await _dbContext.OrganizationUnits
-            .Where(ou => userRoleOrgUnits.Contains(ou.Id))
-            .Select(ou => ou.Path)
-            .ToListAsync(cancellationToken);
+        var scopePaths = await _orgScope.GetCallerScopePathsAsync(cancellationToken);
+        if (scopePaths is null)
+        {
+            return await _dbContext.Users
+                .Include(u => u.OrganizationUnit)
+                .Where(u => u.IsActive && !u.IsDeleted && u.Id != currentUserId)
+                .Select(u => new ManageableUserResponse
+                {
+                    Id = u.Id,
+                    Username = u.Username,
+                    Email = u.Email,
+                    FullName = u.FullName,
+                    OrganizationUnitId = u.OrganizationUnitId,
+                    OrganizationUnitName = u.OrganizationUnit != null ? u.OrganizationUnit.Name : string.Empty,
+                    IsActive = u.IsActive
+                })
+                .ToListAsync(cancellationToken);
+        }
 
-        // Get users whose organization unit path starts with any of the manager's org unit paths
+        if (!scopePaths.Any())
+        {
+            return Enumerable.Empty<ManageableUserResponse>();
+        }
+
         var manageableUsers = await _dbContext.Users
             .Include(u => u.OrganizationUnit)
-            .Where(u => u.IsActive && !u.IsDeleted)
-            .Where(u => userRoleOrgUnits.Contains(u.OrganizationUnitId) == false) // Exclude users in same org as manager
-            .Where(u => orgUnitPaths.Any(path => 
-                u.OrganizationUnit != null && u.OrganizationUnit.Path != null && 
-                (u.OrganizationUnit.Path == path || u.OrganizationUnit.Path.StartsWith(path + "/"))))
+            .Where(u => u.IsActive && !u.IsDeleted && u.Id != currentUserId)
+            .Where(u => u.OrganizationUnit != null &&
+                        u.OrganizationUnit.Path != null &&
+                        scopePaths.Any(path => u.OrganizationUnit.Path == path ||
+                                               u.OrganizationUnit.Path.StartsWith(path + "/")))
             .Select(u => new ManageableUserResponse
             {
                 Id = u.Id,
@@ -85,42 +98,27 @@ public class PermissionDelegationService : IPermissionDelegationService
 
     public async Task<IEnumerable<AssignableRoleResponse>> GetAssignableRolesAsync(CancellationToken cancellationToken = default)
     {
-        var currentUserId = GetCurrentUserId();
-        
-        // Get roles that the current user has
-        var userRoleIds = await _dbContext.UserRoles
-            .Where(ur => ur.UserId == currentUserId)
-            .Select(ur => ur.RoleId)
-            .ToListAsync(cancellationToken);
+        var roles = await _orgScope.GetAssignableRolesAsync(cancellationToken);
 
-        if (!userRoleIds.Any())
-            return Enumerable.Empty<AssignableRoleResponse>();
-
-        var assignableRoles = await _dbContext.Roles
-            .Include(r => r.OrganizationUnit)
-            .Where(r => userRoleIds.Contains(r.Id) && r.IsActive)
-            .Select(r => new AssignableRoleResponse
-            {
-                Id = r.Id,
-                Code = r.Code,
-                Name = r.Name,
-                Description = r.Description,
-                OrganizationUnitId = r.OrganizationUnitId ?? 0,
-                OrganizationUnitName = r.OrganizationUnit != null ? r.OrganizationUnit.Name : string.Empty
-            })
-            .ToListAsync(cancellationToken);
-
-        return assignableRoles;
+        return roles.Select(r => new AssignableRoleResponse
+        {
+            Id = r.Id,
+            Code = r.Code,
+            Name = r.Name,
+            Description = r.Description,
+            OrganizationUnitId = r.OrganizationUnitId ?? 0,
+            OrganizationUnitName = r.OrganizationUnit != null ? r.OrganizationUnit.Name : string.Empty
+        });
     }
 
     public async Task AssignRoleAsync(AssignRoleRequest request, CancellationToken cancellationToken = default)
     {
         var currentUserId = GetCurrentUserId();
         
-        // Check 1: User has MANAGE_PERMISSIONS menu
+        // Check 1: User has PERMISSIONDELEGATION menu
         if (!await UserHasManagePermissionsMenuAsync(cancellationToken))
         {
-            throw new UnauthorizedAccessException("User does not have MANAGE_PERMISSIONS menu");
+            throw new UnauthorizedAccessException("User does not have PERMISSIONDELEGATION menu");
         }
 
         // Check 2: Cannot assign to self
@@ -144,8 +142,8 @@ public class PermissionDelegationService : IPermissionDelegationService
             throw new UnauthorizedAccessException("Target user is not in organizational scope");
         }
 
-        // Check 4: Role must be in user's assignable roles
-        if (!await IsRoleAssignableAsync(request.RoleId, cancellationToken))
+        // Check 4: Role must be assignable (active, non-system, org in caller scope)
+        if (!await _orgScope.IsRoleAssignableAsync(request.RoleId, cancellationToken))
         {
             throw new UnauthorizedAccessException("Role is not assignable");
         }
@@ -184,10 +182,10 @@ public class PermissionDelegationService : IPermissionDelegationService
     {
         var currentUserId = GetCurrentUserId();
         
-        // Check 1: User has MANAGE_PERMISSIONS menu
+        // Check 1: User has PERMISSIONDELEGATION menu
         if (!await UserHasManagePermissionsMenuAsync(cancellationToken))
         {
-            throw new UnauthorizedAccessException("User does not have MANAGE_PERMISSIONS menu");
+            throw new UnauthorizedAccessException("User does not have PERMISSIONDELEGATION menu");
         }
 
         // Check 2: Cannot revoke from self
@@ -211,8 +209,8 @@ public class PermissionDelegationService : IPermissionDelegationService
             throw new UnauthorizedAccessException("Target user is not in organizational scope");
         }
 
-        // Check 4: Role must be in user's assignable roles
-        if (!await IsRoleAssignableAsync(request.RoleId, cancellationToken))
+        // Check 4: Role must be assignable (active, non-system, org in caller scope)
+        if (!await _orgScope.IsRoleAssignableAsync(request.RoleId, cancellationToken))
         {
             throw new UnauthorizedAccessException("Role is not assignable");
         }
@@ -294,57 +292,17 @@ public class PermissionDelegationService : IPermissionDelegationService
             .Select(ur => ur.RoleId)
             .ToListAsync(cancellationToken);
 
-        // Check if any of these roles has MANAGE_PERMISSIONS menu
+        // Check if any of these roles has PERMISSIONDELEGATION menu
         return await _dbContext.RoleMenus
             .Include(rm => rm.Menu)
             .AnyAsync(rm => 
                 roleIds.Contains(rm.RoleId) && 
-                rm.Menu.Code == "MANAGE_PERMISSIONS" &&
+                rm.Menu.Code == "PERMISSIONDELEGATION" &&
                 rm.Menu.IsActive, cancellationToken);
     }
 
-    private async Task<bool> IsUserInOrgScopeAsync(int targetOrgUnitId, CancellationToken cancellationToken)
+    private Task<bool> IsUserInOrgScopeAsync(int targetOrgUnitId, CancellationToken cancellationToken)
     {
-        var currentUserId = GetCurrentUserId();
-        
-        // Get organization units the current user manages through their roles
-        var userRoleOrgUnits = await _dbContext.UserRoles
-            .Include(ur => ur.Role)
-            .Where(ur => ur.UserId == currentUserId && ur.Role.IsActive)
-            .Select(ur => ur.Role.OrganizationUnitId)
-            .Distinct()
-            .ToListAsync(cancellationToken);
-
-        if (!userRoleOrgUnits.Any())
-            return false;
-
-        // Get paths for these org units
-        var orgUnitPaths = await _dbContext.OrganizationUnits
-            .Where(ou => userRoleOrgUnits.Contains(ou.Id))
-            .Select(ou => ou.Path)
-            .ToListAsync(cancellationToken);
-
-        // Check if target org unit is in scope
-        var targetOrgUnit = await _dbContext.OrganizationUnits
-            .FirstOrDefaultAsync(ou => ou.Id == targetOrgUnitId, cancellationToken);
-
-        if (targetOrgUnit == null || string.IsNullOrEmpty(targetOrgUnit.Path))
-            return false;
-
-        return orgUnitPaths.Any(path => 
-            targetOrgUnit.Path == path || targetOrgUnit.Path.StartsWith(path + "/"));
-    }
-
-    private async Task<bool> IsRoleAssignableAsync(int roleId, CancellationToken cancellationToken)
-    {
-        var currentUserId = GetCurrentUserId();
-        
-        // Get roles the current user has
-        var userRoleIds = await _dbContext.UserRoles
-            .Where(ur => ur.UserId == currentUserId)
-            .Select(ur => ur.RoleId)
-            .ToListAsync(cancellationToken);
-
-        return userRoleIds.Contains(roleId);
+        return _orgScope.IsOrgUnitInScopeAsync(targetOrgUnitId, cancellationToken);
     }
 }

@@ -81,6 +81,11 @@ public class UsersController : BaseApiController
         {
             return BadRequest(ApiResponse<UsersCreateResponse>.FailResponse(ex.Message, 400));
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized access to create user");
+            return StatusCode(403, ApiResponse<UsersCreateResponse>.FailResponse("Bạn không có quyền thực hiện thao tác này", 403));
+        }
         catch (InvalidOperationException ex)
         {
             return Conflict(ApiResponse<UsersCreateResponse>.FailResponse(ex.Message, 409));
@@ -105,19 +110,32 @@ public class UsersController : BaseApiController
         {
             return BadRequest(ApiResponse<UsersUpdateResponse>.FailResponse(ex.Message, 400));
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized access to update user");
+            return StatusCode(403, ApiResponse<UsersUpdateResponse>.FailResponse("Bạn không có quyền thực hiện thao tác này", 403));
+        }
     }
 
     [HttpDelete("{id:int}")]
     public async Task<ActionResult<ApiResponse>> Delete(int id)
     {
-        var deleted = await _usersService.DeleteAsync(id);
-        if (!deleted)
+        try
         {
-            return NotFound(ApiResponse.FailResponse("User not found", 404));
-        }
+            var deleted = await _usersService.DeleteAsync(id);
+            if (!deleted)
+            {
+                return NotFound(ApiResponse.FailResponse("User not found", 404));
+            }
 
-        _logger.LogInformation("Deleted user with id '{Id}'.", id);
-        return Ok(ApiResponse.SuccessResponse("User deleted successfully", 200));
+            _logger.LogInformation("Deleted user with id '{Id}'.", id);
+            return Ok(ApiResponse.SuccessResponse("User deleted successfully", 200));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized access to delete user");
+            return StatusCode(403, ApiResponse.FailResponse("Bạn không có quyền thực hiện thao tác này", 403));
+        }
     }
 
     [HttpPut("{id:int}/changepassword")]

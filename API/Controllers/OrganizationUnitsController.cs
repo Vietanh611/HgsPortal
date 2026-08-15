@@ -4,14 +4,13 @@ using Domain.Entities.Identity;
 using Hgs.Share.Requests.OrganizationUnits;
 using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.OrganizationUnits;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[MenuPermission("ORGANIZATIONUNITS")]
+[MenuPermission("ORGANIZATIONUNITS", "USERS")]
 public class OrganizationUnitsController : ControllerBase
 {
     private readonly IOrganizationUnitsService _organizationUnitsService;

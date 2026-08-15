@@ -41,6 +41,7 @@
     List<MenusGetByUserIdResponse> userMenus = new();
     Sidebar? sidebar;
     private bool _isLoadingMenus = false;
+    private int? _lastUserId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -88,7 +89,9 @@
             else
             {
                 userMenus = new List<MenusGetByUserIdResponse>();
-                await MenuCacheService.ClearCachedMenusAsync();
+                var lastUserId = _lastUserId;
+                _lastUserId = null;
+                await MenuCacheService.ClearCachedMenusAsync(lastUserId);
                 StateHasChanged();
             }
         }
@@ -114,8 +117,24 @@
 
         try
         {
-            // Try to get cached menus first
-            var cachedMenus = await MenuCacheService.GetCachedMenusAsync();
+            var token = await TokenStorage.GetAccessTokenAsync();
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                userMenus = new List<MenusGetByUserIdResponse>();
+                return;
+            }
+
+            var userId = JwtService.ExtractUserId(token);
+            if (!userId.HasValue)
+            {
+                userMenus = new List<MenusGetByUserIdResponse>();
+                return;
+            }
+
+            _lastUserId = userId;
+
+            // Try to get cached menus for this user first
+            var cachedMenus = await MenuCacheService.GetCachedMenusAsync(userId.Value);
             if (cachedMenus != null && cachedMenus.Any())
             {
                 userMenus = cachedMenus;
@@ -131,25 +150,12 @@
                 return;
             }
 
-            var token = await TokenStorage.GetAccessTokenAsync();
-            if (string.IsNullOrWhiteSpace(token))
-            {
-                userMenus = new List<MenusGetByUserIdResponse>();
-                return;
-            }
-
-            var userId = JwtService.ExtractUserId(token);
-            if (!userId.HasValue)
-            {
-                userMenus = new List<MenusGetByUserIdResponse>();
-                return;
-            }
-            var response = await apiClient.GetAsync<ApiResponse<IEnumerable<MenusGetByUserIdResponse>>>($"api/menus/user/{userId.Value}");
+            var response = await apiClient.GetAsync<ApiResponse<IEnumerable<MenusGetByUserIdResponse>>>("api/my-menus");
             if (response != null && response.Success && response.Data != null)
             {
                 userMenus = response.Data.ToList();
                 // Cache the menus for future use
-                await MenuCacheService.SetCachedMenusAsync(userMenus);
+                await MenuCacheService.SetCachedMenusAsync(userId.Value, userMenus);
             }
             else
             {
