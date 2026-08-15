@@ -57,6 +57,23 @@ public class ApiClient
             return false;
         }
 
+        if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+        {
+            LastError = "You do not have permission to access this resource.";
+
+            var currentUri = _navigationManager.Uri;
+            var forbiddenUri = _navigationManager.ToAbsoluteUri("/forbidden").ToString();
+
+            // Don't redirect if already on the forbidden page (avoid reload loop)
+            if (!string.Equals(currentUri, forbiddenUri, StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine("403 Forbidden - Redirecting to forbidden page");
+                _navigationManager.NavigateTo("forbidden", forceLoad: true);
+            }
+
+            return false;
+        }
+
         if (!response.IsSuccessStatusCode)
         {
             var errorContent = await response.Content.ReadAsStringAsync();

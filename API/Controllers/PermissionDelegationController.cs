@@ -1,3 +1,4 @@
+using API.Authorization;
 using Core.Interfaces;
 using Hgs.Share.Requests.PermissionDelegation;
 using Hgs.Share.Responses.ApiResponses;
@@ -8,8 +9,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace API.Controllers;
 
 [ApiController]
-[Authorize]
 [Route("api/[controller]")]
+[MenuPermission("PERMISSIONDELEGATION")]
 public class PermissionDelegationController : ControllerBase
 {
     private readonly IPermissionDelegationService _permissionDelegationService;

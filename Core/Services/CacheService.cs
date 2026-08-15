@@ -71,8 +71,8 @@ public class CacheService : ICacheService
 
     public async Task ClearUserMenuCacheAsync(int userId, CancellationToken cancellationToken = default)
     {
-        var cacheKey = $"menus:user:{userId}";
-        await RemoveAsync(cacheKey, cancellationToken);
+        await RemoveAsync($"menus:user:{userId}", cancellationToken);
+        await RemoveAsync($"menus:user:codes:{userId}", cancellationToken);
     }
 
     public async Task ClearAllMenuCacheAsync(CancellationToken cancellationToken = default)

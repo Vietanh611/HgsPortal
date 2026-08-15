@@ -13,4 +13,6 @@ public interface IMenuService
     Task<Menus?> UpdateAsync(int id, MenusUpdateRequest request, CancellationToken cancellationToken = default);
     Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default);
     Task<List<MenusGetByUserIdResponse>> GetMenusByUserIdAsync(int userId, CancellationToken cancellationToken = default);
+    Task<HashSet<string>> GetEffectiveMenuCodesAsync(int userId, CancellationToken cancellationToken = default);
+    Task<bool> IsSuperAdminAsync(int userId, CancellationToken cancellationToken = default);
 }

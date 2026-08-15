@@ -1,3 +1,4 @@
+using API.Authorization;
 using Core.Interfaces;
 using Domain.Entities.DisplayDevices;
 using Hgs.Share.Requests.DisplayDevices;
@@ -10,6 +11,7 @@ namespace API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[MenuPermission("DISPLAYDEVICES")]
 public class DisplayDevicesController : ControllerBase
 {
     private readonly IDisplayDevicesService _displayDevicesService;

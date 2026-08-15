@@ -1,3 +1,4 @@
+using API.Authorization;
 using Core.Interfaces;
 using Domain.Entities.FlyOps;
 using Domain.Entities.Identity;
@@ -9,6 +10,7 @@ using System.Security.Claims;
 
 namespace API.Controllers;
 
+[MenuPermission("USERS")]
 public class UsersController : BaseApiController
 {
     private readonly IUsersService _usersService;

@@ -1,8 +1,10 @@
+using API.Authorization;
 using API.Middleware;
 using Core.Interfaces;
 using Core.Services;
 using Data.DbContexts;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -49,6 +51,7 @@ builder.Services.AddScoped<ICoreAssetsService, CoreAssetsService>();
 builder.Services.AddScoped<IDisplayService, DisplayService>();
 
 builder.Services.AddHttpContextAccessor();
+builder.Services.Configure<CookieSettings>(builder.Configuration.GetSection("CookieSettings"));
 var rateLimitSettings = builder.Configuration.GetSection("RateLimiting");
 
 builder.Services.AddRateLimiter(options =>
@@ -94,7 +97,15 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret))
     };
 });
-builder.Services.AddAuthorization();
+builder.Services.AddScoped<IAuthorizationHandler, MenuPermissionHandler>();
+builder.Services.AddScoped<IAuthorizationMiddlewareResultHandler, MenuAuthorizationResultHandler>();
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .AddRequirements(new MenuPermissionRequirement())
+        .Build();
+});
 builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "X-CSRF-TOKEN";

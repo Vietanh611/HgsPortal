@@ -4,6 +4,7 @@ using Domain.Entities.System;
 using Hgs.Share.Dtos;
 using Hgs.Share.Requests.UserMenus;
 using Hgs.Share.Responses.Menus;
+using Hgs.Share.Responses.UserMenus;
 using Microsoft.EntityFrameworkCore;
 
 namespace Core.Services;
@@ -12,11 +13,13 @@ public class UserMenuService : IUserMenuService
 {
     private readonly HgsDbContext _dbContext;
     private readonly IAuditLogService _auditLog;
+    private readonly ICacheService _cacheService;
 
-    public UserMenuService(HgsDbContext dbContext, IAuditLogService auditLog)
+    public UserMenuService(HgsDbContext dbContext, IAuditLogService auditLog, ICacheService cacheService)
     {
         _dbContext = dbContext;
         _auditLog = auditLog;
+        _cacheService = cacheService;
     }
 
     public async Task<IEnumerable<UserMenuDto>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -107,6 +110,33 @@ public class UserMenuService : IUserMenuService
             .Where(x => x.UserId == userId)
             .Select(x => x.MenuId)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<UserMenuAssignmentDetailsResponse> GetAssignmentDetailsByUserIdAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        var userRoleIds = await _dbContext.UserRoles
+            .AsNoTracking()
+            .Where(x => x.UserId == userId)
+            .Select(x => x.RoleId)
+            .ToListAsync(cancellationToken);
+
+        var roleMenuIds = await _dbContext.RoleMenus
+            .AsNoTracking()
+            .Where(rm => userRoleIds.Contains(rm.RoleId))
+            .Select(rm => rm.MenuId)
+            .ToListAsync(cancellationToken);
+
+        var userMenuIds = await _dbContext.UserMenus
+            .AsNoTracking()
+            .Where(x => x.UserId == userId)
+            .Select(x => x.MenuId)
+            .ToListAsync(cancellationToken);
+
+        return new UserMenuAssignmentDetailsResponse
+        {
+            RoleMenuIds = roleMenuIds.Distinct().OrderBy(x => x).ToList(),
+            UserMenuIds = userMenuIds.Distinct().OrderBy(x => x).ToList()
+        };
     }
 
     private static List<MenusGetByUserIdResponse> BuildMenuHierarchy(
@@ -204,6 +234,7 @@ public class UserMenuService : IUserMenuService
             newValue: userMenu);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+        await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
         return userMenu;
     }
 
@@ -225,6 +256,7 @@ public class UserMenuService : IUserMenuService
 
         _dbContext.UserMenus.Remove(userMenu);
         await _dbContext.SaveChangesAsync(cancellationToken);
+        await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
         return true;
     }
 
@@ -264,6 +296,7 @@ public class UserMenuService : IUserMenuService
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+        await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
         return true;
     }
 
@@ -285,6 +318,7 @@ public class UserMenuService : IUserMenuService
 
         _dbContext.UserMenus.RemoveRange(userMenus);
         await _dbContext.SaveChangesAsync(cancellationToken);
+        await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
         return true;
     }
 }

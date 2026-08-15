@@ -10,11 +10,13 @@ public class RoleMenuService : IRoleMenuService
 {
     private readonly HgsDbContext _dbContext;
     private readonly IAuditLogService _auditLog;
+    private readonly ICacheService _cacheService;
 
-    public RoleMenuService(HgsDbContext dbContext, IAuditLogService auditLog)
+    public RoleMenuService(HgsDbContext dbContext, IAuditLogService auditLog, ICacheService cacheService)
     {
         _dbContext = dbContext;
         _auditLog = auditLog;
+        _cacheService = cacheService;
     }
 
     public async Task<IEnumerable<RoleMenus>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -106,6 +108,7 @@ public class RoleMenuService : IRoleMenuService
             newValue: roleMenu);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+        await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
         return roleMenu;
     }
 
@@ -128,6 +131,7 @@ public class RoleMenuService : IRoleMenuService
 
         _dbContext.RoleMenus.Remove(roleMenu);
         await _dbContext.SaveChangesAsync(cancellationToken);
+        await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
         return true;
     }
 
@@ -188,6 +192,7 @@ public class RoleMenuService : IRoleMenuService
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+        await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
     }
 
     public async Task RemoveMultipleMenusAsync(int roleId, List<int> menuIds, CancellationToken cancellationToken = default)
@@ -217,5 +222,6 @@ public class RoleMenuService : IRoleMenuService
 
         _dbContext.RoleMenus.RemoveRange(roleMenus);
         await _dbContext.SaveChangesAsync(cancellationToken);
+        await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
     }
 }

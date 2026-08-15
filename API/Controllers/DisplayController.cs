@@ -1,4 +1,5 @@
-﻿using Core.Interfaces;
+﻿using API.Authorization;
+using Core.Interfaces;
 using Hgs.Share.Dtos;
 using Hgs.Share.Exceptions;
 using Hgs.Share.Responses.ApiResponses;
@@ -8,8 +9,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace API.Controllers
 {
     [ApiController]
-    [Authorize]
     [Route("api/[controller]")]
+    [MenuPermission("DISPLAY")]
     public class DisplayController : Controller
     {
         private readonly IDisplayService _displayService;

@@ -8,6 +8,7 @@ using Hgs.Share.Responses.Roles;
 using Hgs.Share.Responses.UserRoles;
 using Hgs.Share.Responses.Users;
 using Hgs.Share.Responses.Menus;
+using Hgs.Share.Responses.UserMenus;
 using Microsoft.AspNetCore.Components;
 using WebApp.Client.Services.Components;
 using WebApp.Client.Services.Network;
@@ -30,6 +31,7 @@ public partial class Users
     private IEnumerable<RolesGetAllResponse>? roles;
     private List<int> assignedMenuIds = new();
     private List<int> selectedMenuIds = new();
+    private List<int> roleMenuIds = new();
     private List<int> assignedRoleIds = new();
     private List<int> selectedRoleIds = new();
     private HashSet<int> expandedMenuIds = new();
@@ -129,14 +131,16 @@ public partial class Users
     {
         try
         {
-            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<int>>>($"api/usermenus/user/{userId}/menu-ids");
+            var response = await ApiClient.GetAsync<ApiResponse<UserMenuAssignmentDetailsResponse>>($"api/usermenus/user/{userId}/details");
             if (response != null && response.Success && response.Data != null)
             {
-                assignedMenuIds = response.Data.ToList();
+                roleMenuIds = response.Data.RoleMenuIds ?? new List<int>();
+                assignedMenuIds = response.Data.UserMenuIds ?? new List<int>();
                 selectedMenuIds = new List<int>(assignedMenuIds);
             }
             else
             {
+                roleMenuIds = new List<int>();
                 assignedMenuIds = new List<int>();
                 selectedMenuIds = new List<int>();
             }
@@ -144,6 +148,7 @@ public partial class Users
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading user menus: {ex.Message}");
+            roleMenuIds = new List<int>();
             assignedMenuIds = new List<int>();
             selectedMenuIds = new List<int>();
         }
@@ -415,21 +420,41 @@ public partial class Users
         isAssigningMenus = true;
         try
         {
-            var request = new UserMenusAssignMultipleRequest
+            var toAdd = selectedMenuIds.Except(assignedMenuIds).ToList();
+            var toRemove = assignedMenuIds.Except(selectedMenuIds).ToList();
+
+            if (toAdd.Any())
             {
-                UserId = assignMenuUserId,
-                MenuIds = selectedMenuIds
-            };
-            var success = await ApiClient.PostAsync("api/usermenus/assign-multiple", request);
-            if (success)
-            {
-                ToastService.ShowSuccess("Menus assigned successfully");
-                await CloseAssignMenuModal();
+                var addRequest = new UserMenusAssignMultipleRequest
+                {
+                    UserId = assignMenuUserId,
+                    MenuIds = toAdd
+                };
+                var addSuccess = await ApiClient.PostAsync("api/usermenus/assign-multiple", addRequest);
+                if (!addSuccess)
+                {
+                    ToastService.ShowError("Failed to assign menus");
+                    return;
+                }
             }
-            else
+
+            if (toRemove.Any())
             {
-                ToastService.ShowError("Failed to assign menus");
+                var removeRequest = new UserMenusAssignMultipleRequest
+                {
+                    UserId = assignMenuUserId,
+                    MenuIds = toRemove
+                };
+                var removeSuccess = await ApiClient.PostAsync("api/usermenus/remove-multiple", removeRequest);
+                if (!removeSuccess)
+                {
+                    ToastService.ShowError("Failed to remove menus");
+                    return;
+                }
             }
+
+            ToastService.ShowSuccess("Menus assigned successfully");
+            await CloseAssignMenuModal();
         }
         catch (Exception ex)
         {

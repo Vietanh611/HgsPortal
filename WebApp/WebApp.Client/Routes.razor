@@ -4,6 +4,7 @@
 <Router AppAssembly="@typeof(Program).Assembly">
     <Found Context="routeData">
         @if (routeData.PageType == typeof(WebApp.Client.Pages.Login) ||
+            routeData.PageType == typeof(WebApp.Client.Pages.Forbidden) ||
             routeData.PageType == typeof(WebApp.Client.Pages.Display.DomesticBaggageArrivalDisplay) ||
             routeData.PageType == typeof(WebApp.Client.Pages.Display.InternationalBaggageArrivalDisplay))
         {

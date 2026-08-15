@@ -1,4 +1,5 @@
-﻿using Core.Interfaces;
+﻿using API.Authorization;
+using Core.Interfaces;
 using Domain.Entities.CustomerSatisfaction;
 using Hgs.Share.Requests.CustomerSatisfaction;
 using Hgs.Share.Responses.ApiResponses;
@@ -9,6 +10,7 @@ namespace API.Controllers.CustomerSatisfaction;
 
 [Route("api/[controller]")]
 [ApiController]
+[MenuPermission("CUSTOMERSATISFACTION")]
 public class CustomerSatisfactionController : ControllerBase
 {
     private readonly ICustomerSatisfactionService _customerSatisfactionService;

@@ -1,0 +1,79 @@
+@page "/forbidden"
+@inject NavigationManager Navigation
+
+@layout EmptyLayout
+
+<PageTitle>Access Denied</PageTitle>
+
+<div class="forbidden-container">
+    <Card Class="forbidden-card">
+        <CardBody Class="text-center">
+            <img src="@logoPath" alt="HGS Logo" class="forbidden-logo" />
+        </CardBody>
+        <CardBody Class="text-center">
+            <i class="bi bi-shield-lock forbidden-icon" aria-hidden="true"></i>
+            <h1 class="forbidden-title">Access Denied</h1>
+            <p class="forbidden-message">You do not have permission to access this resource. If you believe this is a mistake, contact your administrator.</p>
+            <Button Color="ButtonColor.Primary" Class="forbidden-action" @onclick="GoToHome">
+                <i class="bi bi-house-door me-2"></i>
+                Back to Home
+            </Button>
+        </CardBody>
+    </Card>
+</div>
+
+<style>
+    .forbidden-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background: linear-gradient(135deg, var(--hgs-blue) 0%, var(--hgs-blue-dark) 100%);
+        padding: 1rem;
+    }
+
+    .forbidden-card {
+        width: 100%;
+        max-width: 420px;
+    }
+
+    .forbidden-logo {
+        width: 120px;
+        height: auto;
+        margin: 0 auto;
+        display: block;
+    }
+
+    .forbidden-icon {
+        font-size: 3rem;
+        color: var(--bs-danger);
+        display: inline-block;
+        margin-bottom: 0.5rem;
+    }
+
+    .forbidden-title {
+        color: var(--text);
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .forbidden-message {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+        margin-bottom: 1rem;
+    }
+
+    .forbidden-action {
+        min-width: 180px;
+    }
+</style>
+
+@code {
+    private string logoPath => $"{Navigation.BaseUri}assets/hgs/new%20logo/logo.png";
+
+    private void GoToHome()
+    {
+        Navigation.NavigateTo("home");
+    }
+}

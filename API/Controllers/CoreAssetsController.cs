@@ -1,3 +1,4 @@
+using API.Authorization;
 using Core.Interfaces;
 using Domain.Entities.CoreAssets;
 using Hgs.Share.Requests.CoreAssets;
@@ -10,6 +11,7 @@ namespace API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[MenuPermission("COREASSETS")]
 public class CoreAssetsController : ControllerBase
 {
     private readonly ICoreAssetsService _coreAssetsService;

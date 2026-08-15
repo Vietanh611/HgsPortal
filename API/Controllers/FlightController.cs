@@ -1,4 +1,5 @@
-﻿using Core.Interfaces;
+﻿using API.Authorization;
+using Core.Interfaces;
 using Domain.Entities.ACDM;
 using Hgs.Share.Exceptions;
 using Hgs.Share.Responses.ApiResponses;
@@ -8,6 +9,7 @@ namespace API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[MenuPermission("FLIGHT")]
 public class FlightController : ControllerBase
 {
     private readonly IFlightService _flightService;

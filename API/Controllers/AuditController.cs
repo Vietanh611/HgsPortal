@@ -1,14 +1,14 @@
+using API.Authorization;
 using Core.Interfaces;
 using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.AuditLogs;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[MenuPermission("AUDIT")]
 public class AuditController : ControllerBase
 {
     private readonly IAuditLogService _auditLogService;

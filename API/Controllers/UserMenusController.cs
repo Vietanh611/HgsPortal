@@ -1,8 +1,10 @@
+using API.Authorization;
 using Core.Interfaces;
 using Hgs.Share.Dtos;
 using Hgs.Share.Requests.UserMenus;
 using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.Menus;
+using Hgs.Share.Responses.UserMenus;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -10,16 +12,18 @@ using System.Security.Claims;
 namespace API.Controllers;
 
 [ApiController]
-[Authorize]
 [Route("api/[controller]")]
+[MenuPermission("USERS")]
 public class UserMenusController : ControllerBase
 {
     private readonly IUserMenuService _userMenuService;
+    private readonly IMenuService _menuService;
     private readonly ILogger<UserMenusController> _logger;
 
-    public UserMenusController(IUserMenuService userMenuService, ILogger<UserMenusController> logger)
+    public UserMenusController(IUserMenuService userMenuService, IMenuService menuService, ILogger<UserMenusController> logger)
     {
         _userMenuService = userMenuService;
+        _menuService = menuService;
         _logger = logger;
     }
 
@@ -43,7 +47,7 @@ public class UserMenusController : ControllerBase
     [HttpGet("user/{userId:int}")]
     public async Task<ActionResult<ApiResponse<IEnumerable<MenusGetByUserIdResponse>>>> GetByUserId(int userId, CancellationToken cancellationToken)
     {
-        var menus = await _userMenuService.GetByUserIdAsync(userId, cancellationToken);
+        var menus = await _menuService.GetMenusByUserIdAsync(userId, cancellationToken);
         return Ok(ApiResponse<IEnumerable<MenusGetByUserIdResponse>>.SuccessResponse(menus, "Menus retrieved successfully for user", 200));
     }
 
@@ -52,6 +56,13 @@ public class UserMenusController : ControllerBase
     {
         var menuIds = await _userMenuService.GetMenuIdsByUserIdAsync(userId, cancellationToken);
         return Ok(ApiResponse<IEnumerable<int>>.SuccessResponse(menuIds, "Menu IDs retrieved successfully for user", 200));
+    }
+
+    [HttpGet("user/{userId:int}/details")]
+    public async Task<ActionResult<ApiResponse<UserMenuAssignmentDetailsResponse>>> GetAssignmentDetailsByUserId(int userId, CancellationToken cancellationToken)
+    {
+        var details = await _userMenuService.GetAssignmentDetailsByUserIdAsync(userId, cancellationToken);
+        return Ok(ApiResponse<UserMenuAssignmentDetailsResponse>.SuccessResponse(details, "User menu assignment details retrieved successfully", 200));
     }
 
     [HttpPost]

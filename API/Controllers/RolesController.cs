@@ -1,3 +1,4 @@
+using API.Authorization;
 using Core.Interfaces;
 using Domain.Entities.Identity;
 using Hgs.Share.Exceptions;
@@ -10,6 +11,7 @@ namespace API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[MenuPermission("ROLES")]
 public class RolesController : ControllerBase
 {
     private readonly IRolesService _rolesService;

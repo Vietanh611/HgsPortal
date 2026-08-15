@@ -1,3 +1,4 @@
+using API.Authorization;
 using Core.Interfaces;
 using Domain.Entities.Identity;
 using Hgs.Share.Requests.OrganizationUnits;
@@ -9,8 +10,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace API.Controllers;
 
 [ApiController]
-[Authorize]
 [Route("api/[controller]")]
+[MenuPermission("ORGANIZATIONUNITS")]
 public class OrganizationUnitsController : ControllerBase
 {
     private readonly IOrganizationUnitsService _organizationUnitsService;

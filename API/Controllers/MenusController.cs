@@ -1,3 +1,4 @@
+using API.Authorization;
 using Core.Interfaces;
 using Domain.Entities.System;
 using Hgs.Share.Requests.Menus;
@@ -9,8 +10,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace API.Controllers;
 
 [ApiController]
-[Authorize]
 [Route("api/[controller]")]
+[MenuPermission("MENUS")]
 public class MenusController : ControllerBase
 {
     private readonly IMenuService _menuService;

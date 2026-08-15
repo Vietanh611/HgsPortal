@@ -30,6 +30,16 @@ public class ExceptionHandlingMiddleware
         }
         catch (Exception ex)
         {
+            if (ex is OperationCanceledException && context.RequestAborted.IsCancellationRequested)
+            {
+                _logger.LogInformation(
+                    "[{RequestId}] {Method} {Path} => Request aborted by client",
+                    context.TraceIdentifier,
+                    context.Request.Method,
+                    context.Request.Path);
+                return;
+            }
+
             await HandleExceptionAsync(context, ex);
         }
     }

@@ -12,12 +12,14 @@ public class UserRoleService : IUserRoleService
     private readonly HgsDbContext _dbContext;
     private readonly IUserMenuService _userMenuService;
     private readonly IAuditLogService _auditLog;
+    private readonly ICacheService _cacheService;
 
-    public UserRoleService(HgsDbContext dbContext, IUserMenuService userMenuService, IAuditLogService auditLog)
+    public UserRoleService(HgsDbContext dbContext, IUserMenuService userMenuService, IAuditLogService auditLog, ICacheService cacheService)
     {
         _dbContext = dbContext;
         _userMenuService = userMenuService;
         _auditLog = auditLog;
+        _cacheService = cacheService;
     }
 
     public async Task<IEnumerable<UserRoles>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -113,6 +115,7 @@ public class UserRoleService : IUserRoleService
         // Automatically assign all role menus to the user
         await AssignRoleMenusToUserAsync(request.RoleId, request.UserId, assignedBy, cancellationToken);
 
+        await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
         return userRole;
     }
 
@@ -160,6 +163,7 @@ public class UserRoleService : IUserRoleService
 
         _dbContext.UserRoles.Remove(userRole);
         await _dbContext.SaveChangesAsync(cancellationToken);
+        await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
         return true;
     }
 
@@ -226,6 +230,8 @@ public class UserRoleService : IUserRoleService
         {
             await AssignRoleMenusToUserAsync(roleId, userId, assignedBy, cancellationToken);
         }
+
+        await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
     }
 
     public async Task RemoveMultipleRolesAsync(int userId, List<int> roleIds, CancellationToken cancellationToken = default)
@@ -266,6 +272,7 @@ public class UserRoleService : IUserRoleService
 
         _dbContext.UserRoles.RemoveRange(rolesToRemove);
         await _dbContext.SaveChangesAsync(cancellationToken);
+        await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
     }
 
     private async Task AssignRoleMenusToUserAsync(int roleId, int userId, int assignedBy, CancellationToken cancellationToken = default)

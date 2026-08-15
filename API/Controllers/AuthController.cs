@@ -5,6 +5,7 @@ using Hgs.Share.Requests.Users;
 using Hgs.Share.Responses;
 using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.Users;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -24,6 +25,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
+    [AllowAnonymous]
     [IgnoreAntiforgeryToken]
     public async Task<ActionResult<ApiResponse<AuthenticateResponse>>> Login(
         [FromBody] AuthenticateRequest request,
@@ -46,6 +48,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("refresh-token")]
+    [AllowAnonymous]
     [IgnoreAntiforgeryToken]
     public async Task<ActionResult<ApiResponse<AuthenticateResponse>>> RefreshToken(
         CancellationToken cancellationToken)
@@ -74,6 +77,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("logout")]
+    [AllowAnonymous]
     [IgnoreAntiforgeryToken]
     public async Task<ActionResult<ApiResponse>> Logout(
         CancellationToken cancellationToken)
@@ -93,6 +97,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpGet("me")]
+    [Authorize]
     public async Task<ActionResult<ApiResponse<UsersGetByIdResponse>>> GetCurrentUser(CancellationToken cancellationToken)
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

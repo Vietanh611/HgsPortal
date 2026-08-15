@@ -167,7 +167,7 @@ else
             var userId = JwtService.ExtractUserId(token);
             userRoles = JwtService.ExtractRoles(token).ToList();
 
-            var meResponse = await ApiClient.GetAsync<ApiResponse<UsersGetByIdResponse>>("api/auth/me");
+            var meResponse = await ApiClient.GetAsync<ApiResponse<UsersGetByIdResponse>>("auth/me");
             if (meResponse != null && meResponse.Success && meResponse.Data != null)
             {
                 currentUser = meResponse.Data;

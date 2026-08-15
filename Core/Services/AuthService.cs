@@ -19,17 +19,20 @@ public class AuthService : IAuthService
     private readonly HgsDbContext _dbContext;
     private readonly ITokenService _tokenService;
     private readonly JwtSettings _jwtSettings;
+    private readonly CookieSettings _cookieSettings;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         HgsDbContext dbContext,
         ITokenService tokenService,
         IOptions<JwtSettings> jwtSettings,
+        IOptions<CookieSettings> cookieSettings,
         ILogger<AuthService> logger)
     {
         _dbContext = dbContext;
         _tokenService = tokenService;
         _jwtSettings = jwtSettings.Value;
+        _cookieSettings = cookieSettings.Value;
         _logger = logger;
     }
 
@@ -209,8 +212,8 @@ public class AuthService : IAuthService
         var cookieOptions = new CookieOptions
         {
             HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.None,
+            Secure = _cookieSettings.Secure,
+            SameSite = _cookieSettings.SameSite,
             Path = "/",
             Expires = DateTime.UtcNow.AddDays(7)
         };
@@ -224,8 +227,8 @@ public class AuthService : IAuthService
         {
             Path = "/",
             HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.None
+            Secure = _cookieSettings.Secure,
+            SameSite = _cookieSettings.SameSite
         });
     }
 }
