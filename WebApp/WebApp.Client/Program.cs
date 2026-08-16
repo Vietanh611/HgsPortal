@@ -56,7 +56,7 @@ builder.Services.AddScoped<ApiClient>(sp =>
     var httpClient = httpClientFactory.CreateClient("ApiClient");
     var tokenStorage = sp.GetRequiredService<ITokenStorage>();
     var navigationManager = sp.GetRequiredService<NavigationManager>();
-    return new ApiClient(httpClient, tokenStorage, navigationManager);
+    return new ApiClient(httpClient, tokenStorage, navigationManager, apiBaseUrl);
 });
 builder.Services.AddBlazorBootstrap();
 builder.Services.AddScoped<ToastService>();

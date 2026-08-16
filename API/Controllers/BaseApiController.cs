@@ -36,4 +36,9 @@ public abstract class BaseApiController : ControllerBase
         userId = 0;
         return false;
     }
+
+    protected string? ResolveUrlPath(string? urlPath)
+    {
+        return UrlPathResolver.Resolve(Request, urlPath);
+    }
 }

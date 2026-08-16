@@ -33,16 +33,19 @@
                 {
                     <Dropdown>
                         <DropdownToggleButton>
-                            <span class="avatar-circle">@AvatarChar</span>
+@if (!string.IsNullOrWhiteSpace(currentUser?.AvatarUrl))
+                                {
+                                    <img src="@currentUser.AvatarUrl" alt="Ảnh đại diện" class="avatar-circle" />
+                                }
+                                else
+                                {
+                                    <span class="avatar-circle">@AvatarChar</span>
+                                }
                             <span class="user-display-name">@DisplayName</span>
                         </DropdownToggleButton>
                         <DropdownMenu Position="DropdownMenuPosition.End">
-                            <DropdownHeader>@currentUser.Username</DropdownHeader>
                             <DropdownItem To="/profile" Type="DropdownItemType.Link">
                                 <i class="bi bi-person me-1"></i> Thông tin tài khoản
-                            </DropdownItem>
-                            <DropdownItem To="/profile" Type="DropdownItemType.Link">
-                                <i class="bi bi-key me-1"></i> Đổi mật khẩu
                             </DropdownItem>
                             <DropdownDivider />
                             <DropdownItem To="/logout" Type="DropdownItemType.Link">
@@ -75,6 +78,8 @@
         !string.IsNullOrWhiteSpace(currentUser?.FullName)
             ? currentUser!.FullName!
             : currentUser?.Username ?? "";
+
+    private ApiClient? CurrentApiClient => ServiceProvider.GetService<ApiClient>();
 
     private string AvatarChar
     {
@@ -314,6 +319,7 @@
         {
             var navItem = CreateNavItem(child);
             navItem.ParentId = parentId;
+            navItem.Class = "ps-4";
             items.Add(navItem);
 
             // Recursive for nested children

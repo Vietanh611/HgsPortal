@@ -19,6 +19,7 @@ public partial class Profile : ComponentBase
     private bool isLoading = true;
     private bool isSubmitting = false;
     private bool isChangingPassword = false;
+    private bool isUploadingAvatar = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -110,6 +111,65 @@ public partial class Profile : ComponentBase
         finally
         {
             isChangingPassword = false;
+        }
+    }
+
+    private async Task HandleAvatarSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file is null || file.Size == 0)
+        {
+            ToastService.ShowError("Vui lòng chọn tệp ảnh.");
+            return;
+        }
+
+        var extension = Path.GetExtension(file.Name).ToLowerInvariant();
+        var allowed = new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
+        if (string.IsNullOrWhiteSpace(extension) || !allowed.Contains(extension))
+        {
+            ToastService.ShowError("Định dạng ảnh không được hỗ trợ. Chỉ chấp nhận JPG, PNG, WEBP, GIF.");
+            return;
+        }
+
+        if (file.Size > 2 * 1024 * 1024)
+        {
+            ToastService.ShowError("Kích thước ảnh vượt quá giới hạn 2MB.");
+            return;
+        }
+
+        isUploadingAvatar = true;
+        try
+        {
+            if (currentUser == null)
+            {
+                return;
+            }
+
+            await using var stream = file.OpenReadStream(maxAllowedSize: 2 * 1024 * 1024);
+            var response = await ApiClient.PostFileAsync<ApiResponse<UsersUpdateResponse>>(
+                $"api/users/{currentUser.Id}/avatar",
+                stream,
+                file.Name,
+                file.ContentType);
+
+            if (response != null && response.Success && response.Data != null)
+            {
+                currentUser.AvatarUrl = response.Data.AvatarUrl;
+                ToastService.ShowSuccess("Đã cập nhật ảnh đại diện");
+                StateHasChanged();
+            }
+            else
+            {
+                ToastService.ShowError(ApiClient.LastError ?? "Không thể tải lên ảnh đại diện");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Lỗi khi tải lên ảnh đại diện: {ex.Message}");
+        }
+        finally
+        {
+            isUploadingAvatar = false;
         }
     }
 }

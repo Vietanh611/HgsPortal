@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Serilog;
 using WebApp.Client.Services;
@@ -52,7 +53,14 @@ builder.Services.AddScoped<CustomAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<TokenRefreshService>();
 
-builder.Services.AddScoped<ApiClient>();
+builder.Services.AddScoped<ApiClient>(sp =>
+{
+    var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+    var httpClient = httpClientFactory.CreateClient("ApiClient");
+    var tokenStorage = sp.GetRequiredService<ITokenStorage>();
+    var navigationManager = sp.GetRequiredService<NavigationManager>();
+    return new ApiClient(httpClient, tokenStorage, navigationManager, apiBaseUrl);
+});
 builder.Services.AddScoped<CoreAssetsService>();
 builder.Services.AddScoped<DisplayDevicesService>();
 

@@ -191,6 +191,13 @@ article {
     flex-shrink: 0;
 }
 
+img.avatar-circle {
+    display: inline-block;
+    object-fit: cover;
+    overflow: hidden;
+    vertical-align: middle;
+}
+
 .user-display-name {
     font-weight: 600;
     font-size: .95rem;

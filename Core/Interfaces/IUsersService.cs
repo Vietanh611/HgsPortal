@@ -13,4 +13,6 @@ public interface IUsersService
     Task<Users?> UpdateAsync(int id, UsersUpdateRequest request, CancellationToken cancellationToken = default);
     Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default);
     Task<bool> ChangePasswordAsync(int id, UsersChangePasswordRequest request, CancellationToken cancellationToken = default);
+    Task<bool> ResetPasswordAsync(int id, UsersResetPasswordRequest request, CancellationToken cancellationToken = default);
+    Task<string?> UploadAvatarAsync(int id, Stream fileStream, string fileName, string contentType, string avatarDirectory, CancellationToken cancellationToken = default);
 }

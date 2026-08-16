@@ -1,5 +1,6 @@
 using Hgs.Share.Responses.ApiResponses;
 using Microsoft.AspNetCore.Components;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 
@@ -11,17 +12,19 @@ public class ApiClient
     private readonly Data.ITokenStorage _tokenStorage;
     private readonly NavigationManager _navigationManager;
     private readonly JsonSerializerOptions _jsonOptions;
+    private readonly string _apiBaseUrl;
     private int _retryCount = 3;
     private TimeSpan _retryDelay = TimeSpan.FromSeconds(1);
 
     public bool IsLoading { get; private set; }
     public string? LastError { get; private set; }
 
-    public ApiClient(HttpClient httpClient, Data.ITokenStorage tokenStorage, NavigationManager navigationManager)
+    public ApiClient(HttpClient httpClient, Data.ITokenStorage tokenStorage, NavigationManager navigationManager, string apiBaseUrl)
     {
         _httpClient = httpClient;
         _tokenStorage = tokenStorage;
         _navigationManager = navigationManager;
+        _apiBaseUrl = apiBaseUrl;
         _jsonOptions = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true,
@@ -282,6 +285,61 @@ public class ApiClient
         {
             IsLoading = false;
         }
+    }
+
+    public async Task<T?> PostFileAsync<T>(string endpoint, Stream fileStream, string fileName, string contentType)
+    {
+        IsLoading = true;
+        LastError = null;
+
+        try
+        {
+            var requestUri = BuildRequestUri(endpoint);
+            var result = await ExecuteWithRetry(async () =>
+            {
+                using var form = new MultipartFormDataContent();
+                using var fileContent = new StreamContent(fileStream);
+                fileContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+                form.Add(fileContent, "file", fileName);
+
+                var response = await _httpClient.PostAsync(requestUri, form);
+                if (await HandleResponse(response))
+                {
+                    return await response.Content.ReadFromJsonAsync<T>(_jsonOptions);
+                }
+                return default;
+            }, $"POST {endpoint}");
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            LastError = $"POST {endpoint} failed: {ex.Message}";
+            Console.WriteLine(LastError);
+            return default;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    public string ResolveUrl(string? relativeOrAbsoluteUrl)
+    {
+        if (string.IsNullOrWhiteSpace(relativeOrAbsoluteUrl))
+        {
+            return string.Empty;
+        }
+
+        if (Uri.TryCreate(relativeOrAbsoluteUrl, UriKind.Absolute, out _))
+        {
+            return relativeOrAbsoluteUrl;
+        }
+
+        var baseUri = !string.IsNullOrWhiteSpace(_apiBaseUrl)
+            ? new Uri(_apiBaseUrl)
+            : (_httpClient.BaseAddress ?? new Uri(_navigationManager.BaseUri));
+        return new Uri(baseUri, relativeOrAbsoluteUrl.TrimStart('/')).ToString();
     }
 
     public async Task<bool> PostAsync(string endpoint, object? data = null)

@@ -1,10 +1,12 @@
 using Core.Helpers;
 using Core.Interfaces;
+using Core.Services.Settings;
 using Data.DbContexts;
 using Domain.Entities.FlyOps;
 using Domain.Entities.Identity;
 using Hgs.Share.Requests.Users;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Core.Services.Identity;
 
@@ -14,17 +16,20 @@ public class UsersService : IUsersService
     private readonly FlyOpsDbContext _flyOpsDbContext;
     private readonly IAuditLogService _auditLog;
     private readonly IOrgScopeService _orgScope;
+    private readonly StorageSettings _storage;
 
     public UsersService(
         HgsDbContext dbContext,
         FlyOpsDbContext flyOpsDbContext,
         IAuditLogService auditLog,
-        IOrgScopeService orgScope)
+        IOrgScopeService orgScope,
+        IOptions<StorageSettings> storageOptions)
     {
         _dbContext = dbContext;
         _flyOpsDbContext = flyOpsDbContext;
         _auditLog = auditLog;
         _orgScope = orgScope;
+        _storage = storageOptions.Value;
     }
 
     private static void EnsureScope(bool inScope)
@@ -258,5 +263,118 @@ public class UsersService : IUsersService
         return true;
     }
 
+    public async Task<bool> ResetPasswordAsync(int id, UsersResetPasswordRequest request, CancellationToken cancellationToken = default)
+    {
+        var user = await _dbContext.Users
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (user is null || user.IsDeleted)
+        {
+            return false;
+        }
 
+        EnsureScope(await _orgScope.IsUserInScopeAsync(id, cancellationToken));
+
+        var oldSnapshot = new
+        {
+            user.Id,
+            user.Username,
+            user.Email,
+            user.FullName,
+            user.PhoneNumber,
+            user.OrganizationUnitId,
+            user.IsActive,
+            user.IsLocked,
+            user.FailedLoginCount,
+            user.IsDeleted
+        };
+
+        user.PasswordHash = PasswordHelper.HashPassword(request.NewPassword);
+        user.UpdatedAt = DateTime.UtcNow;
+
+        _auditLog.Log(
+            action: "UPDATE",
+            entityName: "Users",
+            entityId: user.Id,
+            oldValue: oldSnapshot,
+            newValue: user);
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<string?> UploadAvatarAsync(int id, Stream fileStream, string fileName, string contentType, string avatarDirectory, CancellationToken cancellationToken = default)
+    {
+        var user = await _dbContext.Users
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (user is null || user.IsDeleted)
+        {
+            return null;
+        }
+
+        EnsureScope(await _orgScope.IsUserInScopeAsync(id, cancellationToken));
+
+        var extension = Path.GetExtension(fileName).ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(extension) ||
+            !_storage.AllowedAvatarExtensions.Contains(extension))
+        {
+            throw new ArgumentException("Định dạng ảnh không được hỗ trợ. Chỉ chấp nhận JPG, PNG, WEBP, GIF.");
+        }
+
+        if (fileStream.Length > _storage.MaxAvatarBytes)
+        {
+            throw new ArgumentException($"Kích thước ảnh vượt quá giới hạn {_storage.MaxAvatarBytes / (1024 * 1024)}MB.");
+        }
+
+        Directory.CreateDirectory(avatarDirectory);
+
+        var avatarFileName = $"avatar_{user.Id}_{Guid.NewGuid():N}{extension}";
+        var avatarPhysicalPath = Path.Combine(avatarDirectory, avatarFileName);
+        var avatarRelativePath = $"/uploads/avatars/{avatarFileName}";
+
+        await using (var file = new FileStream(avatarPhysicalPath, FileMode.Create, FileAccess.Write, FileShare.None))
+        {
+            await fileStream.CopyToAsync(file, cancellationToken);
+        }
+
+        var oldAvatarUrl = user.AvatarUrl;
+        var oldSnapshot = new
+        {
+            user.Id,
+            user.Username,
+            user.Email,
+            user.FullName,
+            user.PhoneNumber,
+            user.AvatarUrl,
+            user.OrganizationUnitId,
+            user.IsActive,
+            user.IsLocked,
+            user.FailedLoginCount,
+            user.IsDeleted
+        };
+
+        user.AvatarUrl = avatarRelativePath;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        _auditLog.Log(
+            action: "UPDATE",
+            entityName: "Users",
+            entityId: user.Id,
+            oldValue: oldSnapshot,
+            newValue: user);
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        if (!string.IsNullOrWhiteSpace(oldAvatarUrl) &&
+            oldAvatarUrl.StartsWith("/uploads/avatars/"))
+        {
+            var oldFileName = Path.GetFileName(oldAvatarUrl);
+            var oldPhysicalPath = Path.Combine(avatarDirectory, oldFileName);
+            if (File.Exists(oldPhysicalPath))
+            {
+                File.Delete(oldPhysicalPath);
+            }
+        }
+
+        return avatarRelativePath;
+    }
 }

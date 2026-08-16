@@ -35,7 +35,7 @@ public partial class Menus
         errorMessage = null;
         try
         {
-            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<MenusGetAllResponse>>>("api/menus/all");
+            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<MenusGetAllResponse>>>("api/menus");
             if (response != null && response.Success && response.Data != null)
             {
                 menus = response.Data;

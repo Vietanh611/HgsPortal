@@ -22,7 +22,7 @@ public partial class Users
     [Inject] private ApiClient ApiClient { get; set; } = default!;
     [Inject] private DialogService DialogService { get; set; } = default!;
     private UserFormModal userFormModal = default!;
-    private ChangePasswordModal changePasswordModal = default!;
+    private ResetPasswordModal resetPasswordModal = default!;
     private AssignMenuModal assignMenuModal = default!;
     private AssignRoleModal assignRoleModal = default!;
     private IEnumerable<UsersGetAllResponse>? users;
@@ -36,9 +36,9 @@ public partial class Users
     private List<int> selectedRoleIds = new();
     private HashSet<int> expandedMenuIds = new();
     private UsersCreateRequest userForm = new();
-    private UsersChangePasswordRequest changePasswordForm = new();
-    private string changePasswordUsername = string.Empty;
-    private int changePasswordUserId = 0;
+    private UsersResetPasswordRequest resetPasswordForm = new();
+    private string resetPasswordUsername = string.Empty;
+    private int resetPasswordUserId = 0;
     private string assignMenuUsername = string.Empty;
     private int assignMenuUserId = 0;
     private string assignRoleUsername = string.Empty;
@@ -49,7 +49,7 @@ public partial class Users
     private bool isLoadingRoles = false;
     private bool isEditMode = false;
     private bool isSubmitting = false;
-    private bool isChangingPassword = false;
+    private bool isResettingPassword = false;
     private bool isAssigningMenus = false;
     private bool isAssigningRoles = false;
     private int editingUserId = 0;
@@ -223,12 +223,12 @@ public partial class Users
         await userFormModal.ShowAsync();
     }
 
-    private async Task ShowChangePasswordModal(UsersGetAllResponse user)
+    private async Task ShowResetPasswordModal(UsersGetAllResponse user)
     {
-        changePasswordUserId = user.Id;
-        changePasswordUsername = user.Username;
-        changePasswordForm = new UsersChangePasswordRequest();
-        await changePasswordModal.ShowAsync();
+        resetPasswordUserId = user.Id;
+        resetPasswordUsername = user.Username;
+        resetPasswordForm = new UsersResetPasswordRequest();
+        await resetPasswordModal.ShowAsync();
     }
 
     private async Task CloseUserFormModal()
@@ -236,9 +236,9 @@ public partial class Users
         await userFormModal.HideAsync();
     }
 
-    private async Task CloseChangePasswordModal()
+    private async Task CloseResetPasswordModal()
     {
-        await changePasswordModal.HideAsync();
+        await resetPasswordModal.HideAsync();
     }
 
     private async Task CloseAssignMenuModal()
@@ -389,29 +389,29 @@ public partial class Users
         }
     }
 
-    private async Task HandleChangePassword()
+    private async Task HandleResetPassword()
     {
-        isChangingPassword = true;
+        isResettingPassword = true;
         try
         {
-            var success = await ApiClient.PutAsync($"api/users/{changePasswordUserId}/changepassword", changePasswordForm);
+            var success = await ApiClient.PutAsync($"api/users/{resetPasswordUserId}/resetpassword", resetPasswordForm);
             if (success)
             {
-                ToastService.ShowSuccess("Đã đổi mật khẩu");
-                await CloseChangePasswordModal();
+                ToastService.ShowSuccess("Đã đặt lại mật khẩu");
+                await CloseResetPasswordModal();
             }
             else
             {
-                ToastService.ShowError("Không thể đổi mật khẩu");
+                ToastService.ShowError("Không thể đặt lại mật khẩu");
             }
         }
         catch (Exception ex)
         {
-            ToastService.ShowError($"Lỗi khi đổi mật khẩu: {ex.Message}");
+            ToastService.ShowError($"Lỗi khi đặt lại mật khẩu: {ex.Message}");
         }
         finally
         {
-            isChangingPassword = false;
+            isResettingPassword = false;
         }
     }
 

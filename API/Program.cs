@@ -10,6 +10,7 @@ using Data.DbContexts;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
@@ -61,6 +62,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.Configure<CookieSettings>(builder.Configuration.GetSection("CookieSettings"));
 builder.Services.Configure<LockoutSettings>(builder.Configuration.GetSection("LockoutSettings"));
 builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
+builder.Services.Configure<StorageSettings>(builder.Configuration.GetSection("Storage"));
 builder.Services.AddSingleton<OAuth2TokenProvider>();
 builder.Services.AddScoped<IMailService, MailService>();
 var rateLimitSettings = builder.Configuration.GetSection("RateLimiting");
@@ -186,6 +188,15 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+var storageSettings = builder.Configuration.GetSection("Storage").Get<StorageSettings>() ?? new StorageSettings();
+var avatarPhysicalPath = Path.Combine(app.Environment.ContentRootPath, storageSettings.AvatarDirectory);
+Directory.CreateDirectory(avatarPhysicalPath);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(avatarPhysicalPath),
+    RequestPath = "/uploads/avatars"
+});
 
 app.UseRateLimiter();
 // Add Serilog request logging

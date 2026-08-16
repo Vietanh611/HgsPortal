@@ -40,6 +40,19 @@
                     {
                         <Grid TItem="UsersGetAllResponse" Data="users" AllowPaging="true" AllowSorting="true" PageSize="10" Responsive="true"
                               Class="table table-hover table-bordered table-striped">
+                            <GridColumn TItem="UsersGetAllResponse" HeaderText="Ảnh đại diện" AllowSorting="false" Width="70px">
+                                @if (!string.IsNullOrWhiteSpace(context.AvatarUrl))
+                                {
+                                    <img src="@context.AvatarUrl"
+                                         alt="Ảnh đại diện của @context.Username"
+                                         class="rounded-circle object-fit-cover"
+                                         style="width: 36px; height: 36px;" />
+                                }
+                                else
+                                {
+                                    <span class="avatar-circle" style="width: 36px; height: 36px;">@(context.FullName?.Substring(0, 1).ToUpper() ?? context.Username?.Substring(0, 1).ToUpper() ?? "U")</span>
+                                }
+                            </GridColumn>
                             <GridColumn TItem="UsersGetAllResponse" HeaderText="Tên đăng nhập" SortKeySelector="item => item.Username">
                                 @context.Username
                             </GridColumn>
@@ -79,8 +92,8 @@
                                 <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowEditModal(context)" class="me-1" aria-label="Sửa người dùng">
                                     <Icon Name="IconName.Pencil" />
                                 </Button>
-                                <Button Color="ButtonColor.Warning" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowChangePasswordModal(context)" class="me-1" aria-label="Đổi mật khẩu">
-                                    <Icon Name="IconName.Key" />
+                                <Button Color="ButtonColor.Warning" Size="ButtonSize.Small" @onclick="() => ShowResetPasswordModal(context)" class="me-1" aria-label="Đặt lại mật khẩu">
+                                    <Icon Name="IconName.KeyFill" />
                                 </Button>
                                 <Button Color="ButtonColor.Success" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowAssignRoleModal(context)" class="me-1" aria-label="Gán vai trò">
                                     <Icon Name="IconName.Shield" />
@@ -108,12 +121,12 @@
     OnClose="CloseUserFormModal"
     OnSubmit="HandleSubmit" />
 
-<ChangePasswordModal @ref="changePasswordModal"
-    ChangePasswordForm="changePasswordForm"
-    Username="@changePasswordUsername"
-    IsChangingPassword="isChangingPassword"
-    OnClose="CloseChangePasswordModal"
-    OnSubmit="HandleChangePassword" />
+<ResetPasswordModal @ref="resetPasswordModal"
+    ResetPasswordForm="resetPasswordForm"
+    Username="@resetPasswordUsername"
+    IsResettingPassword="isResettingPassword"
+    OnClose="CloseResetPasswordModal"
+    OnSubmit="HandleResetPassword" />
 
 <AssignMenuModal @ref="assignMenuModal"
     Username="@assignMenuUsername"

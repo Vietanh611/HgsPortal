@@ -1,11 +1,13 @@
 using API.Authorization;
 using Core.Interfaces;
+using Core.Services.Settings;
 using Domain.Entities.FlyOps;
 using Domain.Entities.Identity;
 using Hgs.Share.Requests.Users;
 using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.Users;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using System.Security.Claims;
 
 namespace API.Controllers;
@@ -15,11 +17,19 @@ public class UsersController : BaseApiController
 {
     private readonly IUsersService _usersService;
     private readonly ILogger<UsersController> _logger;
+    private readonly IWebHostEnvironment _env;
+    private readonly StorageSettings _storage;
 
-    public UsersController(IUsersService usersService, ILogger<UsersController> logger)
+    public UsersController(
+        IUsersService usersService,
+        ILogger<UsersController> logger,
+        IWebHostEnvironment env,
+        IOptions<StorageSettings> storageOptions)
     {
         _usersService = usersService;
         _logger = logger;
+        _env = env;
+        _storage = storageOptions.Value;
     }
 
     [HttpGet]
@@ -158,14 +168,78 @@ public class UsersController : BaseApiController
         }
     }
 
-    private static UsersGetAllResponse MapToGetAllResponse(Users user) => new()
+    [HttpPut("{id:int}/resetpassword")]
+    public async Task<ActionResult<ApiResponse>> ResetPassword(int id, [FromBody] UsersResetPasswordRequest request)
+    {
+        try
+        {
+            var reset = await _usersService.ResetPasswordAsync(id, request);
+            if (!reset)
+            {
+                return NotFound(ApiResponse.FailResponse("User not found", 404));
+            }
+
+            _logger.LogInformation("Reset password for user with id '{Id}'.", id);
+            return Ok(ApiResponse.SuccessResponse("Password reset successfully", 200));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized access to reset password");
+            return StatusCode(403, ApiResponse.FailResponse("Bạn không có quyền thực hiện thao tác này", 403));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ApiResponse.FailResponse(ex.Message, 400));
+        }
+    }
+
+    [HttpPost("{id:int}/avatar")]
+    [RequestSizeLimit(5 * 1024 * 1024)]
+    public async Task<ActionResult<ApiResponse<UsersUpdateResponse>>> UploadAvatar(int id, IFormFile file)
+    {
+        try
+        {
+            if (file is null || file.Length == 0)
+            {
+                return BadRequest(ApiResponse<UsersUpdateResponse>.FailResponse("Vui lòng chọn tệp ảnh.", 400));
+            }
+
+            var avatarDirectory = Path.Combine(_env.ContentRootPath, _storage.AvatarDirectory);
+            var avatarUrl = await _usersService.UploadAvatarAsync(
+                id,
+                file.OpenReadStream(),
+                file.FileName,
+                file.ContentType,
+                avatarDirectory);
+
+            if (avatarUrl is null)
+            {
+                return NotFound(ApiResponse<UsersUpdateResponse>.FailResponse("User not found", 404));
+            }
+
+            var user = await _usersService.GetByIdAsync(id);
+            _logger.LogInformation("Uploaded avatar for user with id '{Id}'.", id);
+            return Ok(ApiResponse<UsersUpdateResponse>.SuccessResponse(MapToUpdateResponse(user!), "Avatar uploaded successfully", 200));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ApiResponse<UsersUpdateResponse>.FailResponse(ex.Message, 400));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized access to upload avatar");
+            return StatusCode(403, ApiResponse<UsersUpdateResponse>.FailResponse("Bạn không có quyền thực hiện thao tác này", 403));
+        }
+    }
+
+    private UsersGetAllResponse MapToGetAllResponse(Users user) => new()
     {
         Id = user.Id,
         Username = user.Username,
         Email = user.Email,
         FullName = user.FullName,
         PhoneNumber = user.PhoneNumber,
-        AvatarUrl = user.AvatarUrl,
+        AvatarUrl = ResolveUrlPath(user.AvatarUrl),
         BravoId = user.BravoId,
         OrganizationUnitId = user.OrganizationUnitId,
         OrganizationUnitName = user.OrganizationUnit?.Name,
@@ -181,14 +255,14 @@ public class UsersController : BaseApiController
         IsDeleted = user.IsDeleted
     };
 
-    private static UsersGetByIdResponse MapToGetByIdResponse(Users user) => new()
+    private UsersGetByIdResponse MapToGetByIdResponse(Users user) => new()
     {
         Id = user.Id,
         Username = user.Username,
         Email = user.Email,
         FullName = user.FullName,
         PhoneNumber = user.PhoneNumber,
-        AvatarUrl = user.AvatarUrl,
+        AvatarUrl = ResolveUrlPath(user.AvatarUrl),
         BravoId = user.BravoId,
         OrganizationUnitId = user.OrganizationUnitId,
         OrganizationUnitName = user.OrganizationUnit?.Name,
@@ -204,14 +278,14 @@ public class UsersController : BaseApiController
         IsDeleted = user.IsDeleted
     };
 
-    private static UsersCreateResponse MapToCreateResponse(Users user) => new()
+    private UsersCreateResponse MapToCreateResponse(Users user) => new()
     {
         Id = user.Id,
         Username = user.Username,
         Email = user.Email,
         FullName = user.FullName,
         PhoneNumber = user.PhoneNumber,
-        AvatarUrl = user.AvatarUrl,
+        AvatarUrl = ResolveUrlPath(user.AvatarUrl),
         BravoId = user.BravoId,
         OrganizationUnitId = user.OrganizationUnitId,
         OrganizationUnitName = user.OrganizationUnit?.Name,
@@ -227,14 +301,14 @@ public class UsersController : BaseApiController
         IsDeleted = user.IsDeleted
     };
 
-    private static UsersUpdateResponse MapToUpdateResponse(Users user) => new()
+    private UsersUpdateResponse MapToUpdateResponse(Users user) => new()
     {
         Id = user.Id,
         Username = user.Username,
         Email = user.Email,
         FullName = user.FullName,
         PhoneNumber = user.PhoneNumber,
-        AvatarUrl = user.AvatarUrl,
+        AvatarUrl = ResolveUrlPath(user.AvatarUrl),
         BravoId = user.BravoId,
         OrganizationUnitId = user.OrganizationUnitId,
         OrganizationUnitName = user.OrganizationUnit?.Name,

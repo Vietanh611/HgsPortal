@@ -137,14 +137,14 @@ public class AuthController : ControllerBase
         return Ok(ApiResponse<UsersGetByIdResponse>.SuccessResponse(MapToUserResponse(user), "User retrieved successfully", 200));
     }
 
-    private static UsersGetByIdResponse MapToUserResponse(Users user) => new()
+    private UsersGetByIdResponse MapToUserResponse(Users user) => new()
     {
         Id = user.Id,
         Username = user.Username,
         Email = user.Email,
         FullName = user.FullName,
         PhoneNumber = user.PhoneNumber,
-        AvatarUrl = user.AvatarUrl,
+        AvatarUrl = ResolveUrlPath(user.AvatarUrl),
         BravoId = user.BravoId,
         OrganizationUnitId = user.OrganizationUnitId,
         OrganizationUnitName = user.OrganizationUnit?.Name,
@@ -159,4 +159,9 @@ public class AuthController : ControllerBase
         UpdatedBy = user.UpdatedBy,
         IsDeleted = user.IsDeleted
     };
+
+    private string? ResolveUrlPath(string? urlPath)
+    {
+        return UrlPathResolver.Resolve(Request, urlPath);
+    }
 }

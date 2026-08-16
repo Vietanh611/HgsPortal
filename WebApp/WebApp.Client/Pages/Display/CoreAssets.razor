@@ -3,6 +3,7 @@
 @using Hgs.Share.Responses.CoreAssets
 @using BlazorBootstrap
 @inject WebApp.Client.Services.CoreAssetsService CoreAssetsService
+@inject NavigationManager Navigation
 
 <PageTitle>Tài sản cốt lõi</PageTitle>
 
@@ -73,6 +74,14 @@
                                     <Badge Color="BadgeColor.Danger">Không</Badge>
                                 }
                             </GridColumn>
+                            <GridColumn TItem="CoreAssetsGetAllResponse" HeaderText="Xem" AllowSorting="false" Width="80px">
+                                @if (IsImage(context.ContentType))
+                                {
+                                    <Button Color="ButtonColor.Info" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowImagePreview(context)" aria-label="@($"Xem ảnh {context.Code}")">
+                                        <Icon Name="IconName.Eye" /> Xem
+                                    </Button>
+                                }
+                            </GridColumn>
                         </Grid>
                     }
                 </CardBody>
@@ -139,6 +148,20 @@
     </FooterTemplate>
 </Modal>
 
+<Modal @ref="previewModal" Title="Xem ảnh" Size="ModalSize.Large" Centered="true">
+    <BodyTemplate>
+        @if (!string.IsNullOrEmpty(previewImageUrl))
+        {
+            <div class="text-center">
+                <img src="@previewImageUrl" alt="Ảnh tài sản cốt lõi" class="img-fluid" style="max-height: 70vh; object-fit: contain;" />
+            </div>
+        }
+    </BodyTemplate>
+    <FooterTemplate>
+        <Button Color="ButtonColor.Secondary" @onclick="HideImagePreview">Đóng</Button>
+    </FooterTemplate>
+</Modal>
+
 @code {
     private IEnumerable<CoreAssetsGetAllResponse>? assets;
     private bool isLoading = true;
@@ -147,6 +170,8 @@
     private string? createErrorMessage;
     private CoreAssetsCreateRequest newAsset = new();
     private Modal? createModal;
+    private Modal? previewModal;
+    private string? previewImageUrl;
 
     protected override async Task OnInitializedAsync()
     {
@@ -228,6 +253,29 @@
         finally
         {
             isCreating = false;
+        }
+    }
+
+    private static bool IsImage(string? contentType)
+    {
+        return !string.IsNullOrWhiteSpace(contentType) &&
+               contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task ShowImagePreview(CoreAssetsGetAllResponse asset)
+    {
+        previewImageUrl = $"{Navigation.BaseUri}{asset.StoragePath.TrimStart('/')}";
+        if (previewModal != null)
+        {
+            await previewModal.ShowAsync();
+        }
+    }
+
+    private async Task HideImagePreview()
+    {
+        if (previewModal != null)
+        {
+            await previewModal.HideAsync();
         }
     }
 }
