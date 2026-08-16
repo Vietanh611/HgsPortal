@@ -24,6 +24,14 @@ public interface IAuthService
         LogoutRequest request,
         CancellationToken cancellationToken = default);
 
+    Task ForgotPasswordAsync(
+        ForgotPasswordRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task ResetPasswordAsync(
+        ResetPasswordRequest request,
+        CancellationToken cancellationToken = default);
+
     Task<Users?> GetCurrentUserAsync(
         int userId,
         CancellationToken cancellationToken = default);

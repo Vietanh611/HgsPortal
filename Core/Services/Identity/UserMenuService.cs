@@ -7,7 +7,7 @@ using Hgs.Share.Responses.Menus;
 using Hgs.Share.Responses.UserMenus;
 using Microsoft.EntityFrameworkCore;
 
-namespace Core.Services;
+namespace Core.Services.Identity;
 
 public class UserMenuService : IUserMenuService
 {

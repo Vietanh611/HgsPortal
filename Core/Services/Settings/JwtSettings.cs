@@ -1,4 +1,4 @@
-namespace Core.Services;
+namespace Core.Services.Settings;
 
 public class JwtSettings
 {

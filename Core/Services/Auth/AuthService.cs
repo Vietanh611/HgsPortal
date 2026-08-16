@@ -1,38 +1,50 @@
 using Core.Helpers;
 using Core.Interfaces;
+using Core.Services.Notifications;
+using Core.Services.Settings;
 using Data.DbContexts;
 using Domain.Entities.Identity;
 using Hgs.Share.Exceptions;
 using Hgs.Share.Requests;
 using Hgs.Share.Requests.Users;
 using Hgs.Share.Responses;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.IdentityModel.Tokens.Jwt;
-using Microsoft.AspNetCore.Http;
+using System.Security.Cryptography;
 
-namespace Core.Services;
+namespace Core.Services.Auth;
 
 public class AuthService : IAuthService
 {
     private readonly HgsDbContext _dbContext;
     private readonly ITokenService _tokenService;
+    private readonly IMailService _mailService;
     private readonly JwtSettings _jwtSettings;
     private readonly CookieSettings _cookieSettings;
+    private readonly LockoutSettings _lockoutSettings;
+    private readonly MailSettings _mailSettings;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         HgsDbContext dbContext,
         ITokenService tokenService,
+        IMailService mailService,
         IOptions<JwtSettings> jwtSettings,
         IOptions<CookieSettings> cookieSettings,
+        IOptions<LockoutSettings> lockoutSettings,
+        IOptions<MailSettings> mailSettings,
         ILogger<AuthService> logger)
     {
         _dbContext = dbContext;
         _tokenService = tokenService;
+        _mailService = mailService;
         _jwtSettings = jwtSettings.Value;
         _cookieSettings = cookieSettings.Value;
+        _lockoutSettings = lockoutSettings.Value;
+        _mailSettings = mailSettings.Value;
         _logger = logger;
     }
 
@@ -55,7 +67,25 @@ public class AuthService : IAuthService
         if (user is null || !PasswordHelper.VerifyPassword(request.Password, user.PasswordHash))
         {
             _logger.LogWarning("Invalid login attempt for user '{Username}'.", request.Username);
+            if (user is not null)
+            {
+                user.FailedLoginCount++;
+                if (user.FailedLoginCount >= _lockoutSettings.MaxFailedAttempts)
+                {
+                    user.LockoutEnd = DateTime.UtcNow.AddMinutes(_lockoutSettings.LockoutMinutes);
+                    user.FailedLoginCount = 0;
+                    _logger.LogWarning("User '{Username}' locked out until {LockoutEnd}.", request.Username, user.LockoutEnd);
+                }
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
             throw new UnauthorizedException("Invalid username or password.");
+        }
+
+        if (user.LockoutEnd.HasValue && user.LockoutEnd > DateTime.UtcNow)
+        {
+            var minutesLeft = Math.Ceiling((user.LockoutEnd.Value - DateTime.UtcNow).TotalMinutes);
+            _logger.LogWarning("Locked user '{Username}' tried to login.", request.Username);
+            throw new UnauthorizedException($"Account is temporarily locked. Try again in {minutesLeft} minute(s).");
         }
 
         if (!user.IsActive)
@@ -65,6 +95,10 @@ public class AuthService : IAuthService
         }
 
         user.LastLoginAt = DateTime.UtcNow;
+        if (user.FailedLoginCount != 0)
+        {
+            user.FailedLoginCount = 0;
+        }
         await _dbContext.SaveChangesAsync(cancellationToken);
         return await IssueTokensAsync(user, userAgent, ipAddress, cancellationToken);
     }
@@ -197,6 +231,139 @@ public class AuthService : IAuthService
                userAgent.Contains("iphone") ||
                userAgent.Contains("ipad") ||
                userAgent.Contains("mobile");
+    }
+
+    public async Task ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.Email))
+        {
+            throw new BadRequestException("Email is required.");
+        }
+
+        var user = await _dbContext.Users
+            .Where(u => u.Email == request.Email && !u.IsDeleted && u.IsActive)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (user is null)
+        {
+            _logger.LogWarning("Forgot-password requested for unknown/inactive email '{Email}'.", request.Email);
+            return;
+        }
+
+        var token = GenerateResetToken();
+        user.PasswordResetTokenHash = _tokenService.HashRefreshToken(token);
+        user.PasswordResetTokenExpiresAt = DateTime.UtcNow.AddMinutes(30);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        var resetUrl = $"{_mailSettings.ResetPasswordBaseUrl}/{Uri.EscapeDataString(token)}";
+        var body = $"""
+            <!DOCTYPE html>
+            <html lang="vi">
+              <head>
+                <meta charset="UTF-8">
+                <title>HGS Portal - Đặt lại mật khẩu</title>
+              </head>
+              <body style="margin:0;padding:0;background-color:#f4f6f9;font-family:Segoe UI,Arial,sans-serif;">
+                <div style="max-width:700px;margin:30px auto;background:#ffffff;border:1px solid #dcdcdc;border-radius:8px;overflow:hidden;">
+                  <!-- Header -->
+                  <table width="100%" cellpadding="0" cellspacing="0" style="background:#17479E;">
+                    <tr>
+                      <td style="padding:15px 20px;">
+                        <img src="https://portal.hgs.vn/ImagesUploads/logoHgs.png" alt="HGS" style="height:40px;vertical-align:middle;">
+                        <span style="font-size:18px;font-weight:bold;color:#F58220;padding-left:15px;">HANOI GROUND SERVICES</span>
+                      </td>
+                    </tr>
+                  </table>
+                  <!-- Content -->
+                  <div style="padding:35px 40px;color:#333;font-size:15px;line-height:1.8;">
+                    <p>Kính gửi anh/chị , <strong>{user.FullName}</strong>,</p>
+                    <p>Hệ thống HGS Portal đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản của anh/chị với địa chỉ email: <strong>{user.Email}</strong>).</p>
+                    <p>Vui lòng nhấn vào nút “Đặt lại mật khẩu” bên dưới để thiết lập mật khẩu mới. Liên kết có hiệu lực trong
+                       <strong>30 phút</strong> và chỉ sử dụng được một lần.</p>
+                    <p style="text-align:center;margin:30px 0;">
+                      <a href="{resetUrl}" style="display:inline-block;background:#17479E;color:#ffffff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:bold;">Đặt lại mật khẩu</a>
+                    </p>
+                    <p style="font-size:13px;color:#6C757D;">Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.
+                       Mật khẩu của bạn sẽ không thay đổi.</p>
+                    <p>Trân trọng!</p>
+                  </div>
+                  <!-- Footer -->
+                  <div style="background:#f7f7f7;border-top:1px solid #e5e5e5;padding:20px 35px;color:#555;font-size:13px;line-height:1.7;">
+                    <strong style="color:#17479E;">HGS PORTAL</strong>
+                    <br>
+                    Hanoi Ground Services JSC (HGS)
+                    <hr style="border:none;border-top:1px solid #dddddd;margin:18px 0;">
+                    <div style="text-align:center;color:#888;">
+                      &copy; {DateTime.UtcNow.Year} Hanoi Ground Services JSC. <br>
+                      Email này được gửi tự động, vui lòng không phản hồi.
+                    </div>
+                  </div>
+                </div>
+              </body>
+            </html>
+            """;
+
+        await _mailService.SendAsync(new MailMessage
+        {
+            To = user.Email,
+            Subject = "HGS Portal — Password Reset",
+            HtmlBody = body
+        }, cancellationToken);
+    }
+
+    public async Task ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.Token) || string.IsNullOrWhiteSpace(request.NewPassword))
+        {
+            throw new BadRequestException("Token and new password are required.");
+        }
+
+        if (request.NewPassword.Length < 6)
+        {
+            throw new BadRequestException("Password must be at least 6 characters.");
+        }
+
+        var tokenHash = _tokenService.HashRefreshToken(request.Token);
+        var user = await _dbContext.Users
+            .Where(u => u.PasswordResetTokenHash == tokenHash &&
+                        u.PasswordResetTokenExpiresAt != null &&
+                        u.PasswordResetTokenExpiresAt > DateTime.UtcNow &&
+                        !u.IsDeleted)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (user is null)
+        {
+            throw new UnauthorizedException("Reset link is invalid or expired.");
+        }
+
+        user.PasswordHash = PasswordHelper.HashPassword(request.NewPassword);
+        user.PasswordResetTokenHash = null;
+        user.PasswordResetTokenExpiresAt = null;
+        user.FailedLoginCount = 0;
+        user.LockoutEnd = null;
+
+        var activeTokens = await _dbContext.RefreshTokens
+            .Where(rt => rt.UserId == user.Id && !rt.IsRevoked)
+            .ToListAsync(cancellationToken);
+        foreach (var token in activeTokens)
+        {
+            token.IsRevoked = true;
+            token.RevokedAt = DateTime.UtcNow;
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        _logger.LogInformation("Password reset completed for user '{Username}'.", user.Username);
+    }
+
+    private static string GenerateResetToken()
+    {
+        var randomBytes = new byte[32];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(randomBytes);
+        return Convert.ToBase64String(randomBytes)
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
     }
 
     public async Task<Users?> GetCurrentUserAsync(int userId, CancellationToken cancellationToken = default)

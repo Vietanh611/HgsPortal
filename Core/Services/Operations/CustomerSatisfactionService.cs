@@ -1,10 +1,10 @@
-﻿using Core.Interfaces;
+using Core.Interfaces;
 using Data.DbContexts;
 using Domain.Entities.CustomerSatisfaction;
 using Hgs.Share.Requests.CustomerSatisfaction;
 using Microsoft.EntityFrameworkCore;
 
-namespace Core.Services;
+namespace Core.Services.Operations;
 
 public class CustomerSatisfactionService : ICustomerSatisfactionService
 {

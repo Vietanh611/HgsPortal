@@ -4,7 +4,7 @@ using Domain.Entities.DisplayDevices;
 using Hgs.Share.Requests.DisplayDevices;
 using Microsoft.EntityFrameworkCore;
 
-namespace Core.Services;
+namespace Core.Services.Operations;
 
 public class DisplayDevicesService : IDisplayDevicesService
 {

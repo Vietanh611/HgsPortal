@@ -1,7 +1,7 @@
 using Core.Interfaces;
 using Microsoft.Extensions.Caching.Memory;
 
-namespace Core.Services;
+namespace Core.Services.Operations;
 
 public class CacheService : ICacheService
 {

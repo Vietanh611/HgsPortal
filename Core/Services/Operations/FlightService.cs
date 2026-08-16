@@ -3,7 +3,7 @@ using Data.DbContexts;
 using Domain.Entities.ACDM;
 using Microsoft.EntityFrameworkCore;
 
-namespace Core.Services;
+namespace Core.Services.Operations;
 
 public class FlightService : IFlightService
 {

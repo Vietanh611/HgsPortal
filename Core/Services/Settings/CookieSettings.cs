@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http;
 
-namespace Core.Services;
+namespace Core.Services.Settings;
 
 public class CookieSettings
 {

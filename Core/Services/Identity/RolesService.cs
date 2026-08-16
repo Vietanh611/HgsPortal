@@ -3,7 +3,7 @@ using Data.DbContexts;
 using Domain.Entities.Identity;
 using Microsoft.EntityFrameworkCore;
 
-namespace Core.Services;
+namespace Core.Services.Identity;
 
 public class RolesService : IRolesService
 {

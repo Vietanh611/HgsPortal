@@ -37,6 +37,8 @@ namespace Domain.Entities.Identity
         public bool IsLocked { get; set; }
         public DateTime? LockoutEnd { get; set; }
         public int FailedLoginCount { get; set; }
+        public string? PasswordResetTokenHash { get; set; }
+        public DateTime? PasswordResetTokenExpiresAt { get; set; }
         public DateTime? LastLoginAt { get; set; }
 
         public DateTime CreatedAt { get; set; }

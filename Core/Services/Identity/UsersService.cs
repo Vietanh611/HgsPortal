@@ -6,7 +6,7 @@ using Domain.Entities.Identity;
 using Hgs.Share.Requests.Users;
 using Microsoft.EntityFrameworkCore;
 
-namespace Core.Services;
+namespace Core.Services.Identity;
 
 public class UsersService : IUsersService
 {

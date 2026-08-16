@@ -4,7 +4,7 @@ using Domain.Entities.System;
 using Hgs.Share.Requests.RoleMenus;
 using Microsoft.EntityFrameworkCore;
 
-namespace Core.Services;
+namespace Core.Services.Identity;
 
 public class RoleMenuService : IRoleMenuService
 {

@@ -76,6 +76,28 @@ public class AuthController : ControllerBase
         return Ok(ApiResponse<AuthenticateResponse>.SuccessResponse(response, "Token refreshed successfully", 200));
     }
 
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    [IgnoreAntiforgeryToken]
+    public async Task<ActionResult<ApiResponse>> ForgotPassword(
+        [FromBody] ForgotPasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        await _authService.ForgotPasswordAsync(request, cancellationToken);
+        return Ok(ApiResponse.SuccessResponse("A reset link was sent.", 200));
+    }
+
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    [IgnoreAntiforgeryToken]
+    public async Task<ActionResult<ApiResponse>> ResetPassword(
+        [FromBody] ResetPasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        await _authService.ResetPasswordAsync(request, cancellationToken);
+        return Ok(ApiResponse.SuccessResponse("Password reset successfully.", 200));
+    }
+
     [HttpPost("logout")]
     [AllowAnonymous]
     [IgnoreAntiforgeryToken]

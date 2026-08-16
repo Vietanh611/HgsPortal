@@ -1,4 +1,4 @@
-﻿using Core.Interfaces;
+using Core.Interfaces;
 using Data.DbContexts;
 using Domain.Entities.Identity;
 using Hgs.Share.Attributes;
@@ -11,7 +11,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
-namespace Core.Services
+namespace Core.Services.Operations
 {
     public class AuditLogService : IAuditLogService
     {

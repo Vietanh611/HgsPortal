@@ -1,9 +1,9 @@
-﻿using Core.Interfaces;
+using Core.Interfaces;
 using Data.DbContexts;
 using Hgs.Share.Dtos;
 using Microsoft.EntityFrameworkCore;
 
-namespace Core.Services
+namespace Core.Services.Operations
 {
     public class DisplayService : IDisplayService
     {

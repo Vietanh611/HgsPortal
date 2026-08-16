@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Security.Claims;
 
-namespace Core.Services;
+namespace Core.Services.Identity;
 
 public class PermissionDelegationService : IPermissionDelegationService
 {

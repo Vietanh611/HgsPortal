@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
-namespace Core.Services;
+namespace Core.Services.Identity;
 
 public class OrgScopeService : IOrgScopeService
 {

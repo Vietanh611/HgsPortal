@@ -1,7 +1,11 @@
 using API.Authorization;
 using API.Middleware;
 using Core.Interfaces;
-using Core.Services;
+using Core.Services.Auth;
+using Core.Services.Identity;
+using Core.Services.Notifications;
+using Core.Services.Operations;
+using Core.Services.Settings;
 using Data.DbContexts;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -14,6 +18,8 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
 
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
@@ -53,6 +59,10 @@ builder.Services.AddScoped<IDisplayService, DisplayService>();
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.Configure<CookieSettings>(builder.Configuration.GetSection("CookieSettings"));
+builder.Services.Configure<LockoutSettings>(builder.Configuration.GetSection("LockoutSettings"));
+builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
+builder.Services.AddSingleton<OAuth2TokenProvider>();
+builder.Services.AddScoped<IMailService, MailService>();
 var rateLimitSettings = builder.Configuration.GetSection("RateLimiting");
 
 builder.Services.AddRateLimiter(options =>

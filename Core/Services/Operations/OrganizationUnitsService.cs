@@ -4,7 +4,7 @@ using Domain.Entities.Identity;
 using Hgs.Share.Requests.OrganizationUnits;
 using Microsoft.EntityFrameworkCore;
 
-namespace Core.Services;
+namespace Core.Services.Operations;
 
 public class OrganizationUnitsService : IOrganizationUnitsService
 {

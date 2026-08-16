@@ -6,7 +6,7 @@ using Hgs.Share.Requests.Menus;
 using Hgs.Share.Responses.Menus;
 using Microsoft.EntityFrameworkCore;
 
-namespace Core.Services;
+namespace Core.Services.Identity;
 
 public class MenuService : IMenuService
 {

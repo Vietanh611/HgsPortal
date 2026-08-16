@@ -16,6 +16,9 @@
 #Docs folder
 docs/*
 
+#Scripts folder
+Scripts/*
+
 #SKILL folder
 skills/
 #MARKDOWN
@@ -384,3 +387,4 @@ MigrationBackup/
 FodyWeavers.xsd
 /AGENTS.md
 /CLAUDE.md
+/.obsidian

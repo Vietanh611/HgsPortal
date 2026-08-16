@@ -5,7 +5,7 @@ using Domain.Entities.System;
 using Hgs.Share.Requests.UserRoles;
 using Microsoft.EntityFrameworkCore;
 
-namespace Core.Services;
+namespace Core.Services.Identity;
 
 public class UserRoleService : IUserRoleService
 {

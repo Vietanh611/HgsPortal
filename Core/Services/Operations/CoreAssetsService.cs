@@ -4,7 +4,7 @@ using Domain.Entities.CoreAssets;
 using Hgs.Share.Requests.CoreAssets;
 using Microsoft.EntityFrameworkCore;
 
-namespace Core.Services;
+namespace Core.Services.Operations;
 
 public class CoreAssetsService : ICoreAssetsService
 {
