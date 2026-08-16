@@ -3,13 +3,13 @@
 @using Hgs.Share.Responses.AuditLogs
 @using BlazorBootstrap
 
-<PageTitle>Audit Logs</PageTitle>
+<PageTitle>Nhật ký hoạt động</PageTitle>
 
 <div class="container">
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>Audit Logs</h2>
+                <h1 class="h2 mb-0">Nhật ký hoạt động</h1>
             </div>
 
             <Card>
@@ -26,8 +26,8 @@
                     }
                     else if (auditLogs != null && !auditLogs.Any())
                     {
-                        <HgsEmptyState Title="No audit logs found"
-                                       Message="Audit events will appear here as they are recorded." />
+                        <HgsEmptyState Title="Chưa có nhật ký hoạt động"
+                                       Message="Các sự kiện sẽ xuất hiện tại đây khi được ghi lại." />
                     }
                     else
                     {
@@ -36,26 +36,26 @@
                             <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="ID" SortKeyExpression="item => item.Id">
                                 @context.Id
                             </GridColumn>
-                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="User" SortKeyExpression="item => item.Username">
+                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Người dùng" SortKeyExpression="item => item.Username">
                                 @(context.Username ?? "N/A")
                             </GridColumn>
-                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Action" SortKeyExpression="item => item.Action">
+                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Hành động" SortKeyExpression="item => item.Action">
                                 <Badge Color="@(GetActionBadgeColor(context.Action))">@context.Action</Badge>
                             </GridColumn>
-                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Entity" SortKeyExpression="item => item.EntityName">
+                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Đối tượng" SortKeyExpression="item => item.EntityName">
                                 @context.EntityName
                             </GridColumn>
-                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Entity ID" SortKeyExpression="item => item.EntityId">
+                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Mã đối tượng" SortKeyExpression="item => item.EntityId">
                                 @(context.EntityId?.ToString() ?? "N/A")
                             </GridColumn>
-                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="IP Address" SortKeyExpression="item => item.IpAddress">
+                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Địa chỉ IP" SortKeyExpression="item => item.IpAddress">
                                 @(context.IpAddress ?? "N/A")
                             </GridColumn>
-                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Created At" SortKeyExpression="item => item.CreatedAt">
+                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Thời gian" SortKeyExpression="item => item.CreatedAt">
                                 @context.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")
                             </GridColumn>
-                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Actions" AllowSorting="false">
-                                <Button Color="ButtonColor.Info" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowDetailModal(context)" aria-label="View audit log detail">
+                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Thao tác" AllowSorting="false">
+                                <Button Color="ButtonColor.Info" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowDetailModal(context)" aria-label="Xem chi tiết nhật ký">
                                     <Icon Name="IconName.Eye" />
                                 </Button>
                             </GridColumn>

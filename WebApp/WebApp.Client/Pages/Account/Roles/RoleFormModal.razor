@@ -2,71 +2,77 @@
 @using Hgs.Share.Responses.OrganizationUnits
 @using BlazorBootstrap
 
-<Modal @ref="modal" Title="@(IsEditMode ? "Edit Role" : "Add Role")" OnClose="Close">
+<Modal @ref="modal" Title="@(IsEditMode ? "Sửa vai trò" : "Thêm vai trò")" OnClose="Close" Size="ModalSize.Large">
     <BodyTemplate>
         <EditForm Model="@RoleForm" OnValidSubmit="HandleSubmit">
             <DataAnnotationsValidator />
             
-            <div class="mb-3">
-                <label class="form-label">Code</label>
-                <InputText class="form-control" @bind-Value="RoleForm.Code" />
-                <ValidationMessage For="() => RoleForm.Code" class="text-danger" />
-            </div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Mã</label>
+                    <InputText class="form-control" @bind-Value="RoleForm.Code" />
+                    <ValidationMessage For="() => RoleForm.Code" class="text-danger" />
+                </div>
 
-            <div class="mb-3">
-                <label class="form-label">Name</label>
-                <InputText class="form-control" @bind-Value="RoleForm.Name" />
-                <ValidationMessage For="() => RoleForm.Name" class="text-danger" />
-            </div>
+                <div class="col-md-6">
+                    <label class="form-label">Tên</label>
+                    <InputText class="form-control" @bind-Value="RoleForm.Name" />
+                    <ValidationMessage For="() => RoleForm.Name" class="text-danger" />
+                </div>
 
-            <div class="mb-3">
-                <label class="form-label">Description</label>
-                <InputTextArea class="form-control" @bind-Value="RoleForm.Description" rows="3" />
-            </div>
+                <div class="col-12">
+                    <label class="form-label">Mô tả</label>
+                    <InputTextArea class="form-control" @bind-Value="RoleForm.Description" rows="2" />
+                </div>
 
-            <div class="mb-3">
-                <label class="form-label">Organization Unit</label>
-                <InputSelect class="form-select" @bind-Value="RoleForm.OrganizationUnitId">
-                    <option value="">-- Select Organization Unit --</option>
-                    @if (OrganizationUnits != null)
-                    {
-                        @foreach (var ou in OrganizationUnits)
+                <div class="col-md-6">
+                    <label class="form-label">Đơn vị</label>
+                    <InputSelect class="form-select" @bind-Value="RoleForm.OrganizationUnitId">
+                        <option value="">-- Chọn đơn vị --</option>
+                        @if (OrganizationUnits != null)
                         {
-                            <option value="@ou.Id">@ou.Name</option>
+                            @foreach (var ou in OrganizationUnits)
+                            {
+                                <option value="@ou.Id">@ou.Name</option>
+                            }
                         }
-                    }
-                </InputSelect>
-            </div>
+                    </InputSelect>
+                </div>
 
-            <div class="mb-3">
-                <label class="form-label">Data Scope</label>
-                <InputSelect class="form-select" @bind-Value="RoleForm.DataScope">
-                    <option value="Self">Self</option>
-                    <option value="Department">Department</option>
-                    <option value="Organization">Organization</option>
-                    <option value="All">All</option>
-                </InputSelect>
-            </div>
+                <div class="col-md-6">
+                    <label class="form-label">Phạm vi dữ liệu</label>
+                    <InputSelect class="form-select" @bind-Value="RoleForm.DataScope">
+                        <option value="Self">Cá nhân</option>
+                        <option value="Department">Phòng ban</option>
+                        <option value="Organization">Đơn vị</option>
+                        <option value="All">Toàn bộ</option>
+                    </InputSelect>
+                </div>
 
-            <div class="mb-3 form-check">
-                <InputCheckbox class="form-check-input" id="isSystemRole" @bind-Value="RoleForm.IsSystemRole" />
-                <label class="form-check-label" for="isSystemRole">System Role</label>
-            </div>
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <InputCheckbox class="form-check-input" id="isSystemRole" @bind-Value="RoleForm.IsSystemRole" />
+                        <label class="form-check-label" for="isSystemRole">Vai trò hệ thống</label>
+                    </div>
+                </div>
 
-            <div class="mb-3 form-check">
-                <InputCheckbox class="form-check-input" id="isActive" @bind-Value="RoleForm.IsActive" />
-                <label class="form-check-label" for="isActive">Active</label>
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <InputCheckbox class="form-check-input" id="isActive" @bind-Value="RoleForm.IsActive" />
+                        <label class="form-check-label" for="isActive">Hoạt động</label>
+                    </div>
+                </div>
             </div>
         </EditForm>
     </BodyTemplate>
     <FooterTemplate>
-        <Button Color="ButtonColor.Secondary" @onclick="OnClose" Disabled="@IsSubmitting">Cancel</Button>
+        <Button Color="ButtonColor.Secondary" @onclick="OnClose" Disabled="@IsSubmitting">Hủy</Button>
         <Button Color="ButtonColor.Primary" @onclick="HandleSubmit" Disabled="@IsSubmitting">
             @if (IsSubmitting)
             {
                 <Spinner Color="SpinnerColor.Light" Size="SpinnerSize.Small" class="me-2" />
             }
-            Save
+            Lưu
         </Button>
     </FooterTemplate>
 </Modal>

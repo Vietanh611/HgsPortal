@@ -4,19 +4,19 @@
 @using BlazorBootstrap
 @inject WebApp.Client.Services.CoreAssetsService CoreAssetsService
 
-<PageTitle>Core Assets</PageTitle>
+<PageTitle>Tài sản cốt lõi</PageTitle>
 
 <div class="container">
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>Core Assets</h2>
+                <h1 class="h2 mb-0">Tài sản cốt lõi</h1>
                 <div class="d-flex gap-2">
-                    <Button Color="ButtonColor.Secondary" Outline="true" @onclick="LoadAssets" aria-label="Refresh core assets">
-                        <Icon Name="IconName.ArrowClockwise" /> Refresh
+                    <Button Color="ButtonColor.Secondary" Outline="true" @onclick="LoadAssets" aria-label="Làm mới danh sách tài sản">
+                        <Icon Name="IconName.ArrowClockwise" /> Làm mới
                     </Button>
                     <Button Color="ButtonColor.Primary" @onclick="ShowCreateModal">
-                        <Icon Name="IconName.PlusLg" /> Add Asset
+                        <Icon Name="IconName.PlusLg" /> Thêm tài sản
                     </Button>
                 </div>
             </div>
@@ -35,10 +35,10 @@
                     }
                     else if (assets != null && !assets.Any())
                     {
-                        <HgsEmptyState Title="No core assets found"
-                                       Message="Click Add Asset to register the first core asset."
+                        <HgsEmptyState Title="Chưa có tài sản cốt lõi"
+                                       Message="Nhấn Thêm tài sản để đăng ký tài sản cốt lõi đầu tiên."
                                        ShowAction="true"
-                                       ActionText="Add Asset"
+                                       ActionText="Thêm tài sản"
                                        ActionClick="@ShowCreateModal" />
                     }
                     else
@@ -48,29 +48,29 @@
                             <GridColumn TItem="CoreAssetsGetAllResponse" HeaderText="ID" SortKeyExpression="item => item.Id">
                                 @context.Id
                             </GridColumn>
-                            <GridColumn TItem="CoreAssetsGetAllResponse" HeaderText="Code" SortKeyExpression="item => item.Code">
+                            <GridColumn TItem="CoreAssetsGetAllResponse" HeaderText="Mã" SortKeyExpression="item => item.Code">
                                 @context.Code
                             </GridColumn>
-                            <GridColumn TItem="CoreAssetsGetAllResponse" HeaderText="File Name" SortKeyExpression="item => item.FileName">
+                            <GridColumn TItem="CoreAssetsGetAllResponse" HeaderText="Tên tệp" SortKeyExpression="item => item.FileName">
                                 @(context.FileName ?? "N/A")
                             </GridColumn>
-                            <GridColumn TItem="CoreAssetsGetAllResponse" HeaderText="Content Type" SortKeyExpression="item => item.ContentType">
+                            <GridColumn TItem="CoreAssetsGetAllResponse" HeaderText="Loại nội dung" SortKeyExpression="item => item.ContentType">
                                 @(context.ContentType ?? "N/A")
                             </GridColumn>
-                            <GridColumn TItem="CoreAssetsGetAllResponse" HeaderText="Asset Type" SortKeyExpression="item => item.AssetType">
+                            <GridColumn TItem="CoreAssetsGetAllResponse" HeaderText="Loại tài sản" SortKeyExpression="item => item.AssetType">
                                 <Badge Color="BadgeColor.Info">@context.AssetType</Badge>
                             </GridColumn>
-                            <GridColumn TItem="CoreAssetsGetAllResponse" HeaderText="Storage Path" SortKeyExpression="item => item.StoragePath">
+                            <GridColumn TItem="CoreAssetsGetAllResponse" HeaderText="Đường dẫn lưu trữ" SortKeyExpression="item => item.StoragePath">
                                 <small class="text-muted">@context.StoragePath</small>
                             </GridColumn>
-                            <GridColumn TItem="CoreAssetsGetAllResponse" HeaderText="Active">
+                            <GridColumn TItem="CoreAssetsGetAllResponse" HeaderText="Kích hoạt">
                                 @if (context.IsActive)
                                 {
-                                    <Badge Color="BadgeColor.Success">Yes</Badge>
+                                    <Badge Color="BadgeColor.Success">Có</Badge>
                                 }
                                 else
                                 {
-                                    <Badge Color="BadgeColor.Danger">No</Badge>
+                                    <Badge Color="BadgeColor.Danger">Không</Badge>
                                 }
                             </GridColumn>
                         </Grid>
@@ -81,46 +81,50 @@
     </div>
 </div>
 
-<Modal @ref="createModal" Title="Add New Core Asset">
+<Modal @ref="createModal" Title="Thêm tài sản cốt lõi mới" Size="ModalSize.Large">
     <BodyTemplate>
-        <div class="mb-3">
-            <label class="form-label" for="assetCode">Code *</label>
-            <InputText id="assetCode" class="form-control" @bind-Value="newAsset.Code" placeholder="Enter asset code" />
-        </div>
-        <div class="mb-3">
-            <label class="form-label" for="assetFileName">File Name</label>
-            <InputText id="assetFileName" class="form-control" @bind-Value="newAsset.FileName" placeholder="Enter file name" />
-        </div>
-        <div class="mb-3">
-            <label class="form-label" for="assetContentType">Content Type</label>
-            <InputText id="assetContentType" class="form-control" @bind-Value="newAsset.ContentType" placeholder="e.g., image/png" />
-        </div>
-        <div class="mb-3">
-            <label class="form-label" for="assetStoragePath">Storage Path *</label>
-            <InputText id="assetStoragePath" class="form-control" @bind-Value="newAsset.StoragePath" placeholder="Enter storage path" />
-        </div>
-        <div class="mb-3">
-            <label class="form-label" for="assetType">Asset Type *</label>
-            <select id="assetType" class="form-select" @bind="newAsset.AssetType">
-                <option value="">Select type...</option>
-                <option value="Logo">Logo</option>
-                <option value="Image">Image</option>
-                <option value="Icon">Icon</option>
-                <option value="Document">Document</option>
-                <option value="Video">Video</option>
-            </select>
-        </div>
-        <div class="mb-3 form-check">
-            <InputCheckbox id="assetActive" class="form-check-input" @bind-Value="newAsset.IsActive" />
-            <label class="form-check-label" for="assetActive">Enable this asset</label>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label" for="assetCode">Mã *</label>
+                <InputText id="assetCode" class="form-control" @bind-Value="newAsset.Code" placeholder="Nhập mã tài sản" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="assetFileName">Tên tệp</label>
+                <InputText id="assetFileName" class="form-control" @bind-Value="newAsset.FileName" placeholder="Nhập tên tệp" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="assetContentType">Loại nội dung</label>
+                <InputText id="assetContentType" class="form-control" @bind-Value="newAsset.ContentType" placeholder="ví dụ: image/png" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="assetStoragePath">Đường dẫn lưu trữ *</label>
+                <InputText id="assetStoragePath" class="form-control" @bind-Value="newAsset.StoragePath" placeholder="Nhập đường dẫn lưu trữ" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="assetType">Loại tài sản *</label>
+                <select id="assetType" class="form-select" @bind="newAsset.AssetType">
+                    <option value="">Chọn loại...</option>
+                    <option value="Logo">Logo</option>
+                    <option value="Image">Hình ảnh</option>
+                    <option value="Icon">Biểu tượng</option>
+                    <option value="Document">Tài liệu</option>
+                    <option value="Video">Video</option>
+                </select>
+            </div>
+            <div class="col-md-6 d-flex align-items-center">
+                <div class="form-check mb-0">
+                    <InputCheckbox id="assetActive" class="form-check-input" @bind-Value="newAsset.IsActive" />
+                    <label class="form-check-label" for="assetActive">Kích hoạt tài sản này</label>
+                </div>
+            </div>
         </div>
         @if (!string.IsNullOrEmpty(createErrorMessage))
         {
-            <Alert Color="AlertColor.Danger" role="alert">@createErrorMessage</Alert>
+            <Alert Color="AlertColor.Danger" role="alert" class="mt-3">@createErrorMessage</Alert>
         }
     </BodyTemplate>
     <FooterTemplate>
-        <Button Color="ButtonColor.Secondary" @onclick="HideCreateModal" Disabled="@isCreating">Cancel</Button>
+        <Button Color="ButtonColor.Secondary" @onclick="HideCreateModal" Disabled="@isCreating">Hủy</Button>
         <Button Color="ButtonColor.Primary" @onclick="HandleCreateAsset" Disabled="@isCreating">
             @if (isCreating)
             {
@@ -130,7 +134,7 @@
             {
                 <Icon Name="IconName.PlusLg" />
             }
-            Create Asset
+            Tạo tài sản
         </Button>
     </FooterTemplate>
 </Modal>
@@ -161,12 +165,12 @@
 
             if (assets == null)
             {
-                errorMessage = "Unable to load core assets. Please try again.";
+                errorMessage = "Không thể tải danh sách tài sản cốt lõi. Vui lòng thử lại.";
             }
         }
         catch (Exception ex)
         {
-            errorMessage = $"Error loading core assets: {ex.Message}";
+            errorMessage = $"Lỗi khi tải danh sách tài sản cốt lõi: {ex.Message}";
         }
         finally
         {
@@ -196,7 +200,7 @@
     {
         if (string.IsNullOrWhiteSpace(newAsset.Code) || string.IsNullOrWhiteSpace(newAsset.StoragePath) || string.IsNullOrWhiteSpace(newAsset.AssetType))
         {
-            createErrorMessage = "Code, Storage Path, and Asset Type are required.";
+            createErrorMessage = "Mã, đường dẫn lưu trữ và loại tài sản là bắt buộc.";
             return;
         }
 
@@ -214,12 +218,12 @@
             }
             else
             {
-                createErrorMessage = "Failed to create asset. Please try again.";
+                createErrorMessage = "Không thể tạo tài sản. Vui lòng thử lại.";
             }
         }
         catch (Exception ex)
         {
-            createErrorMessage = $"Error creating asset: {ex.Message}";
+            createErrorMessage = $"Lỗi khi tạo tài sản: {ex.Message}";
         }
         finally
         {

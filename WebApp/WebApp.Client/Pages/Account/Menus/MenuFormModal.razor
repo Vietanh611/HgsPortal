@@ -1,76 +1,82 @@
 @using Hgs.Share.Requests.Menus
 @using BlazorBootstrap
 
-<Modal @ref="modal" Title="@(IsEditMode ? "Edit Menu" : "Add Menu")" OnClose="Close">
+<Modal @ref="modal" Title="@(IsEditMode ? "Sửa menu" : "Thêm menu")" OnClose="Close" Size="ModalSize.Large">
     <BodyTemplate>
         <EditForm Model="@MenuForm" OnValidSubmit="HandleSubmit">
             <DataAnnotationsValidator />
             
-            <div class="mb-3">
-                <label class="form-label">Code</label>
-                <InputText class="form-control" @bind-Value="MenuForm.Code" />
-                <ValidationMessage For="() => MenuForm.Code" class="text-danger" />
-            </div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Mã</label>
+                    <InputText class="form-control" @bind-Value="MenuForm.Code" />
+                    <ValidationMessage For="() => MenuForm.Code" class="text-danger" />
+                </div>
 
-            <div class="mb-3">
-                <label class="form-label">Name</label>
-                <InputText class="form-control" @bind-Value="MenuForm.Name" />
-                <ValidationMessage For="() => MenuForm.Name" class="text-danger" />
-            </div>
+                <div class="col-md-6">
+                    <label class="form-label">Tên</label>
+                    <InputText class="form-control" @bind-Value="MenuForm.Name" />
+                    <ValidationMessage For="() => MenuForm.Name" class="text-danger" />
+                </div>
 
-            <div class="mb-3">
-                <label class="form-label">Parent Menu</label>
-                <InputSelect class="form-select" @bind-Value="MenuForm.ParentId">
-                    <option value="">-- Root Menu --</option>
-                    @if (ParentMenus != null)
-                    {
-                        @foreach (var parent in ParentMenus)
+                <div class="col-md-6">
+                    <label class="form-label">Menu cha</label>
+                    <InputSelect class="form-select" @bind-Value="MenuForm.ParentId">
+                        <option value="">-- Menu gốc --</option>
+                        @if (ParentMenus != null)
                         {
-                            <option value="@parent.Id">@parent.Name</option>
+                            @foreach (var parent in ParentMenus)
+                            {
+                                <option value="@parent.Id">@parent.Name</option>
+                            }
                         }
-                    }
-                </InputSelect>
-            </div>
+                    </InputSelect>
+                </div>
 
-            <div class="mb-3">
-                <label class="form-label">Route</label>
-                <InputText class="form-control" @bind-Value="MenuForm.Route" placeholder="/path" />
-            </div>
+                <div class="col-md-6">
+                    <label class="form-label">Đường dẫn</label>
+                    <InputText class="form-control" @bind-Value="MenuForm.Route" placeholder="/duong-dan" />
+                </div>
 
-            <div class="mb-3">
-                <label class="form-label">Component</label>
-                <InputText class="form-control" @bind-Value="MenuForm.Component" placeholder="ComponentName" />
-            </div>
+                <div class="col-md-6">
+                    <label class="form-label">Thành phần</label>
+                    <InputText class="form-control" @bind-Value="MenuForm.Component" placeholder="TenThanhPhan" />
+                </div>
 
-            <div class="mb-3">
-                <label class="form-label">Icon</label>
-                <InputText class="form-control" @bind-Value="MenuForm.Icon" placeholder="bi-icon-name" />
-            </div>
+                <div class="col-md-6">
+                    <label class="form-label">Biểu tượng</label>
+                    <InputText class="form-control" @bind-Value="MenuForm.Icon" placeholder="bi-icon-name" />
+                </div>
 
-            <div class="mb-3">
-                <label class="form-label">Sort Order</label>
-                <InputNumber class="form-control" @bind-Value="MenuForm.SortOrder" />
-            </div>
+                <div class="col-md-6">
+                    <label class="form-label">Thứ tự</label>
+                    <InputNumber class="form-control" @bind-Value="MenuForm.SortOrder" />
+                </div>
 
-            <div class="mb-3 form-check">
-                <InputCheckbox class="form-check-input" id="isVisible" @bind-Value="MenuForm.IsVisible" />
-                <label class="form-check-label" for="isVisible">Visible</label>
-            </div>
+                <div class="col-md-6 d-flex align-items-center">
+                    <div class="form-check mb-0">
+                        <InputCheckbox class="form-check-input" id="isVisible" @bind-Value="MenuForm.IsVisible" />
+                        <label class="form-check-label" for="isVisible">Hiển thị</label>
+                    </div>
+                </div>
 
-            <div class="mb-3 form-check">
-                <InputCheckbox class="form-check-input" id="isActive" @bind-Value="MenuForm.IsActive" />
-                <label class="form-check-label" for="isActive">Active</label>
+                <div class="col-md-6 d-flex align-items-center">
+                    <div class="form-check mb-0">
+                        <InputCheckbox class="form-check-input" id="isActive" @bind-Value="MenuForm.IsActive" />
+                        <label class="form-check-label" for="isActive">Hoạt động</label>
+                    </div>
+                </div>
             </div>
         </EditForm>
     </BodyTemplate>
     <FooterTemplate>
-        <Button Color="ButtonColor.Secondary" @onclick="OnClose" Disabled="@IsSubmitting">Cancel</Button>
+        <Button Color="ButtonColor.Secondary" @onclick="OnClose" Disabled="@IsSubmitting">Hủy</Button>
         <Button Color="ButtonColor.Primary" @onclick="HandleSubmit" Disabled="@IsSubmitting">
             @if (IsSubmitting)
             {
                 <Spinner Color="SpinnerColor.Light" Size="SpinnerSize.Small" class="me-2" />
             }
-            Save
+            Lưu
         </Button>
     </FooterTemplate>
 </Modal>

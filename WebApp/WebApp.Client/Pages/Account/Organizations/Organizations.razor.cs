@@ -43,14 +43,14 @@ public partial class Organizations : ComponentBase
                 organizations = null;
                 errorMessage = !string.IsNullOrWhiteSpace(ApiClient.LastError)
                     ? ApiClient.LastError
-                    : "Unable to load organizations.";
+                    : "Không thể tải danh sách đơn vị.";
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading organizations: {ex.Message}");
             organizations = null;
-            errorMessage = "Unable to load organizations. Please try again.";
+            errorMessage = "Không thể tải danh sách đơn vị. Vui lòng thử lại.";
         }
         finally
         {
@@ -103,13 +103,13 @@ public partial class Organizations : ComponentBase
                 var success = await ApiClient.PutAsync($"api/organizationunits/{editingOrganizationId}", updateRequest);
                 if (success)
                 {
-                    ToastService.ShowSuccess("Organization updated successfully");
+                    ToastService.ShowSuccess("Đã cập nhật đơn vị");
                     await LoadOrganizations();
                     await organizationFormModal.HideAsync();
                 }
                 else
                 {
-                    ToastService.ShowError("Failed to update organization");
+                    ToastService.ShowError("Không thể cập nhật đơn vị");
                 }
             }
             else
@@ -117,19 +117,19 @@ public partial class Organizations : ComponentBase
                 var success = await ApiClient.PostAsync("api/organizationunits", organizationForm);
                 if (success)
                 {
-                    ToastService.ShowSuccess("Organization created successfully");
+                    ToastService.ShowSuccess("Đã tạo đơn vị");
                     await LoadOrganizations();
                     await organizationFormModal.HideAsync();
                 }
                 else
                 {
-                    ToastService.ShowError("Failed to create organization");
+                    ToastService.ShowError("Không thể tạo đơn vị");
                 }
             }
         }
         catch (Exception ex)
         {
-            ToastService.ShowError($"Error: {ex.Message}");
+            ToastService.ShowError($"Lỗi: {ex.Message}");
         }
         finally
         {
@@ -142,12 +142,12 @@ public partial class Organizations : ComponentBase
         var success = await ApiClient.DeleteAsync($"api/organizationunits/{id}");
         if (success)
         {
-            ToastService.ShowSuccess("Organization deleted successfully");
+            ToastService.ShowSuccess("Đã xóa đơn vị");
             await LoadOrganizations();
         }
         else
         {
-            ToastService.ShowError("Failed to delete organization");
+            ToastService.ShowError("Không thể xóa đơn vị");
         }
     }
 }

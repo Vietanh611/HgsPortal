@@ -10,12 +10,12 @@
         <p class="text-muted mb-3">@Message</p>
     }
     <Button Color="ButtonColor.Primary" Size="ButtonSize.Small" @onclick="RetryClick">
-        <Icon Name="IconName.ArrowClockwise" /> Retry
+        <Icon Name="IconName.ArrowClockwise" /> Thử lại
     </Button>
 </div>
 
 @code {
-    [Parameter] public string Title { get; set; } = "Unable to load data";
+    [Parameter] public string Title { get; set; } = "Không thể tải dữ liệu";
     [Parameter] public string? Message { get; set; }
     [Parameter] public EventCallback RetryClick { get; set; }
 }

@@ -65,18 +65,18 @@ public partial class Profile : ComponentBase
                 var success = await ApiClient.PutAsync($"api/users/{currentUser.Id}", profileForm);
                 if (success)
                 {
-                    ToastService.ShowSuccess("Profile updated successfully");
+                    ToastService.ShowSuccess("Đã cập nhật hồ sơ");
                     await LoadCurrentUser();
                 }
                 else
                 {
-                    ToastService.ShowError("Failed to update profile");
+                    ToastService.ShowError("Không thể cập nhật hồ sơ");
                 }
             }
         }
         catch (Exception ex)
         {
-            ToastService.ShowError($"Error updating profile: {ex.Message}");
+            ToastService.ShowError($"Lỗi khi cập nhật hồ sơ: {ex.Message}");
         }
         finally
         {
@@ -94,18 +94,18 @@ public partial class Profile : ComponentBase
                 var success = await ApiClient.PutAsync($"api/users/{currentUser.Id}/changepassword", changePasswordForm);
                 if (success)
                 {
-                    ToastService.ShowSuccess("Password changed successfully");
+                    ToastService.ShowSuccess("Đã đổi mật khẩu");
                     changePasswordForm = new UsersChangePasswordRequest();
                 }
                 else
                 {
-                    ToastService.ShowError("Failed to change password");
+                    ToastService.ShowError("Không thể đổi mật khẩu");
                 }
             }
         }
         catch (Exception ex)
         {
-            ToastService.ShowError($"Error changing password: {ex.Message}");
+            ToastService.ShowError($"Lỗi khi đổi mật khẩu: {ex.Message}");
         }
         finally
         {

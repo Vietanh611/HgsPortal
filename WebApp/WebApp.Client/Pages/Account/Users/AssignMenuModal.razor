@@ -1,9 +1,9 @@
 @using Hgs.Share.Responses.Menus
 @using BlazorBootstrap
-<Modal @ref="modal" Title="@($"Assign Menus - {Username}")" OnClose="Close" Size="ModalSize.Large">
+<Modal @ref="modal" Title="@($"Gán menu - {Username}")" OnClose="Close" Size="ModalSize.Large">
     <BodyTemplate>
         <div class="mb-3">
-            <label class="form-label">Select Menus</label>
+            <label class="form-label">Chọn menu</label>
             @if (IsLoadingMenus)
             {
                 <Spinner Color="SpinnerColor.Primary" />
@@ -21,11 +21,11 @@
                                 </label>
                                 @if (IsRoleMenu(menu.Id))
                                 {
-                                    <span class="badge bg-secondary ms-2">Từ role</span>
+                                    <span class="badge bg-secondary ms-2">Từ vai trò</span>
                                 }
                                 @if (menu.Children.Any())
                                 {
-                                    <button class="btn btn-sm btn-link p-0 ms-2 text-decoration-none" @onclick="() => HandleToggleMenu(menu.Id)">
+                                    <button class="btn btn-sm btn-link p-0 ms-2 text-decoration-none" @onclick="() => HandleToggleMenu(menu.Id)" aria-label="Mở rộng / thu gọn menu con">
                                         <i class="bi @(IsMenuExpanded(menu.Id) ? "bi-chevron-down" : "bi-chevron-right")"></i>
                                     </button>
                                 }
@@ -42,7 +42,7 @@
                                             </label>
                                             @if (IsRoleMenu(child.Id))
                                             {
-                                                <span class="badge bg-secondary ms-2">Từ role</span>
+                                                <span class="badge bg-secondary ms-2">Từ vai trò</span>
                                             }
                                         </div>
                                     }
@@ -55,13 +55,13 @@
         </div>
     </BodyTemplate>
     <FooterTemplate>
-        <Button Color="ButtonColor.Secondary" @onclick="Close">Cancel</Button>
+        <Button Color="ButtonColor.Secondary" @onclick="Close">Hủy</Button>
         <Button Color="ButtonColor.Primary" Disabled="@IsAssigningMenus" @onclick="HandleSubmit">
             @if (IsAssigningMenus)
             {
                 <Spinner Color="SpinnerColor.Light" Size="SpinnerSize.Small" class="me-2" />
             }
-            Save Assignments
+            Lưu gán menu
         </Button>
     </FooterTemplate>
 </Modal>

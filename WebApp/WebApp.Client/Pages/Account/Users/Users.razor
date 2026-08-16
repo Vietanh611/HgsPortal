@@ -4,15 +4,15 @@
 @inject NavigationManager Navigation
 
 
-<PageTitle>User Management</PageTitle>
+<PageTitle>Quản lý người dùng</PageTitle>
 
 <div class="container">
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>User Management</h2>
+                <h1 class="h2 mb-0">Quản lý người dùng</h1>
                 <Button Color="ButtonColor.Primary" @onclick="ShowCreateModal">
-                    <Icon Name="IconName.PlusLg" /> Add User
+                    <Icon Name="IconName.PlusLg" /> Thêm người dùng
                 </Button>
             </div>
 
@@ -30,65 +30,65 @@
                     }
                     else if (users != null && !users.Any())
                     {
-                        <HgsEmptyState Title="No users found"
-                                       Message="Click Add User to create the first user."
+                        <HgsEmptyState Title="Chưa có người dùng"
+                                       Message="Nhấn Thêm người dùng để tạo người dùng đầu tiên."
                                        ShowAction="true"
-                                       ActionText="Add User"
+                                       ActionText="Thêm người dùng"
                                        ActionClick="@ShowCreateModal" />
                     }
                     else
                     {
                         <Grid TItem="UsersGetAllResponse" Data="users" AllowPaging="true" AllowSorting="true" PageSize="10" Responsive="true"
                               Class="table table-hover table-bordered table-striped">
-                            <GridColumn TItem="UsersGetAllResponse" HeaderText="Username" SortKeySelector="item => item.Username">
+                            <GridColumn TItem="UsersGetAllResponse" HeaderText="Tên đăng nhập" SortKeySelector="item => item.Username">
                                 @context.Username
                             </GridColumn>
                             <GridColumn TItem="UsersGetAllResponse" HeaderText="Email" SortKeySelector="item => item.Email">
                                 @context.Email
                             </GridColumn>
-                            <GridColumn TItem="UsersGetAllResponse" HeaderText="Full Name" SortKeySelector="item => item.FullName">
+                            <GridColumn TItem="UsersGetAllResponse" HeaderText="Họ tên" SortKeySelector="item => item.FullName">
                                 @context.FullName
                             </GridColumn>
-                            <GridColumn TItem="UsersGetAllResponse" HeaderText="Phone" SortKeySelector="item => item.PhoneNumber">
+                            <GridColumn TItem="UsersGetAllResponse" HeaderText="Điện thoại" SortKeySelector="item => item.PhoneNumber">
                                 @context.PhoneNumber
                             </GridColumn>
                             <GridColumn TItem="UsersGetAllResponse" HeaderText="Bravo ID" SortKeySelector="item => item.BravoId">
                                 @(context.BravoId?.ToString() ?? "N/A")
                             </GridColumn>
-                            <GridColumn TItem="UsersGetAllResponse" HeaderText="Organization Unit" SortKeySelector="item => item.OrganizationUnitName">
+                            <GridColumn TItem="UsersGetAllResponse" HeaderText="Đơn vị" SortKeySelector="item => item.OrganizationUnitName">
                                 @(context.OrganizationUnitName ?? "N/A")
                             </GridColumn>
-                            <GridColumn TItem="UsersGetAllResponse" HeaderText="Status">
+                            <GridColumn TItem="UsersGetAllResponse" HeaderText="Trạng thái">
                                 @if (context.IsActive)
                                 {
-                                    <Badge Color="BadgeColor.Success">Active</Badge>
+                                    <Badge Color="BadgeColor.Success">Hoạt động</Badge>
                                 }
                                 else
                                 {
-                                    <Badge Color="BadgeColor.Secondary">Inactive</Badge>
+                                    <Badge Color="BadgeColor.Secondary">Ngừng hoạt động</Badge>
                                 }
                                 @if (context.IsLocked)
                                 {
-                                    <Badge Color="BadgeColor.Danger" class="ms-1">Locked</Badge>
+                                    <Badge Color="BadgeColor.Danger" class="ms-1">Đã khóa</Badge>
                                 }
                             </GridColumn>
-                            <GridColumn TItem="UsersGetAllResponse" HeaderText="Last Login" SortKeyExpression="item => item.LastLoginAt">
-                                @(context.LastLoginAt?.ToString("dd/MM/yyyy HH:mm") ?? "Never")
+                            <GridColumn TItem="UsersGetAllResponse" HeaderText="Đăng nhập gần nhất" SortKeyExpression="item => item.LastLoginAt">
+                                @(context.LastLoginAt?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa đăng nhập")
                             </GridColumn>
-                            <GridColumn TItem="UsersGetAllResponse" HeaderText="Actions" AllowSorting="false">
-                                <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowEditModal(context)" class="me-1" aria-label="Edit user">
+                            <GridColumn TItem="UsersGetAllResponse" HeaderText="Thao tác" AllowSorting="false">
+                                <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowEditModal(context)" class="me-1" aria-label="Sửa người dùng">
                                     <Icon Name="IconName.Pencil" />
                                 </Button>
-                                <Button Color="ButtonColor.Warning" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowChangePasswordModal(context)" class="me-1" aria-label="Change password">
+                                <Button Color="ButtonColor.Warning" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowChangePasswordModal(context)" class="me-1" aria-label="Đổi mật khẩu">
                                     <Icon Name="IconName.Key" />
                                 </Button>
-                                <Button Color="ButtonColor.Success" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowAssignRoleModal(context)" class="me-1" aria-label="Assign roles">
+                                <Button Color="ButtonColor.Success" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowAssignRoleModal(context)" class="me-1" aria-label="Gán vai trò">
                                     <Icon Name="IconName.Shield" />
                                 </Button>
-                                <Button Color="ButtonColor.Info" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowAssignMenuModal(context)" class="me-1" aria-label="Assign menus">
+                                <Button Color="ButtonColor.Info" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowAssignMenuModal(context)" class="me-1" aria-label="Gán menu">
                                     <Icon Name="IconName.ListCheck" />
                                 </Button>
-                                <Button Color="ButtonColor.Danger" Outline="true" Size="ButtonSize.Small" @onclick="() => DeleteUser(context.Id)" aria-label="Delete user">
+                                <Button Color="ButtonColor.Danger" Outline="true" Size="ButtonSize.Small" @onclick="() => DeleteUser(context.Id)" aria-label="Xóa người dùng">
                                     <Icon Name="IconName.Trash" />
                                 </Button>
                             </GridColumn>

@@ -4,19 +4,19 @@
 @using BlazorBootstrap
 @inject WebApp.Client.Services.DisplayDevicesService DisplayDevicesService
 
-<PageTitle>Display Devices</PageTitle>
+<PageTitle>Thiết bị hiển thị</PageTitle>
 
 <div class="container">
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>Display Devices</h2>
+                <h1 class="h2 mb-0">Thiết bị hiển thị</h1>
                 <div class="d-flex gap-2">
-                    <Button Color="ButtonColor.Secondary" Outline="true" @onclick="LoadDevices" aria-label="Refresh display devices">
-                        <Icon Name="IconName.ArrowClockwise" /> Refresh
+                    <Button Color="ButtonColor.Secondary" Outline="true" @onclick="LoadDevices" aria-label="Làm mới danh sách thiết bị">
+                        <Icon Name="IconName.ArrowClockwise" /> Làm mới
                     </Button>
                     <Button Color="ButtonColor.Primary" @onclick="ShowCreateModal">
-                        <Icon Name="IconName.PlusLg" /> Add Device
+                        <Icon Name="IconName.PlusLg" /> Thêm thiết bị
                     </Button>
                 </div>
             </div>
@@ -35,10 +35,10 @@
                     }
                     else if (devices != null && !devices.Any())
                     {
-                        <HgsEmptyState Title="No display devices found"
-                                       Message="Click Add Device to register the first display device."
+                        <HgsEmptyState Title="Chưa có thiết bị hiển thị"
+                                       Message="Nhấn Thêm thiết bị để đăng ký thiết bị hiển thị đầu tiên."
                                        ShowAction="true"
-                                       ActionText="Add Device"
+                                       ActionText="Thêm thiết bị"
                                        ActionClick="@ShowCreateModal" />
                     }
                     else
@@ -48,27 +48,27 @@
                             <GridColumn TItem="DisplayDevicesGetAllResponse" HeaderText="ID" SortKeyExpression="item => item.Id">
                                 @context.Id
                             </GridColumn>
-                            <GridColumn TItem="DisplayDevicesGetAllResponse" HeaderText="Device Name" SortKeyExpression="item => item.DeviceName">
+                            <GridColumn TItem="DisplayDevicesGetAllResponse" HeaderText="Tên thiết bị" SortKeyExpression="item => item.DeviceName">
                                 @context.DeviceName
                             </GridColumn>
-                            <GridColumn TItem="DisplayDevicesGetAllResponse" HeaderText="Device Identifier" SortKeyExpression="item => item.DeviceIdentifier">
+                            <GridColumn TItem="DisplayDevicesGetAllResponse" HeaderText="Mã định danh" SortKeyExpression="item => item.DeviceIdentifier">
                                 @context.DeviceIdentifier
                             </GridColumn>
-                            <GridColumn TItem="DisplayDevicesGetAllResponse" HeaderText="Status" SortKeyExpression="item => item.Status">
+                            <GridColumn TItem="DisplayDevicesGetAllResponse" HeaderText="Trạng thái" SortKeyExpression="item => item.Status">
                                 <Badge Color="@(context.Status == "ACTIVE" ? BadgeColor.Success : BadgeColor.Secondary)">@context.Status</Badge>
                             </GridColumn>
-                            <GridColumn TItem="DisplayDevicesGetAllResponse" HeaderText="Enabled">
+                            <GridColumn TItem="DisplayDevicesGetAllResponse" HeaderText="Kích hoạt">
                                 @if (context.IsEnabled)
                                 {
-                                    <Badge Color="BadgeColor.Success">Yes</Badge>
+                                    <Badge Color="BadgeColor.Success">Có</Badge>
                                 }
                                 else
                                 {
-                                    <Badge Color="BadgeColor.Danger">No</Badge>
+                                    <Badge Color="BadgeColor.Danger">Không</Badge>
                                 }
                             </GridColumn>
-                            <GridColumn TItem="DisplayDevicesGetAllResponse" HeaderText="Last Seen" SortKeyExpression="item => item.LastSeenAt">
-                                @(context.LastSeenAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? "Never")
+                            <GridColumn TItem="DisplayDevicesGetAllResponse" HeaderText="Hoạt động gần nhất" SortKeyExpression="item => item.LastSeenAt">
+                                @(context.LastSeenAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? "Chưa từng")
                             </GridColumn>
                         </Grid>
                     }
@@ -78,31 +78,35 @@
     </div>
 </div>
 
-<Modal @ref="createModal" Title="Add New Display Device">
+<Modal @ref="createModal" Title="Thêm thiết bị hiển thị mới" Size="ModalSize.Large">
     <BodyTemplate>
-        <div class="mb-3">
-            <label class="form-label" for="deviceName">Device Name *</label>
-            <InputText id="deviceName" class="form-control" @bind-Value="newDevice.DeviceName" placeholder="Enter device name" />
-        </div>
-        <div class="mb-3">
-            <label class="form-label" for="deviceIdentifier">Device Identifier *</label>
-            <InputText id="deviceIdentifier" class="form-control" @bind-Value="newDevice.DeviceIdentifier" placeholder="Enter device identifier" />
-        </div>
-        <div class="mb-3">
-            <label class="form-label" for="deviceStatus">Status</label>
-            <InputText id="deviceStatus" class="form-control" @bind-Value="newDevice.Status" placeholder="ACTIVE" />
-        </div>
-        <div class="mb-3 form-check">
-            <InputCheckbox id="deviceEnabled" class="form-check-input" @bind-Value="newDevice.IsEnabled" />
-            <label class="form-check-label" for="deviceEnabled">Enable this device</label>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label" for="deviceName">Tên thiết bị *</label>
+                <InputText id="deviceName" class="form-control" @bind-Value="newDevice.DeviceName" placeholder="Nhập tên thiết bị" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="deviceIdentifier">Mã định danh thiết bị *</label>
+                <InputText id="deviceIdentifier" class="form-control" @bind-Value="newDevice.DeviceIdentifier" placeholder="Nhập mã định danh thiết bị" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="deviceStatus">Trạng thái</label>
+                <InputText id="deviceStatus" class="form-control" @bind-Value="newDevice.Status" placeholder="ACTIVE" />
+            </div>
+            <div class="col-md-6 d-flex align-items-center">
+                <div class="form-check mb-0">
+                    <InputCheckbox id="deviceEnabled" class="form-check-input" @bind-Value="newDevice.IsEnabled" />
+                    <label class="form-check-label" for="deviceEnabled">Kích hoạt thiết bị này</label>
+                </div>
+            </div>
         </div>
         @if (!string.IsNullOrEmpty(createErrorMessage))
         {
-            <Alert Color="AlertColor.Danger" role="alert">@createErrorMessage</Alert>
+            <Alert Color="AlertColor.Danger" role="alert" class="mt-3">@createErrorMessage</Alert>
         }
     </BodyTemplate>
     <FooterTemplate>
-        <Button Color="ButtonColor.Secondary" @onclick="HideCreateModal" Disabled="@isCreating">Cancel</Button>
+        <Button Color="ButtonColor.Secondary" @onclick="HideCreateModal" Disabled="@isCreating">Hủy</Button>
         <Button Color="ButtonColor.Primary" @onclick="HandleCreateDevice" Disabled="@isCreating">
             @if (isCreating)
             {
@@ -112,7 +116,7 @@
             {
                 <Icon Name="IconName.PlusLg" />
             }
-            Create Device
+            Tạo thiết bị
         </Button>
     </FooterTemplate>
 </Modal>
@@ -144,12 +148,12 @@
 
             if (devices == null)
             {
-                errorMessage = "Unable to load display devices. Please try again.";
+                errorMessage = "Không thể tải danh sách thiết bị hiển thị. Vui lòng thử lại.";
             }
         }
         catch (Exception ex)
         {
-            errorMessage = $"Error loading display devices: {ex.Message}";
+            errorMessage = $"Lỗi khi tải danh sách thiết bị hiển thị: {ex.Message}";
         }
         finally
         {
@@ -179,7 +183,7 @@
     {
         if (string.IsNullOrWhiteSpace(newDevice.DeviceName) || string.IsNullOrWhiteSpace(newDevice.DeviceIdentifier))
         {
-            createErrorMessage = "Device name and identifier are required.";
+            createErrorMessage = "Tên thiết bị và mã định danh là bắt buộc.";
             return;
         }
 
@@ -197,12 +201,12 @@
             }
             else
             {
-                createErrorMessage = "Failed to create device. Please try again.";
+                createErrorMessage = "Không thể tạo thiết bị. Vui lòng thử lại.";
             }
         }
         catch (Exception ex)
         {
-            createErrorMessage = $"Error creating device: {ex.Message}";
+            createErrorMessage = $"Lỗi khi tạo thiết bị: {ex.Message}";
         }
         finally
         {

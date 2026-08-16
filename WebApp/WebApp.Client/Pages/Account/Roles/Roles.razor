@@ -2,15 +2,15 @@
 @using Hgs.Share.Responses.Roles
 @using BlazorBootstrap
 
-<PageTitle>Role Management</PageTitle>
+<PageTitle>Quản lý vai trò</PageTitle>
 
 <div class="container">
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>Role Management</h2>
+                <h1 class="h2 mb-0">Quản lý vai trò</h1>
                 <Button Color="ButtonColor.Primary" @onclick="ShowCreateModal">
-                    <Icon Name="IconName.PlusLg" /> Add Role
+                    <Icon Name="IconName.PlusLg" /> Thêm vai trò
                 </Button>
             </div>
 
@@ -28,10 +28,10 @@
                     }
                     else if (roles != null && !roles.Any())
                     {
-                        <HgsEmptyState Title="No roles found"
-                                       Message="Click Add Role to create the first role."
+                        <HgsEmptyState Title="Chưa có vai trò"
+                                       Message="Nhấn Thêm vai trò để tạo vai trò đầu tiên."
                                        ShowAction="true"
-                                       ActionText="Add Role"
+                                       ActionText="Thêm vai trò"
                                        ActionClick="@ShowCreateModal" />
                     }
                     else
@@ -39,49 +39,49 @@
                         <Grid TItem="RolesGetAllResponse" Data="roles" AllowPaging="true" AllowSorting="true"
                               Responsive="true"
                               Class="table table-hover table-bordered table-striped" PageSize="10">
-                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Code" SortKeyExpression="item => item.Code">
+                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Mã" SortKeyExpression="item => item.Code">
                                 @context.Code
                             </GridColumn>
-                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Name" SortKeyExpression="item => item.Name">
+                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Tên" SortKeyExpression="item => item.Name">
                                 @context.Name
                             </GridColumn>
-                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Description" SortKeyExpression="item => item.Description">
+                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Mô tả" SortKeyExpression="item => item.Description">
                                 @(context.Description ?? "N/A")
                             </GridColumn>
-                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Organization Unit" SortKeyExpression="item => item.OrganizationUnitName">
+                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Đơn vị" SortKeyExpression="item => item.OrganizationUnitName">
                                 @(context.OrganizationUnitName ?? "N/A")
                             </GridColumn>
-                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Data Scope" SortKeyExpression="item => item.DataScope">
+                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Phạm vi dữ liệu" SortKeyExpression="item => item.DataScope">
                                 @context.DataScope
                             </GridColumn>
-                            <GridColumn TItem="RolesGetAllResponse" HeaderText="System Role">
+                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Vai trò hệ thống">
                                 @if (context.IsSystemRole)
                                 {
-                                    <Badge Color="BadgeColor.Info">Yes</Badge>
+                                    <Badge Color="BadgeColor.Info">Có</Badge>
                                 }
                                 else
                                 {
-                                    <Badge Color="BadgeColor.Secondary">No</Badge>
+                                    <Badge Color="BadgeColor.Secondary">Không</Badge>
                                 }
                             </GridColumn>
-                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Active">
+                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Trạng thái">
                                 @if (context.IsActive)
                                 {
-                                    <Badge Color="BadgeColor.Success">Active</Badge>
+                                    <Badge Color="BadgeColor.Success">Hoạt động</Badge>
                                 }
                                 else
                                 {
-                                    <Badge Color="BadgeColor.Secondary">Inactive</Badge>
+                                    <Badge Color="BadgeColor.Secondary">Ngừng hoạt động</Badge>
                                 }
                             </GridColumn>
-                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Actions" AllowSorting="false">
-                                <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowEditModal(context)" class="me-1" aria-label="Edit role">
+                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Thao tác" AllowSorting="false">
+                                <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowEditModal(context)" class="me-1" aria-label="Sửa vai trò">
                                     <Icon Name="IconName.Pencil" />
                                 </Button>
-                                <Button Color="ButtonColor.Info" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowAssignMenuModal(context)" class="me-1" aria-label="Assign menus">
+                                <Button Color="ButtonColor.Info" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowAssignMenuModal(context)" class="me-1" aria-label="Gán menu">
                                     <Icon Name="IconName.ListCheck" />
                                 </Button>
-                                <Button Color="ButtonColor.Danger" Outline="true" Size="ButtonSize.Small" @onclick="() => DeleteRole(context.Id)" aria-label="Delete role">
+                                <Button Color="ButtonColor.Danger" Outline="true" Size="ButtonSize.Small" @onclick="() => DeleteRole(context.Id)" aria-label="Xóa vai trò">
                                     <Icon Name="IconName.Trash" />
                                 </Button>
                             </GridColumn>

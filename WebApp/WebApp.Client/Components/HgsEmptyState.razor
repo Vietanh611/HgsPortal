@@ -18,10 +18,10 @@
 </div>
 
 @code {
-    [Parameter] public string Title { get; set; } = "No data found";
+    [Parameter] public string Title { get; set; } = "Không có dữ liệu";
     [Parameter] public string? Message { get; set; }
     [Parameter] public IconName Icon { get; set; } = IconName.Inbox;
     [Parameter] public bool ShowAction { get; set; }
-    [Parameter] public string ActionText { get; set; } = "Add";
+    [Parameter] public string ActionText { get; set; } = "Thêm";
     [Parameter] public EventCallback ActionClick { get; set; }
 }

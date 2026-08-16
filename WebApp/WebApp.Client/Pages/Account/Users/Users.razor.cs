@@ -75,14 +75,14 @@ public partial class Users
                 users = null;
                 errorMessage = !string.IsNullOrWhiteSpace(ApiClient.LastError)
                     ? ApiClient.LastError
-                    : "Unable to load users.";
+                    : "Không thể tải danh sách người dùng.";
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading users: {ex.Message}");
             users = null;
-            errorMessage = "Unable to load users. Please try again.";
+            errorMessage = "Không thể tải danh sách người dùng. Vui lòng thử lại.";
         }
         finally
         {
@@ -355,13 +355,13 @@ public partial class Users
                 var success = await ApiClient.PutAsync($"api/users/{editingUserId}", updateRequest);
                 if (success)
                 {
-                    ToastService.ShowSuccess("User updated successfully");
+                    ToastService.ShowSuccess("Đã cập nhật người dùng");
                     await LoadUsers();
                     await CloseUserFormModal();
                 }
                 else
                 {
-                    ToastService.ShowError("Failed to update user");
+                    ToastService.ShowError("Không thể cập nhật người dùng");
                 }
             }
             else
@@ -369,19 +369,19 @@ public partial class Users
                 var success = await ApiClient.PostAsync("api/users", userForm);
                 if (success)
                 {
-                    ToastService.ShowSuccess("User created successfully");
+                    ToastService.ShowSuccess("Đã tạo người dùng");
                     await LoadUsers();
                     await CloseUserFormModal();
                 }
                 else
                 {
-                    ToastService.ShowError("Failed to create user");
+                    ToastService.ShowError("Không thể tạo người dùng");
                 }
             }
         }
         catch (Exception ex)
         {
-            ToastService.ShowError($"Error saving user: {ex.Message}");
+            ToastService.ShowError($"Lỗi khi lưu người dùng: {ex.Message}");
         }
         finally
         {
@@ -397,17 +397,17 @@ public partial class Users
             var success = await ApiClient.PutAsync($"api/users/{changePasswordUserId}/changepassword", changePasswordForm);
             if (success)
             {
-                ToastService.ShowSuccess("Password changed successfully");
+                ToastService.ShowSuccess("Đã đổi mật khẩu");
                 await CloseChangePasswordModal();
             }
             else
             {
-                ToastService.ShowError("Failed to change password");
+                ToastService.ShowError("Không thể đổi mật khẩu");
             }
         }
         catch (Exception ex)
         {
-            ToastService.ShowError($"Error changing password: {ex.Message}");
+            ToastService.ShowError($"Lỗi khi đổi mật khẩu: {ex.Message}");
         }
         finally
         {
@@ -433,7 +433,7 @@ public partial class Users
                 var addSuccess = await ApiClient.PostAsync("api/usermenus/assign-multiple", addRequest);
                 if (!addSuccess)
                 {
-                    ToastService.ShowError("Failed to assign menus");
+                    ToastService.ShowError("Không thể gán menu");
                     return;
                 }
             }
@@ -448,17 +448,17 @@ public partial class Users
                 var removeSuccess = await ApiClient.PostAsync("api/usermenus/remove-multiple", removeRequest);
                 if (!removeSuccess)
                 {
-                    ToastService.ShowError("Failed to remove menus");
+                    ToastService.ShowError("Không thể gỡ menu");
                     return;
                 }
             }
 
-            ToastService.ShowSuccess("Menus assigned successfully");
+            ToastService.ShowSuccess("Đã gán menu");
             await CloseAssignMenuModal();
         }
         catch (Exception ex)
         {
-            ToastService.ShowError($"Error assigning menus: {ex.Message}");
+            ToastService.ShowError($"Lỗi khi gán menu: {ex.Message}");
         }
         finally
         {
@@ -479,17 +479,17 @@ public partial class Users
             var success = await ApiClient.PostAsync("api/userroles/assign-multiple", request);
             if (success)
             {
-                ToastService.ShowSuccess("Roles assigned successfully");
+                ToastService.ShowSuccess("Đã gán vai trò");
                 await CloseAssignRoleModal();
             }
             else
             {
-                ToastService.ShowError("Failed to assign roles");
+                ToastService.ShowError("Không thể gán vai trò");
             }
         }
         catch (Exception ex)
         {
-            ToastService.ShowError($"Error assigning roles: {ex.Message}");
+            ToastService.ShowError($"Lỗi khi gán vai trò: {ex.Message}");
         }
         finally
         {
@@ -499,7 +499,7 @@ public partial class Users
 
     private async Task DeleteUser(int id)
     {
-        var confirmation = await DialogService.ShowDeleteConfirmAsync("this user");
+        var confirmation = await DialogService.ShowDeleteConfirmAsync("người dùng này");
 
         if (confirmation)
         {
@@ -508,17 +508,17 @@ public partial class Users
                 var success = await ApiClient.DeleteAsync($"api/users/{id}");
                 if (success)
                 {
-                    ToastService.ShowSuccess("User deleted successfully");
+                    ToastService.ShowSuccess("Đã xóa người dùng");
                     await LoadUsers();
                 }
                 else
                 {
-                    ToastService.ShowError("Failed to delete user");
+                    ToastService.ShowError("Không thể xóa người dùng");
                 }
             }
             catch (Exception ex)
             {
-                ToastService.ShowError($"Error deleting user: {ex.Message}");
+                ToastService.ShowError($"Lỗi khi xóa người dùng: {ex.Message}");
             }
         }
     }

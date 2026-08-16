@@ -48,14 +48,14 @@ public partial class PermissionDelegationPage : ComponentBase
                 manageableUsers = Enumerable.Empty<ManageableUserResponse>();
                 errorMessage = !string.IsNullOrWhiteSpace(ApiClient.LastError)
                     ? ApiClient.LastError
-                    : "Unable to load manageable users.";
+                    : "Không thể tải danh sách nhân viên.";
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading manageable users: {ex.Message}");
             manageableUsers = Enumerable.Empty<ManageableUserResponse>();
-            errorMessage = "Unable to load manageable users. Please try again.";
+            errorMessage = "Không thể tải danh sách nhân viên. Vui lòng thử lại.";
         }
         finally
         {
@@ -142,15 +142,15 @@ public partial class PermissionDelegationPage : ComponentBase
         var success = await ApiClient.PostAsync("api/permissiondelegation/assign-role", request);
         if (success)
         {
-            ToastService.ShowSuccess("Role assigned successfully");
+            ToastService.ShowSuccess("Đã gán quyền");
             await LoadUserRoles(selectedUserId);
             await assignRoleDialog.HideAsync();
         }
         else
         {
             var errorMessage = !string.IsNullOrEmpty(ApiClient.LastError) 
-                ? $"Failed to assign role: {ApiClient.LastError}" 
-                : "Failed to assign role";
+                ? $"Không thể gán quyền: {ApiClient.LastError}" 
+                : "Không thể gán quyền";
             ToastService.ShowError(errorMessage);
         }
     }
@@ -176,15 +176,15 @@ public partial class PermissionDelegationPage : ComponentBase
         var success = await ApiClient.PostAsync("api/permissiondelegation/revoke-role", request);
         if (success)
         {
-            ToastService.ShowSuccess("Role revoked successfully");
+            ToastService.ShowSuccess("Đã gỡ quyền");
             await LoadUserRoles(selectedUserId);
             await revokeRoleDialog.HideAsync();
         }
         else
         {
             var errorMessage = !string.IsNullOrEmpty(ApiClient.LastError) 
-                ? $"Failed to revoke role: {ApiClient.LastError}" 
-                : "Failed to revoke role";
+                ? $"Không thể gỡ quyền: {ApiClient.LastError}" 
+                : "Không thể gỡ quyền";
             ToastService.ShowError(errorMessage);
         }
     }

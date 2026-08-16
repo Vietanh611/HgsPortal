@@ -41,14 +41,14 @@ public partial class Audit : ComponentBase
                 auditLogs = null;
                 errorMessage = !string.IsNullOrWhiteSpace(ApiClient.LastError)
                     ? ApiClient.LastError
-                    : "Unable to load audit logs.";
+                    : "Không thể tải nhật ký hoạt động.";
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading audit logs: {ex.Message}");
             auditLogs = null;
-            errorMessage = "Unable to load audit logs. Please try again.";
+            errorMessage = "Không thể tải nhật ký hoạt động. Vui lòng thử lại.";
         }
         finally
         {

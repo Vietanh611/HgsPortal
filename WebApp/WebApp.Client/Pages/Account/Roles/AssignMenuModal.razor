@@ -1,7 +1,7 @@
 @using Hgs.Share.Responses.Menus
 @using BlazorBootstrap
 
-<Modal @ref="modal" Title="@($"Assign Menus - {RoleName}")" OnClose="Close" Size="ModalSize.Large">
+<Modal @ref="modal" Title="@($"Gán menu - {RoleName}")" OnClose="Close" Size="ModalSize.Large">
     <BodyTemplate>
         @if (IsLoadingMenus)
         {
@@ -22,9 +22,9 @@
                             </label>
                             @if (menu.Children != null && menu.Children.Any())
                             {
-                                <button class="btn btn-sm btn-link p-0 ms-2 text-decoration-none" @onclick="() => HandleToggleMenu(menu.Id)">
-                                    <i class="bi @(IsMenuExpanded(menu.Id) ? "bi-chevron-down" : "bi-chevron-right")"></i>
-                                </button>
+<button class="btn btn-sm btn-link p-0 ms-2 text-decoration-none" @onclick="() => HandleToggleMenu(menu.Id)" aria-label="Mở rộng / thu gọn menu con">
+                                        <i class="bi @(IsMenuExpanded(menu.Id) ? "bi-chevron-down" : "bi-chevron-right")"></i>
+                                    </button>
                             }
                         </div>
                         @if (menu.Children != null && menu.Children.Any() && IsMenuExpanded(menu.Id))
@@ -47,13 +47,13 @@
         }
     </BodyTemplate>
     <FooterTemplate>
-        <Button Color="ButtonColor.Secondary" @onclick="OnClose" Disabled="@IsAssigningMenus">Cancel</Button>
+        <Button Color="ButtonColor.Secondary" @onclick="OnClose" Disabled="@IsAssigningMenus">Hủy</Button>
         <Button Color="ButtonColor.Primary" @onclick="OnSubmit" Disabled="@IsAssigningMenus">
             @if (IsAssigningMenus)
             {
                 <Spinner Color="SpinnerColor.Light" Size="SpinnerSize.Small" class="me-2" />
             }
-            Save Assignments
+            Lưu gán menu
         </Button>
     </FooterTemplate>
 </Modal>

@@ -2,15 +2,15 @@
 @using Hgs.Share.Responses.Menus
 @using BlazorBootstrap
 
-<PageTitle>Menu Management</PageTitle>
+<PageTitle>Quản lý menu</PageTitle>
 
 <div class="container">
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>Menu Management</h2>
+                <h1 class="h2 mb-0">Quản lý menu</h1>
                 <Button Color="ButtonColor.Primary" @onclick="ShowCreateModal">
-                    <Icon Name="IconName.PlusLg" /> Add Menu
+                    <Icon Name="IconName.PlusLg" /> Thêm menu
                 </Button>
             </div>
 
@@ -28,59 +28,59 @@
                     }
                     else if (menus != null && !menus.Any())
                     {
-                        <HgsEmptyState Title="No menus found"
-                                       Message="Click Add Menu to create the first menu."
+                        <HgsEmptyState Title="Chưa có menu"
+                                       Message="Nhấn Thêm menu để tạo menu đầu tiên."
                                        ShowAction="true"
-                                       ActionText="Add Menu"
+                                       ActionText="Thêm menu"
                                        ActionClick="@ShowCreateModal" />
                     }
                     else
                     {
                         <Grid TItem="MenusGetAllResponse" Data="menus" AllowPaging="true" AllowSorting="true" Responsive="true"
                               Class="table table-hover table-bordered table-striped"  PageSize="10">
-                            <GridColumn TItem="MenusGetAllResponse" HeaderText="Code" SortKeyExpression="item => item.Code">
+                            <GridColumn TItem="MenusGetAllResponse" HeaderText="Mã" SortKeyExpression="item => item.Code">
                                 @context.Code
                             </GridColumn>
-                            <GridColumn TItem="MenusGetAllResponse" HeaderText="Name" SortKeyExpression="item => item.Name">
+                            <GridColumn TItem="MenusGetAllResponse" HeaderText="Tên" SortKeyExpression="item => item.Name">
                                 @context.Name
                             </GridColumn>
-                            <GridColumn TItem="MenusGetAllResponse" HeaderText="Route" SortKeyExpression="item => item.Route">
+                            <GridColumn TItem="MenusGetAllResponse" HeaderText="Đường dẫn" SortKeyExpression="item => item.Route">
                                 @(context.Route ?? "N/A")
                             </GridColumn>
-                            <GridColumn TItem="MenusGetAllResponse" HeaderText="Parent" SortKeyExpression="item => item.ParentId">
-                                @(context.ParentId?.ToString() ?? "Root")
+                            <GridColumn TItem="MenusGetAllResponse" HeaderText="Menu cha" SortKeyExpression="item => item.ParentId">
+                                @(context.ParentId?.ToString() ?? "Gốc")
                             </GridColumn>
-                            <GridColumn TItem="MenusGetAllResponse" HeaderText="Icon" SortKeyExpression="item => item.Icon">
+                            <GridColumn TItem="MenusGetAllResponse" HeaderText="Biểu tượng" SortKeyExpression="item => item.Icon">
                                 @(context.Icon ?? "N/A")
                             </GridColumn>
-                            <GridColumn TItem="MenusGetAllResponse" HeaderText="Sort Order" SortKeyExpression="item => item.SortOrder">
+                            <GridColumn TItem="MenusGetAllResponse" HeaderText="Thứ tự" SortKeyExpression="item => item.SortOrder">
                                 @context.SortOrder
                             </GridColumn>
-                            <GridColumn TItem="MenusGetAllResponse" HeaderText="Visible">
+                            <GridColumn TItem="MenusGetAllResponse" HeaderText="Hiển thị">
                                 @if (context.IsVisible)
                                 {
-                                    <Badge Color="BadgeColor.Success">Yes</Badge>
+                                    <Badge Color="BadgeColor.Success">Có</Badge>
                                 }
                                 else
                                 {
-                                    <Badge Color="BadgeColor.Secondary">No</Badge>
+                                    <Badge Color="BadgeColor.Secondary">Không</Badge>
                                 }
                             </GridColumn>
-                            <GridColumn TItem="MenusGetAllResponse" HeaderText="Active">
+                            <GridColumn TItem="MenusGetAllResponse" HeaderText="Trạng thái">
                                 @if (context.IsActive)
                                 {
-                                    <Badge Color="BadgeColor.Success">Active</Badge>
+                                    <Badge Color="BadgeColor.Success">Hoạt động</Badge>
                                 }
                                 else
                                 {
-                                    <Badge Color="BadgeColor.Secondary">Inactive</Badge>
+                                    <Badge Color="BadgeColor.Secondary">Ngừng hoạt động</Badge>
                                 }
                             </GridColumn>
-                            <GridColumn TItem="MenusGetAllResponse" HeaderText="Actions" AllowSorting="false">
-                                <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowEditModal(context)" class="me-1" aria-label="Edit menu">
+                            <GridColumn TItem="MenusGetAllResponse" HeaderText="Thao tác" AllowSorting="false">
+                                <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowEditModal(context)" class="me-1" aria-label="Sửa menu">
                                     <Icon Name="IconName.Pencil" />
                                 </Button>
-                                <Button Color="ButtonColor.Danger" Outline="true" Size="ButtonSize.Small" @onclick="() => DeleteMenu(context.Id)" aria-label="Delete menu">
+                                <Button Color="ButtonColor.Danger" Outline="true" Size="ButtonSize.Small" @onclick="() => DeleteMenu(context.Id)" aria-label="Xóa menu">
                                     <Icon Name="IconName.Trash" />
                                 </Button>
                             </GridColumn>

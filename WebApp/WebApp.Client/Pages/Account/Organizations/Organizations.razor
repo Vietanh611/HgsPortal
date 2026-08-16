@@ -3,15 +3,15 @@
 @inject NavigationManager Navigation
 
 
-<PageTitle>Organization Management</PageTitle>
+<PageTitle>Quản lý đơn vị</PageTitle>
 
 <div class="container">
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>Organization Management</h2>
+                <h1 class="h2 mb-0">Quản lý đơn vị</h1>
                 <Button Color="ButtonColor.Primary" @onclick="ShowCreateModal">
-                    <Icon Name="IconName.PlusLg" /> Add Organization
+                    <Icon Name="IconName.PlusLg" /> Thêm đơn vị
                 </Button>
             </div>
 
@@ -29,49 +29,49 @@
                     }
                     else if (organizations != null && !organizations.Any())
                     {
-                        <HgsEmptyState Title="No organizations found"
-                                       Message="Click Add Organization to create the first one."
+                        <HgsEmptyState Title="Chưa có đơn vị"
+                                       Message="Nhấn Thêm đơn vị để tạo đơn vị đầu tiên."
                                        ShowAction="true"
-                                       ActionText="Add Organization"
+                                       ActionText="Thêm đơn vị"
                                        ActionClick="@ShowCreateModal" />
                     }
                     else
                     {
                         <Grid TItem="OrganizationUnitsGetAllResponse" Data="organizations" AllowPaging="true" AllowSorting="true" PageSize="10" Responsive="true"
                               Class="table table-hover table-bordered table-striped">
-                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Code" SortKeySelector="item => item.Code">
+                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Mã" SortKeySelector="item => item.Code">
                                 @context.Code
                             </GridColumn>
-                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Name" SortKeySelector="item => item.Name">
+                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Tên" SortKeySelector="item => item.Name">
                                 @context.Name
                             </GridColumn>
-                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Parent" SortKeySelector="item => item.ParentId">
+                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Đơn vị cha" SortKeySelector="item => item.ParentId">
                                 @(context.ParentId?.ToString() ?? "N/A")
                             </GridColumn>
-                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Level" SortKeySelector="item => item.Level">
+                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Cấp" SortKeySelector="item => item.Level">
                                 @context.Level
                             </GridColumn>
-                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Sort Order" SortKeySelector="item => item.SortOrder">
+                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Thứ tự" SortKeySelector="item => item.SortOrder">
                                 @context.SortOrder
                             </GridColumn>
-                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Status">
+                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Trạng thái">
                                 @if (context.IsActive)
                                 {
-                                    <Badge Color="BadgeColor.Success">Active</Badge>
+                                    <Badge Color="BadgeColor.Success">Hoạt động</Badge>
                                 }
                                 else
                                 {
-                                    <Badge Color="BadgeColor.Secondary">Inactive</Badge>
+                                    <Badge Color="BadgeColor.Secondary">Ngừng hoạt động</Badge>
                                 }
                             </GridColumn>
-                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Created At" SortKeyExpression="item => item.CreatedAt">
+                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Ngày tạo" SortKeyExpression="item => item.CreatedAt">
                                 @context.CreatedAt.ToString("dd/MM/yyyy HH:mm")
                             </GridColumn>
-                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Actions" AllowSorting="false">
-                                <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowEditModal(context)" class="me-1" aria-label="Edit organization">
+                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Thao tác" AllowSorting="false">
+                                <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowEditModal(context)" class="me-1" aria-label="Sửa đơn vị">
                                     <Icon Name="IconName.Pencil" />
                                 </Button>
-                                <Button Color="ButtonColor.Danger" Outline="true" Size="ButtonSize.Small" @onclick="() => DeleteOrganization(context.Id)" aria-label="Delete organization">
+                                <Button Color="ButtonColor.Danger" Outline="true" Size="ButtonSize.Small" @onclick="() => DeleteOrganization(context.Id)" aria-label="Xóa đơn vị">
                                     <Icon Name="IconName.Trash" />
                                 </Button>
                             </GridColumn>

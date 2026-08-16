@@ -2,76 +2,80 @@
 @using Hgs.Share.Responses.OrganizationUnits
 @using BlazorBootstrap
 
-<Modal @ref="modal" Title="@(IsEditMode ? "Edit User" : "Add User")" OnClose="Close">
+<Modal @ref="modal" Title="@(IsEditMode ? "Sửa người dùng" : "Thêm người dùng")" OnClose="Close" Size="ModalSize.Large">
     <BodyTemplate>
         <EditForm Model="@UserForm" OnValidSubmit="HandleSubmit">
             <DataAnnotationsValidator />
             
-            <div class="mb-3">
-                <label class="form-label">Username</label>
-                <InputText @bind-Value="UserForm.Username" class="form-control" disabled="@IsEditMode" />
-                <ValidationMessage For="() => UserForm.Username" class="text-danger" />
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Email</label>
-                <InputText @bind-Value="UserForm.Email" class="form-control" type="email" />
-                <ValidationMessage For="() => UserForm.Email" class="text-danger" />
-            </div>
-
-            @if (!IsEditMode)
-            {
-                <div class="mb-3">
-                    <label class="form-label">Password</label>
-                    <InputText @bind-Value="UserForm.Password" class="form-control" type="password" />
-                    <ValidationMessage For="() => UserForm.Password" class="text-danger" />
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Tên đăng nhập</label>
+                    <InputText @bind-Value="UserForm.Username" class="form-control" disabled="@IsEditMode" />
+                    <ValidationMessage For="() => UserForm.Username" class="text-danger" />
                 </div>
-            }
 
-            <div class="mb-3">
-                <label class="form-label">Full Name</label>
-                <InputText @bind-Value="UserForm.FullName" class="form-control" />
-                <ValidationMessage For="() => UserForm.FullName" class="text-danger" />
-            </div>
+                <div class="col-md-6">
+                    <label class="form-label">Email</label>
+                    <InputText @bind-Value="UserForm.Email" class="form-control" type="email" />
+                    <ValidationMessage For="() => UserForm.Email" class="text-danger" />
+                </div>
 
-            <div class="mb-3">
-                <label class="form-label">Bravo ID</label>
-                <InputNumber @bind-Value="UserForm.BravoId" class="form-control" />
-            </div>
+                @if (!IsEditMode)
+                {
+                    <div class="col-md-6">
+                        <label class="form-label">Mật khẩu</label>
+                        <InputText @bind-Value="UserForm.Password" class="form-control" type="password" />
+                        <ValidationMessage For="() => UserForm.Password" class="text-danger" />
+                    </div>
+                }
 
-            <div class="mb-3">
-                <label class="form-label">Phone Number</label>
-                <InputText @bind-Value="UserForm.PhoneNumber" class="form-control" />
-            </div>
+                <div class="col-md-6">
+                    <label class="form-label">Họ tên</label>
+                    <InputText @bind-Value="UserForm.FullName" class="form-control" />
+                    <ValidationMessage For="() => UserForm.FullName" class="text-danger" />
+                </div>
 
-            <div class="mb-3">
-                <label class="form-label">Organization Unit</label>
-                <select class="form-select" @bind="UserForm.OrganizationUnitId">
-                    <option value="">Select Organization Unit</option>
-                    @if (OrganizationUnits != null)
-                    {
-                        @foreach (var org in OrganizationUnits)
+                <div class="col-md-6">
+                    <label class="form-label">Bravo ID</label>
+                    <InputNumber @bind-Value="UserForm.BravoId" class="form-control" />
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Số điện thoại</label>
+                    <InputText @bind-Value="UserForm.PhoneNumber" class="form-control" />
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Đơn vị</label>
+                    <select class="form-select" @bind="UserForm.OrganizationUnitId">
+                        <option value="">Chọn đơn vị</option>
+                        @if (OrganizationUnits != null)
                         {
-                            <option value="@org.Id">@org.Name</option>
+                            @foreach (var org in OrganizationUnits)
+                            {
+                                <option value="@org.Id">@org.Name</option>
+                            }
                         }
-                    }
-                </select>
-            </div>
+                    </select>
+                </div>
 
-            <div class="mb-3 form-check">
-                <InputCheckbox @bind-Value="UserForm.IsActive" class="form-check-input" id="isActive" />
-                <label class="form-check-label" for="isActive">Active</label>
+                <div class="col-md-6 d-flex align-items-center">
+                    <div class="form-check mb-0">
+                        <InputCheckbox @bind-Value="UserForm.IsActive" class="form-check-input" id="isActive" />
+                        <label class="form-check-label" for="isActive">Hoạt động</label>
+                    </div>
+                </div>
             </div>
         </EditForm>
     </BodyTemplate>
     <FooterTemplate>
-        <Button Color="ButtonColor.Secondary" @onclick="Close">Cancel</Button>
+        <Button Color="ButtonColor.Secondary" @onclick="Close">Hủy</Button>
         <Button Color="ButtonColor.Primary" @onclick="HandleSubmit" Disabled="@IsSubmitting">
             @if (IsSubmitting)
             {
                 <Spinner Color="SpinnerColor.Light" Size="SpinnerSize.Small" class="me-2" />
             }
-            @(IsEditMode ? "Update" : "Create")
+            @(IsEditMode ? "Cập nhật" : "Tạo")
         </Button>
     </FooterTemplate>
 </Modal>

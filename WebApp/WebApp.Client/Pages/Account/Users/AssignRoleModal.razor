@@ -1,7 +1,7 @@
 @using Hgs.Share.Responses.Roles
 @using BlazorBootstrap
 
-<Modal @ref="modal" Title="@($"Assign Roles - {Username}")" OnClose="OnClose" Size="ModalSize.Large">
+<Modal @ref="modal" Title="@($"Gán vai trò - {Username}")" OnClose="OnClose" Size="ModalSize.Large">
     <BodyTemplate>
         @if (IsLoadingRoles)
         {
@@ -14,7 +14,7 @@
             <div class="list-group">
                 @if (Roles == null || !Roles.Any())
                 {
-                    <div class="text-center text-muted">No roles available</div>
+                    <div class="text-center text-muted">Không có vai trò nào</div>
                 }
                 else
                 {
@@ -32,11 +32,11 @@
                                     <strong>@role.Name</strong> (@role.Code)
                                     @if (role.IsSystemRole)
                                     {
-                                        <Badge Color="BadgeColor.Info" class="ms-2">System</Badge>
+                                        <Badge Color="BadgeColor.Info" class="ms-2">Hệ thống</Badge>
                                     }
                                     @if (!role.IsActive)
                                     {
-                                        <Badge Color="BadgeColor.Secondary" class="ms-2">Inactive</Badge>
+                                        <Badge Color="BadgeColor.Secondary" class="ms-2">Ngừng hoạt động</Badge>
                                     }
                                 </label>
                             </div>
@@ -44,7 +44,7 @@
                             {
                                 <small class="text-muted d-block ms-4">@role.Description</small>
                             }
-                            <small class="text-muted d-block ms-4">Data Scope: @role.DataScope</small>
+                            <small class="text-muted d-block ms-4">Phạm vi dữ liệu: @role.DataScope</small>
                         </div>
                     }
                 }
@@ -52,13 +52,13 @@
         }
     </BodyTemplate>
     <FooterTemplate>
-        <Button Color="ButtonColor.Secondary" @onclick="OnClose" Disabled="@IsAssigningRoles">Close</Button>
+        <Button Color="ButtonColor.Secondary" @onclick="OnClose" Disabled="@IsAssigningRoles">Đóng</Button>
         <Button Color="ButtonColor.Primary" @onclick="OnSubmit" Disabled="@IsAssigningRoles">
             @if (IsAssigningRoles)
             {
                 <Spinner Color="SpinnerColor.Light" Size="SpinnerSize.Small" class="me-2" />
             }
-            Save
+            Lưu
         </Button>
     </FooterTemplate>
 </Modal>

@@ -1,56 +1,60 @@
 @using Hgs.Share.Requests.OrganizationUnits
 @using Hgs.Share.Responses.OrganizationUnits
 
-<Modal @ref="modal" Title="@(IsEditMode ? "Edit Organization" : "Add Organization")" OnClose="Close">
+<Modal @ref="modal" Title="@(IsEditMode ? "Sửa đơn vị" : "Thêm đơn vị")" OnClose="Close" Size="ModalSize.Large">
     <BodyTemplate>
         <EditForm Model="@OrganizationForm" OnValidSubmit="HandleSubmit">
             <DataAnnotationsValidator />
             
-            <div class="mb-3">
-                <label class="form-label">Code</label>
-                <InputText @bind-Value="OrganizationForm.Code" class="form-control" />
-                <ValidationMessage For="() => OrganizationForm.Code" class="text-danger" />
-            </div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Mã</label>
+                    <InputText @bind-Value="OrganizationForm.Code" class="form-control" />
+                    <ValidationMessage For="() => OrganizationForm.Code" class="text-danger" />
+                </div>
 
-            <div class="mb-3">
-                <label class="form-label">Name</label>
-                <InputText @bind-Value="OrganizationForm.Name" class="form-control" />
-                <ValidationMessage For="() => OrganizationForm.Name" class="text-danger" />
-            </div>
+                <div class="col-md-6">
+                    <label class="form-label">Tên</label>
+                    <InputText @bind-Value="OrganizationForm.Name" class="form-control" />
+                    <ValidationMessage For="() => OrganizationForm.Name" class="text-danger" />
+                </div>
 
-            <div class="mb-3">
-                <label class="form-label">Parent Organization</label>
-                <select class="form-select" @bind="OrganizationForm.ParentId">
-                    <option value="">Select Parent Organization</option>
-                    @if (Organizations != null)
-                    {
-                        @foreach (var org in Organizations)
+                <div class="col-md-6">
+                    <label class="form-label">Đơn vị cha</label>
+                    <select class="form-select" @bind="OrganizationForm.ParentId">
+                        <option value="">Chọn đơn vị cha</option>
+                        @if (Organizations != null)
                         {
-                            <option value="@org.Id">@org.Name (@org.Code)</option>
+                            @foreach (var org in Organizations)
+                            {
+                                <option value="@org.Id">@org.Name (@org.Code)</option>
+                            }
                         }
-                    }
-                </select>
-            </div>
+                    </select>
+                </div>
 
-            <div class="mb-3">
-                <label class="form-label">Sort Order</label>
-                <InputNumber @bind-Value="OrganizationForm.SortOrder" class="form-control" />
-            </div>
+                <div class="col-md-6">
+                    <label class="form-label">Thứ tự</label>
+                    <InputNumber @bind-Value="OrganizationForm.SortOrder" class="form-control" />
+                </div>
 
-            <div class="mb-3 form-check">
-                <InputCheckbox @bind-Value="OrganizationForm.IsActive" class="form-check-input" id="isActive" />
-                <label class="form-check-label" for="isActive">Active</label>
+                <div class="col-12">
+                    <div class="form-check">
+                        <InputCheckbox @bind-Value="OrganizationForm.IsActive" class="form-check-input" id="isActive" />
+                        <label class="form-check-label" for="isActive">Hoạt động</label>
+                    </div>
+                </div>
             </div>
         </EditForm>
     </BodyTemplate>
     <FooterTemplate>
-        <Button Color="ButtonColor.Secondary" @onclick="Close">Cancel</Button>
+        <Button Color="ButtonColor.Secondary" @onclick="Close">Hủy</Button>
         <Button Color="ButtonColor.Primary" @onclick="HandleSubmit" Disabled="@IsSubmitting">
             @if (IsSubmitting)
             {
                 <Spinner Color="SpinnerColor.Light" Size="SpinnerSize.Small" class="me-2" />
             }
-            @(IsEditMode ? "Update" : "Create")
+            @(IsEditMode ? "Cập nhật" : "Tạo")
         </Button>
     </FooterTemplate>
 </Modal>

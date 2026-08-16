@@ -8,7 +8,7 @@
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>Quản lý phân quyền</h2>
+                <h1 class="h2 mb-0">Quản lý phân quyền</h1>
             </div>
 
             <Card>
@@ -32,30 +32,30 @@
                     {
                         <Grid TItem="ManageableUserResponse" Data="manageableUsers" AllowPaging="true" AllowSorting="true" Responsive="true"
                               Class="table table-hover table-bordered table-striped" PageSize="10">
-                            <GridColumn TItem="ManageableUserResponse" HeaderText="Username" SortKeyExpression="item => item.Username">
+                            <GridColumn TItem="ManageableUserResponse" HeaderText="Tên đăng nhập" SortKeyExpression="item => item.Username">
                                 @context.Username
                             </GridColumn>
                             <GridColumn TItem="ManageableUserResponse" HeaderText="Email" SortKeyExpression="item => item.Email">
                                 @context.Email
                             </GridColumn>
-                            <GridColumn TItem="ManageableUserResponse" HeaderText="Full Name" SortKeyExpression="item => item.FullName">
+                            <GridColumn TItem="ManageableUserResponse" HeaderText="Họ tên" SortKeyExpression="item => item.FullName">
                                 @context.FullName
                             </GridColumn>
-                            <GridColumn TItem="ManageableUserResponse" HeaderText="Organization Unit" SortKeyExpression="item => item.OrganizationUnitName">
+                            <GridColumn TItem="ManageableUserResponse" HeaderText="Đơn vị" SortKeyExpression="item => item.OrganizationUnitName">
                                 @(context.OrganizationUnitName ?? "N/A")
                             </GridColumn>
-                            <GridColumn TItem="ManageableUserResponse" HeaderText="Status">
+                            <GridColumn TItem="ManageableUserResponse" HeaderText="Trạng thái">
                                 @if (context.IsActive)
                                 {
-                                    <Badge Color="BadgeColor.Success">Active</Badge>
+                                    <Badge Color="BadgeColor.Success">Hoạt động</Badge>
                                 }
                                 else
                                 {
-                                    <Badge Color="BadgeColor.Secondary">Inactive</Badge>
+                                    <Badge Color="BadgeColor.Secondary">Ngừng hoạt động</Badge>
                                 }
                             </GridColumn>
-                            <GridColumn TItem="ManageableUserResponse" HeaderText="Actions" AllowSorting="false">
-                                <Button Color="ButtonColor.Info" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowPermissionsView(context)" aria-label="View permissions">
+                            <GridColumn TItem="ManageableUserResponse" HeaderText="Thao tác" AllowSorting="false">
+                                <Button Color="ButtonColor.Info" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowPermissionsView(context)" aria-label="Xem quyền">
                                     <Icon Name="IconName.Eye" />
                                 </Button>
                             </GridColumn>
@@ -73,7 +73,7 @@
         <CardBody>
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5>Quyền hiện tại của @selectedUsername</h5>
-                <Button Color="ButtonColor.Secondary" Size="ButtonSize.Small" @onclick="ClosePermissionsView" aria-label="Close permissions view">
+                <Button Color="ButtonColor.Secondary" Size="ButtonSize.Small" @onclick="ClosePermissionsView" aria-label="Đóng xem quyền">
                     <Icon Name="IconName.XLg" />
                 </Button>
             </div>

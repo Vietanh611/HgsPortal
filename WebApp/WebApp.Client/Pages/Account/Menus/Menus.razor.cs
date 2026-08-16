@@ -47,7 +47,7 @@ public partial class Menus
                 parentMenus = null;
                 errorMessage = !string.IsNullOrWhiteSpace(ApiClient.LastError)
                     ? ApiClient.LastError
-                    : "Unable to load menus.";
+                    : "Không thể tải danh sách menu.";
             }
         }
         catch (Exception ex)
@@ -55,7 +55,7 @@ public partial class Menus
             Console.WriteLine($"Error loading menus: {ex.Message}");
             menus = null;
             parentMenus = null;
-            errorMessage = "Unable to load menus. Please try again.";
+            errorMessage = "Không thể tải danh sách menu. Vui lòng thử lại.";
         }
         finally
         {
@@ -116,13 +116,13 @@ public partial class Menus
                 var success = await ApiClient.PutAsync($"api/menus/{editingMenuId}", updateRequest);
                 if (success)
                 {
-                    ToastService.ShowSuccess("Menu updated successfully");
+                    ToastService.ShowSuccess("Đã cập nhật menu");
                     await LoadMenus();
                     await CloseMenuFormModal();
                 }
                 else
                 {
-                    ToastService.ShowError("Failed to update menu");
+                    ToastService.ShowError("Không thể cập nhật menu");
                 }
             }
             else
@@ -130,19 +130,19 @@ public partial class Menus
                 var success = await ApiClient.PostAsync("api/menus", menuForm);
                 if (success)
                 {
-                    ToastService.ShowSuccess("Menu created successfully");
+                    ToastService.ShowSuccess("Đã tạo menu");
                     await LoadMenus();
                     await CloseMenuFormModal();
                 }
                 else
                 {
-                    ToastService.ShowError("Failed to create menu");
+                    ToastService.ShowError("Không thể tạo menu");
                 }
             }
         }
         catch (Exception ex)
         {
-            ToastService.ShowError($"Error saving menu: {ex.Message}");
+            ToastService.ShowError($"Lỗi khi lưu menu: {ex.Message}");
         }
         finally
         {
@@ -152,7 +152,7 @@ public partial class Menus
 
     private async Task DeleteMenu(int id)
     {
-        var confirmation = await DialogService.ShowDeleteConfirmAsync("this menu");
+        var confirmation = await DialogService.ShowDeleteConfirmAsync("menu này");
 
         if (confirmation)
         {
@@ -161,17 +161,17 @@ public partial class Menus
                 var success = await ApiClient.DeleteAsync($"api/menus/{id}");
                 if (success)
                 {
-                    ToastService.ShowSuccess("Menu deleted successfully");
+                    ToastService.ShowSuccess("Đã xóa menu");
                     await LoadMenus();
                 }
                 else
                 {
-                    ToastService.ShowError("Failed to delete menu");
+                    ToastService.ShowError("Không thể xóa menu");
                 }
             }
             catch (Exception ex)
             {
-                ToastService.ShowError($"Error deleting menu: {ex.Message}");
+                ToastService.ShowError($"Lỗi khi xóa menu: {ex.Message}");
             }
         }
     }

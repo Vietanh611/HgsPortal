@@ -49,7 +49,7 @@
     }
 }
 
-<PageTitle>Login</PageTitle>
+<PageTitle>Đăng nhập</PageTitle>
 
 <div class="login-container">
     <Card Class="login-card">
@@ -60,19 +60,8 @@
             <EditForm Model="@loginRequest" OnValidSubmit="HandleLogin">
                 <DataAnnotationsValidator />
 
-                @* <div class="mb-3">
-                    <label class="form-label">Username</label>
-                    <InputText @bind-Value="loginRequest.Username" class="form-control" placeholder="Enter your username" />
-                    <ValidationMessage For="() => loginRequest.Username" class="error-message" />
-                </div>
-
                 <div class="mb-3">
-                    <label class="form-label">Password</label>
-                    <InputText type="password" @bind-Value="loginRequest.Password" class="form-control" placeholder="Enter your password" />
-                    <ValidationMessage For="() => loginRequest.Password" class="error-message" />
-                </div> *@
-                <div class="mb-3">
-                    <label class="form-label">Username</label>
+                    <label class="form-label">Tên đăng nhập</label>
 
                     <div class="input-group">
                         <span class="input-group-text">
@@ -81,14 +70,14 @@
 
                         <InputText @bind-Value="loginRequest.Username"
                                    class="form-control"
-                                   placeholder="Enter your username" />
+                                   placeholder="Nhập tên đăng nhập" />
                     </div>
 
                     <ValidationMessage For="() => loginRequest.Username" />
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Password</label>
+                    <label class="form-label">Mật khẩu</label>
                     <div class="input-group">
                         <span class="input-group-text">
                             <i class="bi bi-lock"></i>
@@ -96,7 +85,7 @@
                         <InputText type="@(showPassword ? "text" : "password")"
                                    class="form-control"
                                    @bind-Value="loginRequest.Password"
-                                   placeholder="Enter your password" />
+                                   placeholder="Nhập mật khẩu" />
                         <span class="input-group-text" role="button" @onclick="() => showPassword = !showPassword">
                             <i class="bi @(showPassword ? "bi-eye-slash" : "bi-eye")"></i>
                         </span>
@@ -106,7 +95,7 @@
 
                 <div class="mb-3 form-check">
                     <InputCheckbox @bind-Value="rememberMe" class="form-check-input" id="rememberMe" />
-                    <label class="form-check-label" for="rememberMe">Remember Me</label>
+                    <label class="form-check-label" for="rememberMe">Ghi nhớ đăng nhập</label>
                 </div>
 
                 @if (!string.IsNullOrEmpty(errorMessage))
@@ -121,12 +110,12 @@
                     {
                         <Spinner Color="SpinnerColor.Light" Size="SpinnerSize.Small" class="me-2" />
                     }
-                    Sign In
+                    Đăng nhập
                 </Button>
             </EditForm>
         </CardBody>
         <CardFooter Class="text-center login-footer">
-            <a href="forgot-password">Forgot Password?</a>
+            <a href="forgot-password">Quên mật khẩu?</a>
         </CardFooter>
     </Card>
 </div>
@@ -219,14 +208,14 @@
 
             if (loginResult == null)
             {
-                errorMessage = "Invalid username or password.";
+                errorMessage = "Tên đăng nhập hoặc mật khẩu không đúng.";
                 return;
             }
 
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             if (authState.User.Identity?.IsAuthenticated != true)
             {
-                errorMessage = "Login succeeded but authentication state is not ready yet. Please try again.";
+                errorMessage = "Đăng nhập thành công nhưng trạng thái xác thực chưa sẵn sàng. Vui lòng thử lại.";
                 return;
             }
 
@@ -248,7 +237,7 @@
         }
         catch (Exception ex)
         {
-            errorMessage = $"An error occurred: {ex.Message}";
+            errorMessage = $"Đã xảy ra lỗi: {ex.Message}";
         }
         finally
         {

@@ -1,5 +1,5 @@
 // Version-based cache naming for easy updates
-const CACHE_VERSION = '2026-08-13-001';
+const CACHE_VERSION = '2026-08-16-001';
 const CACHE_NAME = `hgs-portal-${CACHE_VERSION}`;
 const SHELL_CACHE = `hgs-shell-${CACHE_VERSION}`;
 
@@ -14,7 +14,7 @@ const SHELL_URLS = [
     './lib/bootstrap-icons/font/bootstrap-icons.css',
     './_content/Blazor.Bootstrap/blazor.bootstrap.css',
     './_content/Blazor.Bootstrap/blazor.bootstrap.js',
-    './app.css',
+    './css/hgsStyle.css',
     './WebApp.styles.css'
 ];
 

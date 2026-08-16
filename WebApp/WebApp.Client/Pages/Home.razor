@@ -20,9 +20,41 @@
 
 @if (isLoading)
 {
-    <div class="text-center py-5">
-        <Spinner Color="SpinnerColor.Primary" />
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <PlaceholderContainer Animation="PlaceholderAnimation.Glow">
+                <Placeholder Width="PlaceholderWidth.Col8" />
+                <Placeholder Width="PlaceholderWidth.Col4" Size="PlaceholderSize.Small" Class="mt-1" />
+            </PlaceholderContainer>
+        </div>
     </div>
+
+    <div class="row g-3 mb-4">
+        @for (var i = 0; i < 4; i++)
+        {
+            <div class="col-12 col-sm-6 col-xl-3">
+                <Card>
+                    <CardBody>
+                        <PlaceholderContainer Animation="PlaceholderAnimation.Glow">
+                            <Placeholder Width="PlaceholderWidth.Col6" Size="PlaceholderSize.Small" />
+                            <Placeholder Width="PlaceholderWidth.Col4" Size="PlaceholderSize.Large" Class="mt-2" />
+                        </PlaceholderContainer>
+                    </CardBody>
+                </Card>
+            </div>
+        }
+    </div>
+
+    <Card>
+        <CardBody>
+            <PlaceholderContainer Animation="PlaceholderAnimation.Glow">
+                <Placeholder Width="PlaceholderWidth.Col10" Class="mb-3" />
+                <Placeholder Width="PlaceholderWidth.Col12" />
+                <Placeholder Width="PlaceholderWidth.Col12" />
+                <Placeholder Width="PlaceholderWidth.Col8" />
+            </PlaceholderContainer>
+        </CardBody>
+    </Card>
 }
 else if (errorMessage != null)
 {
@@ -32,7 +64,7 @@ else
 {
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="mb-1">Welcome, @DisplayName</h2>
+            <h1 class="h2 mb-1">Xin chào, @DisplayName</h1>
             @if (userRoles.Any())
             {
                 <span class="text-muted">@string.Join(", ", userRoles)</span>
@@ -42,8 +74,8 @@ else
 
     @if (!modules.Any() && !canViewAudit)
     {
-        <HgsEmptyState Title="No dashboard modules available"
-                       Message="You don't have permission to view any modules yet." />
+        <HgsEmptyState Title="Chưa có module nào trên bảng điều khiển"
+                       Message="Bạn chưa được cấp quyền xem module nào." />
     }
     else
     {
@@ -76,8 +108,8 @@ else
             <Card>
                 <CardHeader>
                     <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Recent Activity</h5>
-                        <a href="audit" class="btn btn-sm btn-outline-primary">View all</a>
+                        <h5 class="mb-0">Hoạt động gần đây</h5>
+                        <a href="audit" class="btn btn-sm btn-outline-primary">Xem tất cả</a>
                     </div>
                 </CardHeader>
                 <CardBody>
@@ -86,10 +118,10 @@ else
                         <table class="table table-hover mb-0">
                             <thead>
                                 <tr>
-                                    <th>User</th>
-                                    <th>Action</th>
-                                    <th>Entity</th>
-                                    <th>Created At</th>
+                                    <th>Người dùng</th>
+                                    <th>Hành động</th>
+                                    <th>Đối tượng</th>
+                                    <th>Thời gian</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -107,7 +139,7 @@ else
                     }
                     else
                     {
-                        <p class="text-muted mb-0">No recent activity.</p>
+                        <p class="text-muted mb-0">Chưa có hoạt động nào.</p>
                     }
                 </CardBody>
             </Card>
@@ -128,11 +160,11 @@ else
 
     private static readonly List<DashboardModule> AllModules = new()
     {
-        new DashboardModule { Route = "users", Title = "Users", Icon = IconName.PeopleFill, Color = IconColor.Primary, Href = "users" },
-        new DashboardModule { Route = "roles", Title = "Roles", Icon = IconName.PersonBadgeFill, Color = IconColor.Info, Href = "roles" },
-        new DashboardModule { Route = "organizations", Title = "Organizations", Icon = IconName.Building, Color = IconColor.Success, Href = "organizations" },
-        new DashboardModule { Route = "displaydevices", Title = "Display Devices", Icon = IconName.Display, Color = IconColor.Warning, Href = "displaydevices" },
-        new DashboardModule { Route = "coreassets", Title = "Core Assets", Icon = IconName.BoxSeam, Color = IconColor.Danger, Href = "coreassets" }
+        new DashboardModule { Route = "users", Title = "Người dùng", Icon = IconName.PeopleFill, Color = IconColor.Primary, Href = "users" },
+        new DashboardModule { Route = "roles", Title = "Vai trò", Icon = IconName.PersonBadgeFill, Color = IconColor.Info, Href = "roles" },
+        new DashboardModule { Route = "organizations", Title = "Đơn vị", Icon = IconName.Building, Color = IconColor.Success, Href = "organizations" },
+        new DashboardModule { Route = "displaydevices", Title = "Thiết bị hiển thị", Icon = IconName.Display, Color = IconColor.Warning, Href = "displaydevices" },
+        new DashboardModule { Route = "coreassets", Title = "Tài sản cốt lõi", Icon = IconName.BoxSeam, Color = IconColor.Danger, Href = "coreassets" }
     };
 
     private bool isLoading = true;
@@ -160,7 +192,7 @@ else
             var token = await TokenStorage.GetAccessTokenAsync();
             if (string.IsNullOrWhiteSpace(token))
             {
-                errorMessage = "You are not authenticated.";
+                errorMessage = "Bạn chưa đăng nhập.";
                 return;
             }
 
@@ -205,7 +237,7 @@ else
         }
         catch (Exception ex)
         {
-            errorMessage = ApiClient.LastError ?? $"Failed to load dashboard: {ex.Message}";
+            errorMessage = ApiClient.LastError ?? $"Không thể tải dữ liệu tổng quan: {ex.Message}";
         }
         finally
         {

@@ -57,14 +57,14 @@ public partial class Roles
                 roles = null;
                 errorMessage = !string.IsNullOrWhiteSpace(ApiClient.LastError)
                     ? ApiClient.LastError
-                    : "Unable to load roles.";
+                    : "Không thể tải danh sách vai trò.";
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading roles: {ex.Message}");
             roles = null;
-            errorMessage = "Unable to load roles. Please try again.";
+            errorMessage = "Không thể tải danh sách vai trò. Vui lòng thử lại.";
         }
         finally
         {
@@ -231,15 +231,15 @@ public partial class Roles
                 var success = await ApiClient.PutAsync($"api/roles/{editingRoleId}", updateRequest);
                 if (success)
                 {
-                    ToastService.ShowSuccess("Role updated successfully");
+                    ToastService.ShowSuccess("Đã cập nhật vai trò");
                     await LoadRoles();
                     await CloseRoleFormModal();
                 }
                 else
                 {
                     var errorMessage = !string.IsNullOrEmpty(ApiClient.LastError) 
-                        ? $"Failed to update role: {ApiClient.LastError}" 
-                        : "Failed to update role";
+                        ? $"Không thể cập nhật vai trò: {ApiClient.LastError}" 
+                        : "Không thể cập nhật vai trò";
                     ToastService.ShowError(errorMessage);
                 }
             }
@@ -248,22 +248,22 @@ public partial class Roles
                 var success = await ApiClient.PostAsync("api/roles", roleForm);
                 if (success)
                 {
-                    ToastService.ShowSuccess("Role created successfully");
+                    ToastService.ShowSuccess("Đã tạo vai trò");
                     await LoadRoles();
                     await CloseRoleFormModal();
                 }
                 else
                 {
                     var errorMessage = !string.IsNullOrEmpty(ApiClient.LastError) 
-                        ? $"Failed to create role: {ApiClient.LastError}" 
-                        : "Failed to create role";
+                        ? $"Không thể tạo vai trò: {ApiClient.LastError}" 
+                        : "Không thể tạo vai trò";
                     ToastService.ShowError(errorMessage);
                 }
             }
         }
         catch (Exception ex)
         {
-            ToastService.ShowError($"Error saving role: {ex.Message}");
+            ToastService.ShowError($"Lỗi khi lưu vai trò: {ex.Message}");
         }
         finally
         {
@@ -284,20 +284,20 @@ public partial class Roles
             var success = await ApiClient.PostAsync("api/rolemenus/assign-multiple", request);
             if (success)
             {
-                ToastService.ShowSuccess("Menus assigned successfully");
+                ToastService.ShowSuccess("Đã gán menu");
                 await CloseAssignMenuModal();
             }
             else
             {
                 var errorMessage = !string.IsNullOrEmpty(ApiClient.LastError) 
-                    ? $"Failed to assign menus: {ApiClient.LastError}" 
-                    : "Failed to assign menus";
+                    ? $"Không thể gán menu: {ApiClient.LastError}" 
+                    : "Không thể gán menu";
                 ToastService.ShowError(errorMessage);
             }
         }
         catch (Exception ex)
         {
-            ToastService.ShowError($"Error assigning menus: {ex.Message}");
+            ToastService.ShowError($"Lỗi khi gán menu: {ex.Message}");
         }
         finally
         {
@@ -307,7 +307,7 @@ public partial class Roles
 
     private async Task DeleteRole(int id)
     {
-        var confirmation = await DialogService.ShowDeleteConfirmAsync("this role");
+        var confirmation = await DialogService.ShowDeleteConfirmAsync("vai trò này");
         
         if (confirmation)
         {
@@ -316,20 +316,20 @@ public partial class Roles
                 var success = await ApiClient.DeleteAsync($"api/roles/{id}");
                 if (success)
                 {
-                    ToastService.ShowSuccess("Role deleted successfully");
+                    ToastService.ShowSuccess("Đã xóa vai trò");
                     await LoadRoles();
                 }
                 else
                 {
                     var errorMessage = !string.IsNullOrEmpty(ApiClient.LastError) 
-                        ? $"Failed to delete role: {ApiClient.LastError}" 
-                        : "Failed to delete role";
+                        ? $"Không thể xóa vai trò: {ApiClient.LastError}" 
+                        : "Không thể xóa vai trò";
                     ToastService.ShowError(errorMessage);
                 }
             }
             catch (Exception ex)
             {
-                ToastService.ShowError($"Error deleting role: {ex.Message}");
+                ToastService.ShowError($"Lỗi khi xóa vai trò: {ex.Message}");
             }
         }
     }
