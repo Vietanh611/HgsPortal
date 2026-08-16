@@ -8,7 +8,6 @@ using System.Globalization;
 using System.Net;
 using WebApp.Client.Services.Components;
 using WebApp.Client.Services.Network;
-using AuditDetailModal = WebApp.Client.Pages.SystemPages.Audit.AuditDetailModal;
 using CustomToastService = WebApp.Client.Services.Components.ToastService;
 
 namespace WebApp.Client.Pages.SystemPages.Audit;
@@ -20,7 +19,6 @@ public partial class Audit : ComponentBase
 
     private Grid<AuditLogsGetAllResponse> grid = default!;
     private AuditDetailModal auditDetailModal = default!;
-    private Collapse filterCollapse = default!;
     private AuditLogsGetAllResponse? selectedAuditLog;
     private string? errorMessage;
     private bool showEmptyState;
@@ -108,19 +106,9 @@ public partial class Audit : ComponentBase
         await ApplyFilters();
     }
 
-    private Task ToggleFilterCollapse()
+    private void ToggleFilterCollapse()
     {
         filterExpanded = !filterExpanded;
-        return filterCollapse.ToggleAsync();
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            filterExpanded = false;
-            await filterCollapse.HideAsync();
-        }
     }
 
     private async Task ExportXlsx()
