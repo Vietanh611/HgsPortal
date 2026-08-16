@@ -66,6 +66,12 @@ namespace Data.DbContexts
                 .HasOne(x => x.Reason)
                 .WithMany(x => x.EvaluationReasonLinks)
                 .HasForeignKey(x => x.ReasonId);
+
+            modelBuilder.Entity<AuditLogs>()
+                .HasOne(a => a.TargetUser)
+                .WithMany()
+                .HasForeignKey(a => a.TargetUserId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

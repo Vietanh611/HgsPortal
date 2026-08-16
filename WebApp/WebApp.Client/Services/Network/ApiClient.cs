@@ -324,6 +324,38 @@ public class ApiClient
         }
     }
 
+    public async Task<byte[]?> GetFileBytesAsync(string endpoint)
+    {
+        IsLoading = true;
+        LastError = null;
+
+        try
+        {
+            var requestUri = BuildRequestUri(endpoint);
+            var result = await ExecuteWithRetry(async () =>
+            {
+                var response = await _httpClient.GetAsync(requestUri);
+                if (await HandleResponse(response))
+                {
+                    return await response.Content.ReadAsByteArrayAsync();
+                }
+                return null;
+            }, $"GET {endpoint}");
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            LastError = $"GET {endpoint} failed: {ex.Message}";
+            Console.WriteLine(LastError);
+            return null;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
     public string ResolveUrl(string? relativeOrAbsoluteUrl)
     {
         if (string.IsNullOrWhiteSpace(relativeOrAbsoluteUrl))

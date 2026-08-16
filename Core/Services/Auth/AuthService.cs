@@ -22,6 +22,7 @@ public class AuthService : IAuthService
     private readonly HgsDbContext _dbContext;
     private readonly ITokenService _tokenService;
     private readonly IMailService _mailService;
+    private readonly IAuditLogService _auditLog;
     private readonly JwtSettings _jwtSettings;
     private readonly CookieSettings _cookieSettings;
     private readonly LockoutSettings _lockoutSettings;
@@ -32,6 +33,7 @@ public class AuthService : IAuthService
         HgsDbContext dbContext,
         ITokenService tokenService,
         IMailService mailService,
+        IAuditLogService auditLog,
         IOptions<JwtSettings> jwtSettings,
         IOptions<CookieSettings> cookieSettings,
         IOptions<LockoutSettings> lockoutSettings,
@@ -41,6 +43,7 @@ public class AuthService : IAuthService
         _dbContext = dbContext;
         _tokenService = tokenService;
         _mailService = mailService;
+        _auditLog = auditLog;
         _jwtSettings = jwtSettings.Value;
         _cookieSettings = cookieSettings.Value;
         _lockoutSettings = lockoutSettings.Value;
@@ -67,14 +70,35 @@ public class AuthService : IAuthService
         if (user is null || !PasswordHelper.VerifyPassword(request.Password, user.PasswordHash))
         {
             _logger.LogWarning("Invalid login attempt for user '{Username}'.", request.Username);
-            if (user is not null)
+            if (user is null)
             {
+                // Không có UserId để gán — denormalize Username vẫn ghi nhận được (chống brute-force theo tài khoản)
+                await _auditLog.LogSecurityEventAsync(
+                    action: "LOGIN_FAIL_INVALID_CREDENTIALS",
+                    eventCategory: "Auth", success: false, severity: "Warning",
+                    username: request.Username,
+                    detail: "Username không tồn tại");
+            }
+            else
+            {
+                await _auditLog.LogSecurityEventAsync(
+                    action: "LOGIN_FAIL_INVALID_CREDENTIALS",
+                    eventCategory: "Auth", success: false, severity: "Warning",
+                    userId: user.Id, username: user.Username,
+                    detail: "Sai mật khẩu");
+
                 user.FailedLoginCount++;
                 if (user.FailedLoginCount >= _lockoutSettings.MaxFailedAttempts)
                 {
                     user.LockoutEnd = DateTime.UtcNow.AddMinutes(_lockoutSettings.LockoutMinutes);
                     user.FailedLoginCount = 0;
                     _logger.LogWarning("User '{Username}' locked out until {LockoutEnd}.", request.Username, user.LockoutEnd);
+
+                    await _auditLog.LogSecurityEventAsync(
+                        action: "ACCOUNT_LOCKED",
+                        eventCategory: "Security", success: true, severity: "Critical",
+                        targetUserId: user.Id, username: user.Username,
+                        detail: "Khóa tự động sau khi vượt ngưỡng đăng nhập sai");
                 }
                 await _dbContext.SaveChangesAsync(cancellationToken);
             }
@@ -85,12 +109,26 @@ public class AuthService : IAuthService
         {
             var minutesLeft = Math.Ceiling((user.LockoutEnd.Value - DateTime.UtcNow).TotalMinutes);
             _logger.LogWarning("Locked user '{Username}' tried to login.", request.Username);
+
+            await _auditLog.LogSecurityEventAsync(
+                action: "LOGIN_FAIL_LOCKED",
+                eventCategory: "Auth", success: false, severity: "Warning",
+                userId: user.Id, username: user.Username,
+                detail: $"Tài khoản đang bị khóa, thử lại sau {minutesLeft} phút");
+
             throw new UnauthorizedException($"Account is temporarily locked. Try again in {minutesLeft} minute(s).");
         }
 
         if (!user.IsActive)
         {
             _logger.LogWarning("Inactive user '{Username}' tried to login.", request.Username);
+
+            await _auditLog.LogSecurityEventAsync(
+                action: "LOGIN_FAIL_INACTIVE_USER",
+                eventCategory: "Auth", success: false, severity: "Warning",
+                userId: user.Id, username: user.Username,
+                detail: "Tài khoản đã bị vô hiệu hóa");
+
             throw new UnauthorizedException("User is not active.");
         }
 
@@ -100,6 +138,12 @@ public class AuthService : IAuthService
             user.FailedLoginCount = 0;
         }
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await _auditLog.LogSecurityEventAsync(
+            action: "LOGIN_SUCCESS",
+            eventCategory: "Auth", success: true, severity: "Info",
+            userId: user.Id, username: user.Username);
+
         return await IssueTokensAsync(user, userAgent, ipAddress, cancellationToken);
     }
 
@@ -120,8 +164,40 @@ public class AuthService : IAuthService
             .Where(rt => rt.TokenHash == tokenHash)
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (tokenEntity is null || tokenEntity.IsRevoked || tokenEntity.ExpiresAt < DateTime.UtcNow)
+        if (tokenEntity is null)
         {
+            // Token không còn khớp bản ghi hợp lệ — nhưng có thể là token CŨ đã bị rotate ra.
+            // Nếu hash khớp PreviousTokenHash của một token đã revoke → tái sử dụng token cũ (dấu hiệu bị đánh cắp).
+            var reusedOldToken = await _dbContext.RefreshTokens
+                .AnyAsync(rt => rt.PreviousTokenHash == tokenHash && rt.IsRevoked, cancellationToken);
+
+            if (reusedOldToken)
+            {
+                _logger.LogWarning("Refresh token reuse attempt detected (replayed old token).");
+
+                await _auditLog.LogSecurityEventAsync(
+                    action: "REFRESH_TOKEN_REUSE_DETECTED",
+                    eventCategory: "Security", success: false, severity: "Critical",
+                    detail: "Phát hiện sử dụng lại refresh token cũ đã bị thu hồi (PreviousTokenHash)");
+            }
+
+            throw new UnauthorizedException("Invalid or expired refresh token.");
+        }
+
+        if (tokenEntity.IsRevoked || tokenEntity.ExpiresAt < DateTime.UtcNow)
+        {
+            if (tokenEntity.IsRevoked)
+            {
+                // Token này ĐÃ bị revoke (sau khi rotate / logout) nhưng vẫn được dùng lại → reuse detection
+                _logger.LogWarning("Refresh token reuse attempt detected (revoked token for user {UserId}).", tokenEntity.UserId);
+
+                await _auditLog.LogSecurityEventAsync(
+                    action: "REFRESH_TOKEN_REUSE_DETECTED",
+                    eventCategory: "Security", success: false, severity: "Critical",
+                    userId: tokenEntity.UserId,
+                    detail: "Phát hiện sử dụng lại refresh token đã bị thu hồi");
+            }
+
             throw new UnauthorizedException("Invalid or expired refresh token.");
         }
 
@@ -169,6 +245,11 @@ public class AuthService : IAuthService
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await _auditLog.LogSecurityEventAsync(
+            action: "LOGOUT",
+            eventCategory: "Auth", success: true, severity: "Info",
+            userId: tokenEntity.UserId);
     }
 
     private async Task<AuthenticateResponse> IssueTokensAsync(Users user, string? userAgent, string? ipAddress, CancellationToken cancellationToken)
@@ -254,6 +335,12 @@ public class AuthService : IAuthService
         user.PasswordResetTokenHash = _tokenService.HashRefreshToken(token);
         user.PasswordResetTokenExpiresAt = DateTime.UtcNow.AddMinutes(30);
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        // Không log khi email không tồn tại — tránh lộ enumeration qua chính audit log
+        await _auditLog.LogSecurityEventAsync(
+            action: "PASSWORD_RESET_REQUESTED",
+            eventCategory: "Auth", success: true, severity: "Info",
+            targetUserId: user.Id, username: user.Username);
 
         var resetUrl = $"{_mailSettings.ResetPasswordBaseUrl}/{Uri.EscapeDataString(token)}";
         var body = $"""
@@ -353,6 +440,11 @@ public class AuthService : IAuthService
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         _logger.LogInformation("Password reset completed for user '{Username}'.", user.Username);
+
+        await _auditLog.LogSecurityEventAsync(
+            action: "PASSWORD_RESET_COMPLETED",
+            eventCategory: "Security", success: true, severity: "Warning",
+            targetUserId: user.Id, username: user.Username);
     }
 
     private static string GenerateResetToken()

@@ -115,14 +115,16 @@ public class UserRoleService : IUserRoleService
         _dbContext.UserRoles.Add(userRole);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        _auditLog.Log(
-            action: "CREATE",
-            entityName: "UserRoles",
-            entityId: userRole.Id,
-            oldValue: null,
-            newValue: userRole);
-
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        // LogSecurityEventAsync tự SaveChanges — thay thế Log CRUD cũ (không thêm dòng trùng)
+        await _auditLog.LogSecurityEventAsync(
+            action: "ROLE_ASSIGNED",
+            eventCategory: "Permission", success: true, severity: "Warning",
+            userId: assignedBy,             // người thực hiện
+            targetUserId: request.UserId,   // người được gán role
+            entityName: "Roles",
+            entityId: request.RoleId,       // EntityId là int? — truyền thẳng
+            detail: $"Gán role '{role.Name}' cho user '{user.Username}'",
+            newValue: new { role.Id, role.Name, targetUserId = user.Id });
 
         // Automatically assign all role menus to the user
         await AssignRoleMenusToUserAsync(request.RoleId, request.UserId, assignedBy, cancellationToken);
@@ -150,6 +152,7 @@ public class UserRoleService : IUserRoleService
     {
         var userRole = await _dbContext.UserRoles
             .Include(ur => ur.User)
+            .Include(ur => ur.Role)
             .FirstOrDefaultAsync(ur => ur.Id == id, cancellationToken);
 
         if (userRole is null)
@@ -166,15 +169,18 @@ public class UserRoleService : IUserRoleService
             throw new InvalidOperationException("Cannot remove the last role from a user");
         }
 
-        _auditLog.Log(
-            action: "DELETE",
-            entityName: "UserRoles",
-            entityId: userRole.Id,
-            oldValue: userRole,
-            newValue: null);
-
         _dbContext.UserRoles.Remove(userRole);
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await _auditLog.LogSecurityEventAsync(
+            action: "ROLE_REVOKED",
+            eventCategory: "Permission", success: true, severity: "Warning",
+            targetUserId: userRole.UserId,
+            entityName: "Roles",
+            entityId: userRole.RoleId,
+            detail: $"Gỡ role '{userRole.Role?.Name}' khỏi user '{userRole.User?.Username}'",
+            oldValue: new { userRole.RoleId, RoleName = userRole.Role?.Name, userRole.UserId });
+
         await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
         return true;
     }
@@ -235,17 +241,19 @@ public class UserRoleService : IUserRoleService
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
+        // 1 dòng audit cho mỗi role được gán — truy vết theo TargetUserId/EntityId không bỏ sót
         foreach (var userRole in createdUserRoles)
         {
-            _auditLog.Log(
-                action: "CREATE",
-                entityName: "UserRoles",
-                entityId: userRole.Id,
-                oldValue: null,
-                newValue: userRole);
+            await _auditLog.LogSecurityEventAsync(
+                action: "ROLE_ASSIGNED",
+                eventCategory: "Permission", success: true, severity: "Warning",
+                userId: assignedBy,
+                targetUserId: userId,
+                entityName: "Roles",
+                entityId: userRole.RoleId,
+                detail: $"Gán role #{userRole.RoleId} cho user '{user.Username}'",
+                newValue: new { roleId = userRole.RoleId, userId });
         }
-
-        await _dbContext.SaveChangesAsync(cancellationToken);
 
         // Automatically assign all role menus to the user for each new role
         foreach (var roleId in newRoleIds)
@@ -278,6 +286,7 @@ public class UserRoleService : IUserRoleService
 
         // Get count of roles to be removed
         var rolesToRemove = await _dbContext.UserRoles
+            .Include(ur => ur.Role)
             .Where(ur => ur.UserId == userId && roleIds.Contains(ur.RoleId))
             .ToListAsync(cancellationToken);
 
@@ -287,18 +296,22 @@ public class UserRoleService : IUserRoleService
             throw new InvalidOperationException("Cannot remove the last role from a user");
         }
 
-        foreach (var userRole in rolesToRemove)
-        {
-            _auditLog.Log(
-                action: "DELETE",
-                entityName: "UserRoles",
-                entityId: userRole.Id,
-                oldValue: userRole,
-                newValue: null);
-        }
-
         _dbContext.UserRoles.RemoveRange(rolesToRemove);
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        // 1 dòng audit cho mỗi role bị gỡ
+        foreach (var userRole in rolesToRemove)
+        {
+            await _auditLog.LogSecurityEventAsync(
+                action: "ROLE_REVOKED",
+                eventCategory: "Permission", success: true, severity: "Warning",
+                targetUserId: userId,
+                entityName: "Roles",
+                entityId: userRole.RoleId,
+                detail: $"Gỡ role '{userRole.Role?.Name}' khỏi user '{user.Username}'",
+                oldValue: new { userRole.RoleId, RoleName = userRole.Role?.Name, userId });
+        }
+
         await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
     }
 

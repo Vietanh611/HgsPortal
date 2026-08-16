@@ -10,48 +10,143 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1 class="h2 mb-0">Nhật ký hoạt động</h1>
+                <Button Color="ButtonColor.Success" Disabled="@isExporting" Loading="@isExporting" LoadingText="Đang tải..." @onclick="ExportXlsx">
+                    @if (!isExporting)
+                    {
+                        <Icon Name="IconName.Download" />
+                    }
+                    Export XLSX
+                </Button>
             </div>
+
+            <Card class="mb-4">
+                <CardHeader>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Bộ lọc</h5>
+                        <Button Color="ButtonColor.Link" @onclick="ToggleFilterCollapse" aria-expanded="@filterExpanded">
+                            <Icon Name="@(filterExpanded ? IconName.ChevronUp : IconName.ChevronDown)" /> Bộ lọc
+                        </Button>
+                    </div>
+                </CardHeader>
+                <Collapse @ref="filterCollapse">
+                    <CardBody>
+                        <div class="row g-3 align-items-end">
+                        <div class="col-md-4 col-lg-3">
+                            <label for="auditKeyword" class="form-label fw-bold">Từ khóa</label>
+                            <input type="text" id="auditKeyword" class="form-control" placeholder="Username, IP, mã đối tượng"
+                                   @bind="filterKeyword" />
+                        </div>
+                        <div class="col-md-4 col-lg-3">
+                            <label for="auditEventCategory" class="form-label fw-bold">Loại sự kiện</label>
+                            <select id="auditEventCategory" class="form-select" @bind="filterEventCategory">
+                                <option value="">Tất cả</option>
+                                <option value="DataChange">DataChange</option>
+                                <option value="Auth">Auth</option>
+                                <option value="Security">Security</option>
+                                <option value="Permission">Permission</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 col-lg-3">
+                            <label for="auditAction" class="form-label fw-bold">Hành động</label>
+                            <input type="text" id="auditAction" class="form-control" placeholder="CREATE, LOGIN_FAIL..."
+                                   @bind="filterAction" />
+                        </div>
+                        <div class="col-md-4 col-lg-3">
+                            <label for="auditSuccess" class="form-label fw-bold">Kết quả</label>
+                            <select id="auditSuccess" class="form-select" @bind="filterSuccess">
+                                <option value="">Tất cả</option>
+                                <option value="true">Thành công</option>
+                                <option value="false">Thất bại</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 col-lg-3">
+                            <label for="auditSeverity" class="form-label fw-bold">Mức độ</label>
+                            <select id="auditSeverity" class="form-select" @bind="filterSeverity">
+                                <option value="">Tất cả</option>
+                                <option value="Info">Info</option>
+                                <option value="Warning">Warning</option>
+                                <option value="Critical">Critical</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 col-lg-3">
+                            <label for="auditEntityName" class="form-label fw-bold">Đối tượng</label>
+                            <input type="text" id="auditEntityName" class="form-control" placeholder="Users, Roles..."
+                                   @bind="filterEntityName" />
+                        </div>
+                        <div class="col-md-4 col-lg-3">
+                            <label for="auditEntityId" class="form-label fw-bold">Mã đối tượng</label>
+                            <input type="number" id="auditEntityId" class="form-control" placeholder="VD: 12"
+                                   @bind="filterEntityId" />
+                        </div>
+                        <div class="col-md-4 col-lg-3">
+                            <label for="auditFromDate" class="form-label fw-bold">Từ ngày</label>
+                            <input type="date" id="auditFromDate" class="form-control" @bind="filterFromDate" />
+                        </div>
+                        <div class="col-md-4 col-lg-3">
+                            <label for="auditToDate" class="form-label fw-bold">Đến ngày</label>
+                            <input type="date" id="auditToDate" class="form-control" @bind="filterToDate" />
+                        </div>
+                        <div class="col-12 col-lg-3 d-flex gap-2">
+                            <Button Color="ButtonColor.Primary" @onclick="ApplyFilters">
+                                <Icon Name="IconName.Search" /> Áp dụng
+                            </Button>
+                            <Button Color="ButtonColor.Secondary" Outline="true" @onclick="ResetFilters">
+                                <Icon Name="IconName.ArrowClockwise" /> Đặt lại
+                            </Button>
+                        </div>
+                    </div>
+                    </CardBody>
+                </Collapse>
+            </Card>
 
             <Card>
                 <CardBody>
-                    @if (isLoading)
+                    @if (errorMessage != null)
                     {
-                        <div class="text-center py-5">
-                            <Spinner Color="SpinnerColor.Primary" />
-                        </div>
+                        <HgsErrorState Message="@errorMessage" RetryClick="@ApplyFilters" />
                     }
-                    else if (errorMessage != null)
+                    else if (showEmptyState)
                     {
-                        <HgsErrorState Message="@errorMessage" RetryClick="@LoadAuditLogs" />
-                    }
-                    else if (auditLogs != null && !auditLogs.Any())
-                    {
-                        <HgsEmptyState Title="Chưa có nhật ký hoạt động"
-                                       Message="Các sự kiện sẽ xuất hiện tại đây khi được ghi lại." />
+                        <HgsEmptyState Title="Không có nhật ký hoạt động"
+                                       Message="Thử điều chỉnh bộ lọc hoặc chọn khoảng thời gian khác." />
                     }
                     else
                     {
-                        <Grid TItem="AuditLogsGetAllResponse" Data="auditLogs" AllowPaging="true" AllowSorting="true" Responsive="true"
-                              Class="table table-hover table-bordered table-striped" PageSize="@pageSize" TotalItems="@totalCount">
-                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="ID" SortKeyExpression="item => item.Id">
+                        <Grid TItem="AuditLogsGetAllResponse" @ref="grid" DataProvider="AuditLogsDataProvider"
+                              AllowPaging="true" PageSize="20" Responsive="true"
+                              Class="table table-hover table-bordered table-striped">
+                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="ID">
                                 @context.Id
                             </GridColumn>
-                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Người dùng" SortKeyExpression="item => item.Username">
+                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Người dùng">
                                 @(context.Username ?? "N/A")
                             </GridColumn>
-                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Hành động" SortKeyExpression="item => item.Action">
+                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Loại sự kiện">
+                                <Badge Color="@(GetEventCategoryBadgeColor(context.EventCategory))">@context.EventCategory</Badge>
+                            </GridColumn>
+                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Hành động">
                                 <Badge Color="@(GetActionBadgeColor(context.Action))">@context.Action</Badge>
                             </GridColumn>
-                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Đối tượng" SortKeyExpression="item => item.EntityName">
-                                @context.EntityName
+                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Kết quả">
+                                @if (context.Success)
+                                {
+                                    <Badge Color="BadgeColor.Success">Thành công</Badge>
+                                }
+                                else
+                                {
+                                    <Badge Color="BadgeColor.Danger">Thất bại</Badge>
+                                }
                             </GridColumn>
-                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Mã đối tượng" SortKeyExpression="item => item.EntityId">
-                                @(context.EntityId?.ToString() ?? "N/A")
+                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Mức độ">
+                                <Badge Color="@(GetSeverityBadgeColor(context.Severity))">@context.Severity</Badge>
                             </GridColumn>
-                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Địa chỉ IP" SortKeyExpression="item => item.IpAddress">
+                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Đối tượng">
+                                @(context.TargetUsername ?? context.EntityName)
+                            </GridColumn>
+                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Địa chỉ IP">
                                 @(context.IpAddress ?? "N/A")
                             </GridColumn>
-                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Thời gian" SortKeyExpression="item => item.CreatedAt">
+                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Thời gian">
                                 @context.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")
                             </GridColumn>
                             <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Thao tác" AllowSorting="false">

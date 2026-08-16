@@ -100,14 +100,15 @@ public class RoleMenuService : IRoleMenuService
         _dbContext.RoleMenus.Add(roleMenu);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        _auditLog.Log(
-            action: "CREATE",
-            entityName: "RoleMenus",
-            entityId: roleMenu.Id,
-            oldValue: null,
-            newValue: roleMenu);
+        await _auditLog.LogSecurityEventAsync(
+            action: "MENU_ASSIGNED_TO_ROLE",
+            eventCategory: "Permission", success: true, severity: "Warning",
+            userId: assignedBy,
+            entityName: "Roles",
+            entityId: request.RoleId,
+            detail: $"Gán menu '{menu.Name}' cho role '{role.Name}'",
+            newValue: new { roleId = request.RoleId, menuId = request.MenuId, menu.Name });
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
         await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
         return roleMenu;
     }
@@ -115,6 +116,8 @@ public class RoleMenuService : IRoleMenuService
     public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
         var roleMenu = await _dbContext.RoleMenus
+            .Include(rm => rm.Role)
+            .Include(rm => rm.Menu)
             .FirstOrDefaultAsync(rm => rm.Id == id, cancellationToken);
 
         if (roleMenu is null)
@@ -122,15 +125,17 @@ public class RoleMenuService : IRoleMenuService
             return false;
         }
 
-        _auditLog.Log(
-            action: "DELETE",
-            entityName: "RoleMenus",
-            entityId: roleMenu.Id,
-            oldValue: roleMenu,
-            newValue: null);
-
         _dbContext.RoleMenus.Remove(roleMenu);
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await _auditLog.LogSecurityEventAsync(
+            action: "MENU_REVOKED_FROM_ROLE",
+            eventCategory: "Permission", success: true, severity: "Warning",
+            entityName: "Roles",
+            entityId: roleMenu.RoleId,
+            detail: $"Gỡ menu '{roleMenu.Menu?.Name}' khỏi role '{roleMenu.Role?.Name}'",
+            oldValue: new { roleMenu.RoleId, menuId = roleMenu.MenuId, MenuName = roleMenu.Menu?.Name });
+
         await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
         return true;
     }
@@ -181,17 +186,19 @@ public class RoleMenuService : IRoleMenuService
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
+        // 1 dòng audit cho mỗi menu được gán
         foreach (var roleMenu in createdRoleMenus)
         {
-            _auditLog.Log(
-                action: "CREATE",
-                entityName: "RoleMenus",
-                entityId: roleMenu.Id,
-                oldValue: null,
-                newValue: roleMenu);
+            await _auditLog.LogSecurityEventAsync(
+                action: "MENU_ASSIGNED_TO_ROLE",
+                eventCategory: "Permission", success: true, severity: "Warning",
+                userId: assignedBy,
+                entityName: "Roles",
+                entityId: roleId,
+                detail: $"Gán menu #{roleMenu.MenuId} cho role '{role.Name}'",
+                newValue: new { roleId, menuId = roleMenu.MenuId });
         }
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
         await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
     }
 
@@ -207,21 +214,25 @@ public class RoleMenuService : IRoleMenuService
         }
 
         var roleMenus = await _dbContext.RoleMenus
+            .Include(rm => rm.Menu)
             .Where(rm => rm.RoleId == roleId && menuIds.Contains(rm.MenuId))
             .ToListAsync(cancellationToken);
 
-        foreach (var roleMenu in roleMenus)
-        {
-            _auditLog.Log(
-                action: "DELETE",
-                entityName: "RoleMenus",
-                entityId: roleMenu.Id,
-                oldValue: roleMenu,
-                newValue: null);
-        }
-
         _dbContext.RoleMenus.RemoveRange(roleMenus);
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        // 1 dòng audit cho mỗi menu bị gỡ
+        foreach (var roleMenu in roleMenus)
+        {
+            await _auditLog.LogSecurityEventAsync(
+                action: "MENU_REVOKED_FROM_ROLE",
+                eventCategory: "Permission", success: true, severity: "Warning",
+                entityName: "Roles",
+                entityId: roleId,
+                detail: $"Gỡ menu '{roleMenu.Menu?.Name}' khỏi role '{role.Name}'",
+                oldValue: new { roleId, menuId = roleMenu.MenuId, MenuName = roleMenu.Menu?.Name });
+        }
+
         await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
     }
 }

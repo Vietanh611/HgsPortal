@@ -1,5 +1,7 @@
 using API.Authorization;
 using Core.Interfaces;
+using Hgs.Share.Exceptions;
+using Hgs.Share.Requests.Audit;
 using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.AuditLogs;
 using Microsoft.AspNetCore.Mvc;
@@ -12,39 +14,49 @@ namespace API.Controllers;
 public class AuditController : ControllerBase
 {
     private readonly IAuditLogService _auditLogService;
+    private readonly IAuditLogExportService _auditLogExportService;
     private readonly ILogger<AuditController> _logger;
 
-    public AuditController(IAuditLogService auditLogService, ILogger<AuditController> logger)
+    public AuditController(
+        IAuditLogService auditLogService,
+        IAuditLogExportService auditLogExportService,
+        ILogger<AuditController> logger)
     {
         _auditLogService = auditLogService;
+        _auditLogExportService = auditLogExportService;
         _logger = logger;
     }
 
     [HttpGet]
-    public async Task<ActionResult<ApiResponse<PagedResponse<AuditLogsGetAllResponse>>>> GetAll(
-        [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 10,
+    public async Task<ActionResult<ApiResponse<PagedResponse<AuditLogsGetAllResponse>>>> GetFiltered(
+        [FromQuery] AuditLogsFilterRequest request,
         CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var (items, totalCount) = await _auditLogService.GetAllAsync(pageNumber, pageSize, cancellationToken);
+        // Không dùng try/catch — ExceptionHandlingMiddleware xử lý toàn cục (theo convention repo)
+        var result = await _auditLogService.GetFilteredAsync(request, cancellationToken);
+        return Ok(ApiResponse<PagedResponse<AuditLogsGetAllResponse>>.SuccessResponse(result, "OK", 200));
+    }
 
-            var response = new PagedResponse<AuditLogsGetAllResponse>
-            {
-                Items = items,
-                TotalCount = totalCount,
-                PageNumber = pageNumber,
-                PageSize = pageSize,
-                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize)
-            };
-
-            return Ok(ApiResponse<PagedResponse<AuditLogsGetAllResponse>>.SuccessResponse(response, "Audit logs retrieved successfully", 200));
-        }
-        catch (Exception ex)
+    [HttpGet("export")]
+    public async Task<IActionResult> Export(
+        [FromQuery] AuditLogsFilterRequest request,
+        [FromQuery] string format = "xlsx",
+        CancellationToken cancellationToken = default)
+    {
+        if (format is not ("csv" or "xlsx"))
         {
-            _logger.LogError(ex, "Error retrieving audit logs");
-            return StatusCode(500, ApiResponse<PagedResponse<AuditLogsGetAllResponse>>.FailResponse("Error retrieving audit logs", 500));
+            throw new BadRequestException("format phải là csv hoặc xlsx");
         }
+
+        var fileName = $"audit-log-{DateTime.UtcNow:yyyyMMdd-HHmmss}.{format}";
+        var bytes = format == "csv"
+            ? await _auditLogExportService.ExportCsvAsync(request, cancellationToken)
+            : await _auditLogExportService.ExportExcelAsync(request, cancellationToken);
+
+        var contentType = format == "csv"
+            ? "text/csv"
+            : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+        return File(bytes, contentType, fileName);
     }
 }

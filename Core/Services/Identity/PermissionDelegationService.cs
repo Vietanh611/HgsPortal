@@ -166,10 +166,20 @@ public class PermissionDelegationService : IPermissionDelegationService
         };
 
         _dbContext.UserRoles.Add(userRole);
-        
-        // Audit log
-        _auditLog.Log("CREATE", "UserRoles", request.TargetUserId, null, new { UserId = request.TargetUserId, RoleId = request.RoleId });
-        
+
+        var delegatedRole = await _dbContext.Roles.AsNoTracking().FirstOrDefaultAsync(r => r.Id == request.RoleId, cancellationToken);
+
+        // Audit — thay thế Log CRUD cũ (không thêm dòng trùng)
+        await _auditLog.LogSecurityEventAsync(
+            action: "PERMISSION_DELEGATED",
+            eventCategory: "Permission", success: true, severity: "Critical",
+            userId: currentUserId,               // người ủy quyền
+            targetUserId: request.TargetUserId,  // user nhận ủy quyền
+            entityName: "Roles",
+            entityId: request.RoleId,
+            detail: $"Ủy quyền role '{delegatedRole?.Name}' cho user '{targetUser.Username}'",
+            newValue: new { roleId = request.RoleId, delegatedRole?.Name, targetUserId = request.TargetUserId });
+
         await _dbContext.SaveChangesAsync(cancellationToken);
         
         // Clear menu cache for target user since their roles changed
@@ -226,10 +236,20 @@ public class PermissionDelegationService : IPermissionDelegationService
 
         // Revoke role
         _dbContext.UserRoles.Remove(userRole);
-        
-        // Audit log
-        _auditLog.Log("DELETE", "UserRoles", request.TargetUserId, new { UserId = request.TargetUserId, RoleId = request.RoleId }, null);
-        
+
+        var revokedRole = await _dbContext.Roles.AsNoTracking().FirstOrDefaultAsync(r => r.Id == request.RoleId, cancellationToken);
+
+        // Audit — thay thế Log CRUD cũ (không thêm dòng trùng)
+        await _auditLog.LogSecurityEventAsync(
+            action: "PERMISSION_DELEGATION_REVOKED",
+            eventCategory: "Permission", success: true, severity: "Warning",
+            userId: currentUserId,
+            targetUserId: request.TargetUserId,
+            entityName: "Roles",
+            entityId: request.RoleId,
+            detail: $"Thu hồi ủy quyền role '{revokedRole?.Name}' của user '{targetUser.Username}'",
+            oldValue: new { roleId = request.RoleId, revokedRole?.Name, targetUserId = request.TargetUserId });
+
         await _dbContext.SaveChangesAsync(cancellationToken);
         
         // Clear menu cache for target user since their roles changed

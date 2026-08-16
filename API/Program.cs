@@ -51,6 +51,7 @@ builder.Services.AddScoped<IMenuService, MenuService>();
 builder.Services.AddScoped<IUserMenuService, UserMenuService>();
 builder.Services.AddScoped<IRoleMenuService, RoleMenuService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+builder.Services.AddScoped<IAuditLogExportService, AuditLogExportService>();
 builder.Services.AddScoped<IPermissionDelegationService, PermissionDelegationService>();
 builder.Services.AddScoped<ICacheService, CacheService>();
 builder.Services.AddScoped<IOrgScopeService, OrgScopeService>();

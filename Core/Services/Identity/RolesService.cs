@@ -125,12 +125,27 @@ public class RolesService : IRolesService
             role.IsActive = request.IsActive;
         }
 
-        _auditLog.Log(
-            action: "UPDATE",
-            entityName: "Roles",
-            entityId: role.Id,
-            oldValue: oldSnapshot,
-            newValue: role);
+        // Role hệ thống bị sửa là sự kiện bảo mật Critical — thay Log CRUD thường (mục 4.4 spec)
+        if (role.IsSystemRole)
+        {
+            await _auditLog.LogSecurityEventAsync(
+                action: "SYSTEM_ROLE_MODIFIED",
+                eventCategory: "Security", success: true, severity: "Critical",
+                entityName: "Roles",
+                entityId: role.Id,
+                detail: $"Role hệ thống '{role.Code}' bị sửa",
+                oldValue: oldSnapshot,
+                newValue: role);
+        }
+        else
+        {
+            _auditLog.Log(
+                action: "UPDATE",
+                entityName: "Roles",
+                entityId: role.Id,
+                oldValue: oldSnapshot,
+                newValue: role);
+        }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         return role;

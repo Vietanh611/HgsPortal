@@ -233,14 +233,19 @@ public class UserMenuService : IUserMenuService
         _dbContext.UserMenus.Add(userMenu);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        _auditLog.Log(
-            action: "CREATE",
-            entityName: "UserMenus",
-            entityId: userMenu.Id,
-            oldValue: null,
-            newValue: userMenu);
+        var user = await _dbContext.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == request.UserId, cancellationToken);
+        var menu = await _dbContext.Menus.AsNoTracking().FirstOrDefaultAsync(m => m.Id == request.MenuId, cancellationToken);
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await _auditLog.LogSecurityEventAsync(
+            action: "MENU_ASSIGNED_TO_USER",
+            eventCategory: "Permission", success: true, severity: "Warning",
+            userId: assignedBy,
+            targetUserId: request.UserId,
+            entityName: "Menus",
+            entityId: request.MenuId,
+            detail: $"Gán menu '{menu?.Name}' cho user '{user?.Username}'",
+            newValue: new { request.UserId, menuId = request.MenuId, menu?.Name });
+
         await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
         return userMenu;
     }
@@ -248,21 +253,25 @@ public class UserMenuService : IUserMenuService
     public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
         var userMenu = await _dbContext.UserMenus
+            .Include(x => x.Menu)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (userMenu is null)
         {
             return false;
         }
 
-        _auditLog.Log(
-            action: "DELETE",
-            entityName: "UserMenus",
-            entityId: userMenu.Id,
-            oldValue: userMenu,
-            newValue: null);
-
         _dbContext.UserMenus.Remove(userMenu);
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await _auditLog.LogSecurityEventAsync(
+            action: "MENU_REVOKED_FROM_USER",
+            eventCategory: "Permission", success: true, severity: "Warning",
+            targetUserId: userMenu.UserId,
+            entityName: "Menus",
+            entityId: userMenu.MenuId,
+            detail: $"Gỡ menu '{userMenu.Menu?.Name}' khỏi user #{userMenu.UserId}",
+            oldValue: new { userMenu.UserId, menuId = userMenu.MenuId, MenuName = userMenu.Menu?.Name });
+
         await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
         return true;
     }
@@ -297,17 +306,22 @@ public class UserMenuService : IUserMenuService
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
+        var user = await _dbContext.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+
+        // 1 dòng audit cho mỗi menu được gán
         foreach (var userMenu in createdUserMenus)
         {
-            _auditLog.Log(
-                action: "CREATE",
-                entityName: "UserMenus",
-                entityId: userMenu.Id,
-                oldValue: null,
-                newValue: userMenu);
+            await _auditLog.LogSecurityEventAsync(
+                action: "MENU_ASSIGNED_TO_USER",
+                eventCategory: "Permission", success: true, severity: "Warning",
+                userId: assignedBy,
+                targetUserId: userId,
+                entityName: "Menus",
+                entityId: userMenu.MenuId,
+                detail: $"Gán menu #{userMenu.MenuId} cho user '{user?.Username}'",
+                newValue: new { userId, menuId = userMenu.MenuId });
         }
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
         await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
         return true;
     }
@@ -320,21 +334,26 @@ public class UserMenuService : IUserMenuService
         }
 
         var userMenus = await _dbContext.UserMenus
+            .Include(x => x.Menu)
             .Where(x => x.UserId == userId && menuIds.Contains(x.MenuId))
             .ToListAsync(cancellationToken);
 
-        foreach (var userMenu in userMenus)
-        {
-            _auditLog.Log(
-                action: "DELETE",
-                entityName: "UserMenus",
-                entityId: userMenu.Id,
-                oldValue: userMenu,
-                newValue: null);
-        }
-
         _dbContext.UserMenus.RemoveRange(userMenus);
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        // 1 dòng audit cho mỗi menu bị gỡ
+        foreach (var userMenu in userMenus)
+        {
+            await _auditLog.LogSecurityEventAsync(
+                action: "MENU_REVOKED_FROM_USER",
+                eventCategory: "Permission", success: true, severity: "Warning",
+                targetUserId: userId,
+                entityName: "Menus",
+                entityId: userMenu.MenuId,
+                detail: $"Gỡ menu '{userMenu.Menu?.Name}' khỏi user #{userId}",
+                oldValue: new { userId, menuId = userMenu.MenuId, MenuName = userMenu.Menu?.Name });
+        }
+
         await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
         return true;
     }

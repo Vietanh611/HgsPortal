@@ -42,6 +42,21 @@
         });
     </script>
 
+    <script>
+        // Tải file nhị phân (export) qua blob — cần qua HttpClient để mang Bearer token
+        window.hgsDownloadFile = function (fileName, byteArray) {
+            var blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+    </script>
+
     <!-- Chart.js (dùng cho chart components) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.0.1/chart.umd.js" integrity="sha512-gQhCDsnnnUfaRzD8k1L5llCCV6O9HN09zClIzzeJ8OJ9MpGmIlCxm+pdCkqTwqJ4JcjbojFr79rl2F1mzcoLMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <!-- chartjs-plugin-datalabels (cho chart data labels) -->

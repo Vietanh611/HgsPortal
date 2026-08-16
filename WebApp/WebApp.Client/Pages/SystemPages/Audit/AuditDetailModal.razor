@@ -16,9 +16,38 @@
                     <div>@(AuditLog.Username ?? "N/A")</div>
                 </div>
                 <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Người bị tác động</label>
+                    <div>@(AuditLog.TargetUsername ?? "N/A")</div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Loại sự kiện</label>
+                    <div>
+                        <Badge Color="@(GetEventCategoryBadgeColor(AuditLog.EventCategory))">@AuditLog.EventCategory</Badge>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
                     <label class="form-label fw-bold">Hành động</label>
                     <div>
                         <Badge Color="@(GetActionBadgeColor(AuditLog.Action))">@AuditLog.Action</Badge>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Kết quả</label>
+                    <div>
+                        @if (AuditLog.Success)
+                        {
+                            <Badge Color="BadgeColor.Success">Thành công</Badge>
+                        }
+                        else
+                        {
+                            <Badge Color="BadgeColor.Danger">Thất bại</Badge>
+                        }
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Mức độ</label>
+                    <div>
+                        <Badge Color="@(GetSeverityBadgeColor(AuditLog.Severity))">@AuditLog.Severity</Badge>
                     </div>
                 </div>
                 <div class="col-md-6 mb-3">
@@ -103,6 +132,28 @@
             "CREATE" => BadgeColor.Success,
             "UPDATE" => BadgeColor.Warning,
             "DELETE" => BadgeColor.Danger,
+            _ => BadgeColor.Secondary
+        };
+    }
+
+    private static BadgeColor GetSeverityBadgeColor(string severity)
+    {
+        return severity switch
+        {
+            "Critical" => BadgeColor.Danger,
+            "High" => BadgeColor.Warning,
+            "Warning" => BadgeColor.Warning,
+            _ => BadgeColor.Secondary
+        };
+    }
+
+    private static BadgeColor GetEventCategoryBadgeColor(string eventCategory)
+    {
+        return eventCategory switch
+        {
+            "Auth" => BadgeColor.Info,
+            "Security" => BadgeColor.Danger,
+            "Permission" => BadgeColor.Warning,
             _ => BadgeColor.Secondary
         };
     }

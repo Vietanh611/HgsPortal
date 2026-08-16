@@ -260,6 +260,14 @@ public class UsersService : IUsersService
         user.PasswordHash = PasswordHelper.HashPassword(request.NewPassword);
         user.UpdatedAt = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await _auditLog.LogSecurityEventAsync(
+            action: "PASSWORD_CHANGED",
+            eventCategory: "Security", success: true, severity: "Warning",
+            userId: user.Id, username: user.Username,
+            detail: "Đổi mật khẩu",
+            newValue: new { user.Id, user.Username, ChangedAt = DateTime.UtcNow });
+
         return true;
     }
 
