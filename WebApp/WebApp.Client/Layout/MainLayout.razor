@@ -29,11 +29,12 @@
 
         <main>
             <div class="bb-top-row px-3">
+                <Icon Name="IconName.List" Class="sidebar-toggle-icon d-none d-md-inline-flex" role="button" aria-label="Bật/tắt menu" tabindex="0" @onclick="ToggleSidebar" />
                 @if (currentUser != null)
                 {
                     <Dropdown>
                         <DropdownToggleButton>
-@if (!string.IsNullOrWhiteSpace(currentUser?.AvatarUrl))
+                                @if (!string.IsNullOrWhiteSpace(currentUser?.AvatarUrl))
                                 {
                                     <img src="@currentUser.AvatarUrl" alt="Ảnh đại diện" class="avatar-circle" />
                                 }
@@ -89,7 +90,11 @@
             return string.IsNullOrWhiteSpace(name) ? "U" : name[..1].ToUpper();
         }
     }
-
+    private async Task ToggleSidebar()
+    {
+        
+            sidebar.ToggleSidebar();
+    }
     protected override async Task OnInitializedAsync()
     {
         // Subscribe to authentication state changes

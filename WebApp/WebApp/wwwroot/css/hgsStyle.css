@@ -55,8 +55,8 @@
     --bb-sidebar-content-border-color: rgba(255,255,255,.15);
     --bb-sidebar-title-text-color: #FFFFFF;
     --bb-sidebar-brand-icon-color: #F58220;
-    --bb-sidebar-brand-image-width: 70px;
-    --bb-sidebar-brand-image-height: 28px;
+    --bb-sidebar-brand-image-width: 96px;
+    --bb-sidebar-brand-image-height: auto;
     --bb-sidebar-title-badge-text-color: #FFFFFF;
     --bb-sidebar-title-badge-background-color: #F58220;
     --bb-sidebar-navbar-toggler-icon-color: var(--hgs-orange);
@@ -176,6 +176,87 @@ article {
             color: var(--hgs-blue);
             box-shadow: none;
         }
+
+.bb-top-row .sidebar-toggle-icon {
+    margin-right: auto;
+    font-size: 1.4rem;
+    line-height: 1;
+    color: var(--hgs-blue);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    padding: .25rem .4rem;
+    transition: var(--transition-fast);
+}
+
+    .bb-top-row .sidebar-toggle-icon:hover,
+    .bb-top-row .sidebar-toggle-icon:focus-visible {
+        color: var(--hgs-orange);
+        background: var(--hgs-blue-light);
+        outline: none;
+    }
+
+/* Sidebar brand: hiển thị logo đầy đủ, không padding/margin thừa */
+.bb-sidebar-top-row {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+.bb-sidebar-top-row .container-fluid {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+.navbar-brand{
+    padding-top:0;
+    padding-bottom:0;
+}
+.bb-sidebar-top-row .navbar-brand-image {
+    margin-right: 0 !important;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Sidebar brand logo: hiển thị đầy đủ, không tràn parent */
+.bb-sidebar-top-row .navbar-brand-image img {
+    display: block;
+    max-width: 100%;
+    max-height: 42px;
+    width: var(--bb-sidebar-brand-image-width);
+    height: auto !important;
+    object-fit: contain;
+}
+
+/* Sidebar collapsed (icon-only): thu nhỏ logo vừa sidebar, căn giữa icon, bỏ lệch nav-item con */
+.bb-sidebar.collapsed .navbar-brand-image {
+    display: block;
+    width: 65px;
+    height: auto;
+    margin-right: 0 !important;
+    padding-left:0;
+}
+.bb-sidebar.collapsed .bb-sidebar-top-row .container-fluid {
+    --bs-gutter-x: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+    .bb-sidebar.collapsed .navbar-brand-image img {
+        width: 65px;
+        height: auto;
+    }
+
+.bb-sidebar.collapsed nav .nav-item {
+    padding-left: 0 !important;
+}
+
+.bb-sidebar.collapsed nav .nav-link {
+    display: flex;
+    justify-content: center;
+    padding-left: .5rem !important;
+    padding-right: .5rem !important;
+}
+
+.bb-sidebar.collapsed nav .nav-link-icon {
+    margin-right: 0 !important;
+}
 
 .avatar-circle {
     width: 32px;
