@@ -3,6 +3,11 @@ using Microsoft.AspNetCore.Components.Authorization;
 
 namespace WebApp.Client.Services.Network;
 
+/// <summary>
+/// Trước mỗi request, tự động refresh access token nếu token sắp hết hạn (trong 5 phút)
+/// để phiên đăng nhập không bị gián đoạn. Nếu refresh thất bại, xóa token, thông báo thay
+/// đổi trạng thái đăng nhập và chuyển về trang đăng nhập (trừ các trang công cộng).
+/// </summary>
 public class TokenRefreshHandler : DelegatingHandler
 {
     private readonly Data.ITokenStorage _tokenStorage;

@@ -6,6 +6,10 @@ using WebApp.Client.Services.Network;
 
 namespace WebApp.Client.Services;
 
+/// <summary>
+/// Service dữ liệu cho các trang hiển thị công cộng (baggage arrival display), được truy
+/// cập mà không cần đăng nhập.
+/// </summary>
 public class DisplayClientService
 {
     private readonly ApiClient _apiClient;
@@ -21,6 +25,10 @@ public class DisplayClientService
         $"DisplayClientService: ApiClient={_apiClient.GetHashCode()}");
     }
 
+    /// <summary>
+    /// Nạp dữ liệu hiển thị chuyến bay đến nội địa; trả null khi API lỗi hoặc không có dữ
+    /// liệu để trang xử lý trạng thái trống.
+    /// </summary>
     public async Task<List<BaggageArrivalDisplayDto>?> GetDomesticBaggageArrivalDisplayAsync()
     {
         try
@@ -41,6 +49,10 @@ public class DisplayClientService
         }
     }
 
+    /// <summary>
+    /// Nạp dữ liệu hiển thị chuyến bay đến quốc tế; trả null khi API lỗi hoặc không có dữ
+    /// liệu để trang xử lý trạng thái trống.
+    /// </summary>
     public async Task<List<BaggageArrivalDisplayDto>?> GetInternationalBaggageArrivalDisplayAsync()
     {
         try
@@ -61,6 +73,10 @@ public class DisplayClientService
         }
     }
 
+    /// <summary>
+    /// Lấy các core asset đang hoạt động (IsActive) có Code khớp với assetCode, dùng để
+    /// phân loại hiển thị theo loại tài sản.
+    /// </summary>
     public async Task<List<CoreAssetsGetAllResponse>?> GetCoreAssetsByTypeAsync(string assetCode)
     {
         try

@@ -6,6 +6,12 @@ using System.Text.Json;
 
 namespace API.Middleware;
 
+/// <summary>
+/// Tầng xử lý lỗi toàn cục: bắt mọi exception, ánh xạ loại exception thành status + message
+/// theo quy ước (Hgs.Share.Exceptions, lỗi SQL, ...), ghi log đúng một lần và trả JSON
+/// ApiResponse thống nhất — controller/service không cần try/catch riêng (theo convention repo).
+/// Request bị client hủy (RequestAborted) được bỏ qua, không coi là lỗi.
+/// </summary>
 public class ExceptionHandlingMiddleware
 {
     private readonly RequestDelegate _next;
@@ -22,6 +28,10 @@ public class ExceptionHandlingMiddleware
         _logger = logger;
     }
 
+    /// <summary>
+    /// Bỏ qua OperationCanceledException khi client đã hủy request (chỉ log thông tin, không trả
+    /// lỗi); mọi exception khác chuyển sang xử lý và trả response lỗi.
+    /// </summary>
     public async Task InvokeAsync(HttpContext context)
     {
         try
@@ -44,6 +54,11 @@ public class ExceptionHandlingMiddleware
         }
     }
 
+    /// <summary>
+    /// Chọn status/message theo loại exception; log Error cho status ≥ 500, Warning cho còn lại.
+    /// RequestId, tên loại exception và StackTrace chỉ được bổ sung vào payload khi chạy ở
+    /// Development để hỗ trợ debug — production không lộ nội bộ này cho client.
+    /// </summary>
     private async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         var requestId = context.TraceIdentifier;

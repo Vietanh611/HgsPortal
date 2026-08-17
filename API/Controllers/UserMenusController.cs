@@ -51,6 +51,9 @@ public class UserMenusController : ControllerBase
         return Ok(ApiResponse<IEnumerable<MenusGetByUserIdResponse>>.SuccessResponse(menus, "Menus retrieved successfully for user", 200));
     }
 
+    /// <summary>
+    /// Chỉ trả về các menu gán trực tiếp cho user (bảng UserMenus), không bao gồm menu kế thừa từ role.
+    /// </summary>
     [HttpGet("user/{userId:int}/menu-ids")]
     public async Task<ActionResult<ApiResponse<IEnumerable<int>>>> GetMenuIdsByUserId(int userId, CancellationToken cancellationToken)
     {
@@ -58,6 +61,10 @@ public class UserMenusController : ControllerBase
         return Ok(ApiResponse<IEnumerable<int>>.SuccessResponse(menuIds, "Menu IDs retrieved successfully for user", 200));
     }
 
+    /// <summary>
+    /// Trả về tách biệt menu kế thừa từ role (RoleMenuIds) và menu gán trực tiếp (UserMenuIds)
+    /// để UI phân biệt được nguồn gốc từng menu.
+    /// </summary>
     [HttpGet("user/{userId:int}/details")]
     public async Task<ActionResult<ApiResponse<UserMenuAssignmentDetailsResponse>>> GetAssignmentDetailsByUserId(int userId, CancellationToken cancellationToken)
     {
@@ -65,6 +72,9 @@ public class UserMenusController : ControllerBase
         return Ok(ApiResponse<UserMenuAssignmentDetailsResponse>.SuccessResponse(details, "User menu assignment details retrieved successfully", 200));
     }
 
+    /// <summary>
+    /// Gán menu trực tiếp cho user; user đích phải nằm trong org-scope → ngoài phạm vi 403.
+    /// </summary>
     [HttpPost]
     public async Task<ActionResult> Create([FromBody] UserMenusCreateRequest request, CancellationToken cancellationToken)
     {
@@ -86,6 +96,9 @@ public class UserMenusController : ControllerBase
         return Ok(ApiResponse.SuccessResponse("User menu deleted successfully", 200));
     }
 
+    /// <summary>
+    /// Gán nhiều menu cho user; user đích phải nằm trong org-scope → ngoài phạm vi 403.
+    /// </summary>
     [HttpPost("assign-multiple")]
     public async Task<ActionResult> AssignMultipleMenus([FromBody] UserMenusAssignMultipleRequest request, CancellationToken cancellationToken)
     {
@@ -95,6 +108,9 @@ public class UserMenusController : ControllerBase
         return Ok(ApiResponse.SuccessResponse("Menus assigned successfully", 200));
     }
 
+    /// <summary>
+    /// Gỡ nhiều menu khỏi user; user đích phải nằm trong org-scope → ngoài phạm vi 403.
+    /// </summary>
     [HttpPost("remove-multiple")]
     public async Task<ActionResult> RemoveMultipleMenus([FromBody] UserMenusAssignMultipleRequest request, CancellationToken cancellationToken)
     {

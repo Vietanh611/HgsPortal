@@ -94,6 +94,9 @@ public class OrganizationUnitsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Từ chối xóa (409) org unit đang được user/role tham chiếu hoặc còn có org unit con.
+    /// </summary>
     [HttpDelete("{id:int}")]
     public async Task<ActionResult<ApiResponse>> Delete(int id)
     {

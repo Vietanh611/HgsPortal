@@ -23,6 +23,10 @@ public class KioskDeviceConfigService
         _localStorage = localStorage;
     }
 
+    /// <summary>
+    /// Đọc cấu hình kiosk đã lưu; trả null nếu chưa lưu hoặc thiếu DeviceId/DeviceKey
+    /// (cấu hình không hợp lệ) để caller biết kiosk chưa được pairing hoàn tất.
+    /// </summary>
     public async Task<KioskDeviceConfig?> GetAsync()
     {
         try

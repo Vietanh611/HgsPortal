@@ -23,6 +23,9 @@ public class MenusController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>
+    /// Trả về cây menu lồng nhau theo ParentId (Children) — khác GET /all trả danh sách phẳng.
+    /// </summary>
     [HttpGet]
     public async Task<ActionResult<ApiResponse<IEnumerable<MenusGetAllResponse>>>> GetAll()
     {
@@ -32,6 +35,9 @@ public class MenusController : ControllerBase
         return Ok(ApiResponse<IEnumerable<MenusGetAllResponse>>.SuccessResponse(response, "Menus retrieved successfully", 200));
     }
 
+    /// <summary>
+    /// Trả về danh sách menu phẳng, không dựng cây con (Children rỗng) — khác GET / trả dạng cây.
+    /// </summary>
     [HttpGet("all")]
     public async Task<ActionResult<ApiResponse<IEnumerable<MenusGetAllResponse>>>> GetAllFlat()
     {
@@ -105,6 +111,10 @@ public class MenusController : ControllerBase
         return Ok(ApiResponse.SuccessResponse("Menu deleted successfully", 200));
     }
 
+    /// <summary>
+    /// Cây menu hiệu dụng của user (kế thừa từ role + gán trực tiếp); user có role SUPER_ADMIN
+    /// nhận toàn bộ menu hệ thống.
+    /// </summary>
     [HttpGet("user/{userId:int}")]
     public async Task<ActionResult<ApiResponse<IEnumerable<MenusGetByUserIdResponse>>>> GetByUserId(int userId)
     {

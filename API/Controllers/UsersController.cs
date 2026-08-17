@@ -32,6 +32,10 @@ public class UsersController : BaseApiController
         _storage = storageOptions.Value;
     }
 
+    /// <summary>
+    /// Trả về danh sách user thuộc phạm vi tổ chức (org-scope) của người gọi;
+    /// superadmin thấy toàn bộ user chưa bị xóa mềm.
+    /// </summary>
     [HttpGet]
     public async Task<ActionResult<ApiResponse<IEnumerable<UsersGetAllResponse>>>> GetAll()
     {
@@ -41,6 +45,9 @@ public class UsersController : BaseApiController
         return Ok(ApiResponse<IEnumerable<UsersGetAllResponse>>.SuccessResponse(response, "Users retrieved successfully", 200));
     }
 
+    /// <summary>
+    /// Trả 404 thay vì 403 khi user ngoài org-scope để không lộ thông tin về sự tồn tại của user.
+    /// </summary>
     [HttpGet("{id:int}")]
     public async Task<ActionResult<ApiResponse<UsersGetByIdResponse>>> GetById(int id)
     {
@@ -53,6 +60,10 @@ public class UsersController : BaseApiController
         return Ok(ApiResponse<UsersGetByIdResponse>.SuccessResponse(MapToGetByIdResponse(user), "User retrieved successfully", 200));
     }
 
+    /// <summary>
+    /// Danh sách nhân viên lấy từ hệ thống Bravo (bảng NhanVien, FlyOps) chưa nghỉ việc —
+    /// nguồn dữ liệu khác hệ thống HGS.
+    /// </summary>
     [HttpGet("bravo")]
     public async Task<ActionResult<ApiResponse<IEnumerable<NhanVien>>>> GetBravoAll()
     {
@@ -78,6 +89,9 @@ public class UsersController : BaseApiController
         return Ok(ApiResponse<UsersGetByIdResponse>.SuccessResponse(MapToGetByIdResponse(user), "User retrieved successfully", 200));
     }
 
+    /// <summary>
+    /// Tạo user mới; org đích phải nằm trong org-scope của người gọi, ngoài phạm vi → 403.
+    /// </summary>
     [HttpPost]
     public async Task<ActionResult<ApiResponse<UsersCreateResponse>>> Create([FromBody] UsersCreateRequest request)
     {
@@ -102,6 +116,9 @@ public class UsersController : BaseApiController
         }
     }
 
+    /// <summary>
+    /// Cập nhật user trong org-scope; nếu đổi OrganizationUnitId, org mới cũng phải trong phạm vi → 403.
+    /// </summary>
     [HttpPut("{id:int}")]
     public async Task<ActionResult<ApiResponse<UsersUpdateResponse>>> Update(int id, [FromBody] UsersUpdateRequest request)
     {
@@ -127,6 +144,9 @@ public class UsersController : BaseApiController
         }
     }
 
+    /// <summary>
+    /// Xóa mềm (đánh dấu IsDeleted, không xóa vật lý); user đích phải nằm trong org-scope → 403.
+    /// </summary>
     [HttpDelete("{id:int}")]
     public async Task<ActionResult<ApiResponse>> Delete(int id)
     {
@@ -148,6 +168,10 @@ public class UsersController : BaseApiController
         }
     }
 
+    /// <summary>
+    /// Chỉ người sở hữu tài khoản đổi được mật khẩu vì phải xác thực bằng mật khẩu hiện tại
+    /// trước khi cập nhật; sai mật khẩu hiện tại → 400.
+    /// </summary>
     [HttpPut("{id:int}/changepassword")]
     public async Task<ActionResult<ApiResponse>> ChangePassword(int id, [FromBody] UsersChangePasswordRequest request)
     {
@@ -168,6 +192,10 @@ public class UsersController : BaseApiController
         }
     }
 
+    /// <summary>
+    /// Đặt lại mật khẩu cho user trong org-scope (thao tác quản trị, không cần mật khẩu hiện tại);
+    /// ngoài phạm vi → 403.
+    /// </summary>
     [HttpPut("{id:int}/resetpassword")]
     public async Task<ActionResult<ApiResponse>> ResetPassword(int id, [FromBody] UsersResetPasswordRequest request)
     {
@@ -193,6 +221,10 @@ public class UsersController : BaseApiController
         }
     }
 
+    /// <summary>
+    /// Upload avatar cho user trong org-scope; giới hạn kích thước 5 MB (RequestSizeLimit) và
+    /// chỉ chấp nhận định dạng trong cấu hình StorageSettings.
+    /// </summary>
     [HttpPost("{id:int}/avatar")]
     [RequestSizeLimit(5 * 1024 * 1024)]
     public async Task<ActionResult<ApiResponse<UsersUpdateResponse>>> UploadAvatar(int id, IFormFile file)

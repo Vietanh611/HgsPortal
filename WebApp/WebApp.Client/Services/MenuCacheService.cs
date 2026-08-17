@@ -4,6 +4,11 @@ using System.Text.Json;
 
 namespace WebApp.Client.Services;
 
+/// <summary>
+/// Cache menu theo user trong localStorage để giảm số request lấy menu khi điều hướng;
+/// dữ liệu hết hạn sau 30 phút và user được theo dõi để xóa cache hàng loạt khi phân
+/// quyền thay đổi.
+/// </summary>
 public class MenuCacheService : IMenuCacheService
 {
     private readonly ILocalStorageService _localStorageService;
@@ -24,6 +29,10 @@ public class MenuCacheService : IMenuCacheService
 
     private static string GetKey(int userId) => $"{CachedMenusKeyPrefix}{userId}";
 
+    /// <summary>
+    /// Đọc menu đã cache của user; trả null và tự xóa cache nếu dữ liệu hết hạn hoặc không
+    /// giải mã được, để lần gọi sau tải lại từ server.
+    /// </summary>
     public async Task<List<MenusGetByUserIdResponse>?> GetCachedMenusAsync(int userId)
     {
         try
@@ -60,6 +69,10 @@ public class MenuCacheService : IMenuCacheService
         }
     }
 
+    /// <summary>
+    /// Ghi menu của user kèm thời điểm lưu để kiểm tra hết hạn và ghi nhận user vào danh sách
+    /// theo dõi phục vụ xóa cache hàng loạt.
+    /// </summary>
     public async Task SetCachedMenusAsync(int userId, List<MenusGetByUserIdResponse> menus)
     {
         try
@@ -80,6 +93,10 @@ public class MenuCacheService : IMenuCacheService
         }
     }
 
+    /// <summary>
+    /// Xóa cache menu của một user, hoặc của toàn bộ user đang theo dõi khi phân quyền thay
+    /// đổi, để menu được nạp lại theo quyền mới.
+    /// </summary>
     public async Task ClearCachedMenusAsync(int? userId = null)
     {
         try

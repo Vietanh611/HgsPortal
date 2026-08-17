@@ -2,6 +2,11 @@ using System.Net.Http.Headers;
 
 namespace WebApp.Client.Services.Network;
 
+/// <summary>
+/// Attaches the stored access token as a Bearer authorization header to every outgoing
+/// request. If the token cannot be read, the request still proceeds unauthenticated so a
+/// transient storage failure does not break unrelated API calls.
+/// </summary>
 public class AuthorizationHandler : DelegatingHandler
 {
     private readonly Data.ITokenStorage _tokenStorage;

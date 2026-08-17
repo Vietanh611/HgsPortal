@@ -5,6 +5,11 @@ using System.Security.Claims;
 
 namespace WebApp.Client.Services.Auth;
 
+/// <summary>
+/// Cung cấp AuthenticationState cho Blazor từ token đã lưu: token sắp hết hạn (trong
+/// 5 phút) sẽ được refresh trước; khi chưa đăng nhập hoặc refresh thất bại, trả về trạng
+/// thái anonymous thay vì ném lỗi làm hỏng quá trình render.
+/// </summary>
 public class CustomAuthenticationStateProvider : AuthenticationStateProvider
 {
     private readonly Data.ITokenStorage _tokenStorage;
@@ -96,12 +101,19 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
         return result;
     }
 
+    /// <summary>
+    /// Đăng xuất rồi thông báo Blazor cập nhật trạng thái đăng nhập (chuyển về anonymous).
+    /// </summary>
     public async Task LogoutAsync()
     {
         await _authService.LogoutAsync();
         NotifyAuthenticationStateChanged();
     }
 
+    /// <summary>
+    /// Thông báo cho Blazor rằng trạng thái đăng nhập đã thay đổi, buộc các component
+    /// phụ thuộc xác thực render lại.
+    /// </summary>
     public void NotifyAuthenticationStateChanged()
     {
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());

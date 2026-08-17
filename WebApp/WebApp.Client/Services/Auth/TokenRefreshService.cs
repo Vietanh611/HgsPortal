@@ -5,6 +5,10 @@ using System.Text.Json;
 
 namespace WebApp.Client.Services.Auth;
 
+/// <summary>
+/// Gọi API refresh-token (dùng refresh cookie HttpOnly) để cấp access token mới và lưu
+/// lại vào storage; được các handler gọi trước request nhằm tránh token hết hạn.
+/// </summary>
 public class TokenRefreshService
 {
     private readonly IHttpClientFactory _httpClientFactory;
@@ -29,6 +33,10 @@ public class TokenRefreshService
         return _httpClientFactory.CreateClient("AuthClient");
     }
 
+    /// <summary>
+    /// Refresh access token và lưu token mới; trả về dữ liệu phiên nếu thành công, ngược lại
+    /// trả về null (không ném exception) để caller xử lý đăng xuất.
+    /// </summary>
     public async Task<AuthenticateResponse?> RefreshTokenAsync()
     {
         try

@@ -2,6 +2,11 @@ using Blazored.LocalStorage;
 
 namespace WebApp.Client.Services.Data;
 
+/// <summary>
+/// Lưu access token và thời gian hết hạn vào localStorage của trình duyệt để duy trì phiên
+/// đăng nhập qua các lần tải lại trang (refresh token nằm trong cookie HttpOnly, không thể
+/// đọc từ JavaScript).
+/// </summary>
 public class TokenStorage : ITokenStorage
 {
     private readonly ILocalStorageService _localStorageService;

@@ -24,6 +24,10 @@ public class PermissionDelegationController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>
+    /// Danh sách user trong org-scope của người gọi (loại trừ chính mình, chỉ user active)
+    /// dùng để chọn người nhận ủy quyền.
+    /// </summary>
     [HttpGet("manageable-users")]
     public async Task<ActionResult<ApiResponse<IEnumerable<ManageableUserResponse>>>> GetManageableUsers()
     {
@@ -44,6 +48,9 @@ public class PermissionDelegationController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Chỉ trả về role gán được: active, không phải role hệ thống và org thuộc org-scope của người gọi.
+    /// </summary>
     [HttpGet("assignable-roles")]
     public async Task<ActionResult<ApiResponse<IEnumerable<AssignableRoleResponse>>>> GetAssignableRoles()
     {
@@ -64,6 +71,10 @@ public class PermissionDelegationController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Gán role cho user được ủy quyền với chuỗi kiểm tra an toàn: có menu PERMISSIONDELEGATION,
+    /// không gán cho chính mình, user đích trong org-scope, role gán được, chưa có sẵn role đó.
+    /// </summary>
     [HttpPost("assign-role")]
     public async Task<ActionResult<ApiResponse>> AssignRole([FromBody] AssignRoleRequest request)
     {
@@ -89,6 +100,10 @@ public class PermissionDelegationController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Gỡ role ủy quyền với chuỗi kiểm tra an toàn tương tự AssignRole (không gỡ của chính mình,
+    /// user trong org-scope, role gán được).
+    /// </summary>
     [HttpPost("revoke-role")]
     public async Task<ActionResult<ApiResponse>> RevokeRole([FromBody] RevokeRoleRequest request)
     {
@@ -114,6 +129,9 @@ public class PermissionDelegationController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Trả về quyền hiệu dụng của user gồm Roles và các menu active lấy qua role.
+    /// </summary>
     [HttpGet("user/{userId:int}/effective-permissions")]
     public async Task<ActionResult<ApiResponse<UserEffectivePermissionsResponse>>> GetUserEffectivePermissions(int userId)
     {

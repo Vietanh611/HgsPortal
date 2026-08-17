@@ -3,6 +3,10 @@ namespace WebApp.Client.Services.Components;
 using BlazorBootstrap;
 using BlazorBootstrapToastService = BlazorBootstrap.ToastService;
 
+/// <summary>
+/// Thin facade over BlazorBootstrap.ToastService that keeps components decoupled from
+/// BlazorBootstrap types when showing notifications.
+/// </summary>
 public class ToastService
 {
     private readonly BlazorBootstrapToastService _toastService;

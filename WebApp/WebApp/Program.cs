@@ -1,3 +1,4 @@
+using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Serilog;
@@ -63,6 +64,14 @@ builder.Services.AddScoped<ApiClient>(sp =>
     return new ApiClient(httpClient, tokenStorage, navigationManager, apiBaseUrl);
 });
 builder.Services.AddScoped<CoreAssetsService>();
+
+// KioskDeviceConfigService + DevicesService dùng bởi các trang display (công cộng) trong
+// lúc server prerender: KioskDeviceConfigService phụ thuộc ILocalStorageService (Blazored),
+// nhưng trong static rendering việc gọi JS interop sẽ ném ngoại lệ và được GetAsync bắt
+// (trả null) — nên server chỉ cần resolve được service để render nhánh anonymous.
+builder.Services.AddBlazoredLocalStorage();
+builder.Services.AddScoped<KioskDeviceConfigService>();
+builder.Services.AddScoped<DevicesService>();
 
 var app = builder.Build();
 

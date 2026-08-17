@@ -10,6 +10,11 @@ using System.Security.Claims;
 
 namespace API.Controllers;
 
+/// <summary>
+/// Quản lý gán menu cho role — nền tảng của phân quyền menu (RBAC): mọi user mang role sẽ kế
+/// thừa các menu này, nên mỗi thay đổi ở đây sẽ xóa toàn bộ cache menu để quyền mới phản ánh
+/// ngay (xem IRoleMenuService). Chỉ user có menu USERS mới được thao tác.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [MenuPermission("USERS")]

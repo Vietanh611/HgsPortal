@@ -37,6 +37,14 @@ public class AuditController : ControllerBase
         return Ok(ApiResponse<PagedResponse<AuditLogsGetAllResponse>>.SuccessResponse(result, "OK", 200));
     }
 
+    /// <summary>
+    /// Xuất audit log ra file CSV/Excel với các ràng buộc: định dạng bắt buộc csv/xlsx,
+    /// khoảng thời gian tối đa 90 ngày, tối đa 50.000 dòng; mỗi lần export tự ghi một
+    /// dòng audit EXPORT.
+    /// </summary>
+    /// <remarks>
+    /// Không cung cấp fromDate/toDate thì mặc định xuất 30 ngày gần nhất.
+    /// </remarks>
     [HttpGet("export")]
     public async Task<IActionResult> Export(
         [FromQuery] AuditLogsFilterRequest request,

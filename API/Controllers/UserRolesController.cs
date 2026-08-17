@@ -70,6 +70,10 @@ public class UserRolesController : ControllerBase
         return Ok(ApiResponse<IEnumerable<UserRolesGetAllResponse>>.SuccessResponse(response));
     }
 
+/// <summary>
+    /// Gán role cho user; kiểm tra user nằm trong org-scope và role thuộc loại gán được
+    /// (active, non-system, org trong phạm vi) — vi phạm → 403.
+    /// </summary>
     [HttpPost]
     public async Task<ActionResult<ApiResponse<UserRolesCreateResponse>>> Create([FromBody] UserRolesCreateRequest request, CancellationToken cancellationToken)
     {
@@ -91,6 +95,9 @@ public class UserRolesController : ControllerBase
         return Ok(ApiResponse<UserRolesUpdateResponse>.SuccessResponse(MapToUpdateResponse(userRole)));
     }
 
+/// <summary>
+    /// Gỡ gán role; từ chối khi đây là role cuối cùng của user để đảm bảo user luôn có ít nhất một role.
+    /// </summary>
     [HttpDelete("{id}")]
     public async Task<ActionResult<ApiResponse<bool>>> Delete(int id, CancellationToken cancellationToken)
     {
@@ -103,6 +110,10 @@ public class UserRolesController : ControllerBase
         return Ok(ApiResponse<bool>.SuccessResponse(true));
     }
 
+/// <summary>
+    /// Gán nhiều role cho một user; mỗi role phải thuộc loại gán được và user phải nằm trong
+    /// org-scope — ngoài phạm vi → 403.
+    /// </summary>
     [HttpPost("assign-multiple")]
     public async Task<ActionResult<ApiResponse<bool>>> AssignMultipleRoles([FromBody] UserRolesAssignMultipleRequest request, CancellationToken cancellationToken)
     {
@@ -112,6 +123,10 @@ public class UserRolesController : ControllerBase
         return Ok(ApiResponse<bool>.SuccessResponse(true, "Roles assigned successfully"));
     }
 
+/// <summary>
+    /// Gỡ nhiều role khỏi user; từ chối nếu việc gỡ khiến user không còn role nào;
+    /// user ngoài org-scope → 403.
+    /// </summary>
     [HttpPost("remove-multiple")]
     public async Task<ActionResult<ApiResponse<bool>>> RemoveMultipleRoles([FromBody] UserRolesAssignMultipleRequest request, CancellationToken cancellationToken)
     {

@@ -85,6 +85,9 @@ public class CustomerSatisfactionController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Từ chối xóa (409) thiết bị đang được đánh giá tham chiếu.
+    /// </summary>
     [HttpDelete("devices/{id:int}")]
     public async Task<ActionResult<ApiResponse>> DeleteDevice(int id)
     {
@@ -167,6 +170,9 @@ public class CustomerSatisfactionController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Từ chối xóa (409) lý do đang được đánh giá tham chiếu.
+    /// </summary>
     [HttpDelete("reasons/{id:int}")]
     public async Task<ActionResult<ApiResponse>> DeleteReason(int id)
     {
@@ -206,6 +212,10 @@ public class CustomerSatisfactionController : ControllerBase
         return Ok(ApiResponse<EvaluationsGetByIdResponse>.SuccessResponse(MapToGetByIdEvaluationResponse(evaluation), "Evaluation retrieved successfully", 200));
     }
 
+    /// <summary>
+    /// Tạo đánh giá; bắt buộc ít nhất một trong DeviceId/FlightId/StaffUserId, reasonIds phải
+    /// tồn tại (không → 404) và được liên kết kèm theo.
+    /// </summary>
     [HttpPost("evaluations")]
     public async Task<ActionResult<ApiResponse<EvaluationsCreateResponse>>> CreateEvaluation([FromBody] EvaluationsCreateRequest request)
     {

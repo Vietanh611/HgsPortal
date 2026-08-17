@@ -6,6 +6,10 @@ using WebApp.Client.Services.Network;
 
 namespace WebApp.Client.Services;
 
+/// <summary>
+/// Service phía client cho danh mục core assets; các method trả null khi lỗi để giao diện
+/// hiển thị trạng thái mặc định.
+/// </summary>
 public class CoreAssetsService
 {
     private readonly ApiClient _apiClient;

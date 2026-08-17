@@ -6,6 +6,11 @@ using System.Text.Json;
 
 namespace WebApp.Client.Services.Network;
 
+/// <summary>
+/// Client HTTP tập trung cho mọi request API của WebApp nhằm thống nhất cách xử lý lỗi
+/// (trích message từ ApiResponse, chuyển hướng khi 401/403), tự retry lỗi mạng tạm thời
+/// và cung cấp trạng thái IsLoading/LastError cho giao diện.
+/// </summary>
 public class ApiClient
 {
     private readonly HttpClient _httpClient;
@@ -32,6 +37,11 @@ public class ApiClient
         };
     }
 
+    /// <summary>
+    /// Đánh giá HTTP response: 401 → xóa token và quay về trang đăng nhập (trừ trang công cộng),
+    /// 403 → chuyển sang trang forbidden (bỏ qua khi silent để không gián đoạn request nền),
+    /// các lỗi khác → trích message lỗi từ ApiResponse vào LastError.
+    /// </summary>
     private async Task<bool> HandleResponse(HttpResponseMessage response, bool silent = false)
     {
         if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
@@ -110,6 +120,10 @@ public class ApiClient
         return true;
     }
 
+    /// <summary>
+    /// Chỉ retry lỗi mạng tạm thời (HttpRequestException); các exception khác dừng ngay
+    /// để không lặp lại lỗi logic không thể hồi phục bằng cách gọi lại.
+    /// </summary>
     private async Task<T?> ExecuteWithRetry<T>(Func<Task<T>> action, string operationName)
     {
         int attempt = 0;
@@ -156,6 +170,10 @@ public class ApiClient
         return new Uri(baseUri, endpoint.TrimStart('/'));
     }
 
+    /// <summary>
+    /// Gửi GET; khi lỗi gán LastError và trả về null. Với silent=true (request tùy chọn/nền)
+    /// sẽ không chuyển hướng sang trang forbidden mà chỉ trả về kết quả mặc định.
+    /// </summary>
     public async Task<T?> GetAsync<T>(string endpoint, bool silent = false, IDictionary<string, string>? headers = null)
     {
         IsLoading = true;

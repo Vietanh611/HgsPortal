@@ -10,7 +10,9 @@
             routeData.PageType == typeof(WebApp.Client.Pages.Display.DomesticBaggageArrivalDisplay) ||
             routeData.PageType == typeof(WebApp.Client.Pages.Display.InternationalBaggageArrivalDisplay))
         {
-            <RouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.EmptyLayout)" />
+            <CascadingAuthenticationState>
+                <RouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.EmptyLayout)" />
+            </CascadingAuthenticationState>
         }
         else
         {

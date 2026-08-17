@@ -24,6 +24,10 @@ public class AuthController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>
+    /// Đăng nhập và trả access token; refresh token chỉ được đặt trong cookie HttpOnly
+    /// `refresh_token` (7 ngày), không bao giờ nằm trong body response.
+    /// </summary>
     [HttpPost("login")]
     [AllowAnonymous]
     [IgnoreAntiforgeryToken]
@@ -47,6 +51,10 @@ public class AuthController : ControllerBase
         return Ok(ApiResponse<AuthenticateResponse>.SuccessResponse(response, "Login successful", 200));
     }
 
+    /// <summary>
+    /// Làm mới access token bằng refresh token đọc từ cookie; token cũ bị thu hồi (rotation)
+    /// và token mới được đặt lại vào cookie.
+    /// </summary>
     [HttpPost("refresh-token")]
     [AllowAnonymous]
     [IgnoreAntiforgeryToken]
@@ -76,6 +84,10 @@ public class AuthController : ControllerBase
         return Ok(ApiResponse<AuthenticateResponse>.SuccessResponse(response, "Token refreshed successfully", 200));
     }
 
+    /// <summary>
+    /// Gửi link đặt lại mật khẩu qua email; luôn trả về thành công kể cả khi email không tồn tại
+    /// để tránh lộ thông tin tài khoản (chống enumeration).
+    /// </summary>
     [HttpPost("forgot-password")]
     [AllowAnonymous]
     [IgnoreAntiforgeryToken]
@@ -87,6 +99,10 @@ public class AuthController : ControllerBase
         return Ok(ApiResponse.SuccessResponse("A reset link was sent.", 200));
     }
 
+    /// <summary>
+    /// Đặt lại mật khẩu bằng link dùng một lần (hết hạn 30 phút); đồng thời thu hồi mọi
+    /// refresh token đang hoạt động của user — đăng xuất toàn bộ phiên.
+    /// </summary>
     [HttpPost("reset-password")]
     [AllowAnonymous]
     [IgnoreAntiforgeryToken]
@@ -98,6 +114,9 @@ public class AuthController : ControllerBase
         return Ok(ApiResponse.SuccessResponse("Password reset successfully.", 200));
     }
 
+    /// <summary>
+    /// Thu hồi refresh token phía server và xóa cookie `refresh_token`.
+    /// </summary>
     [HttpPost("logout")]
     [AllowAnonymous]
     [IgnoreAntiforgeryToken]

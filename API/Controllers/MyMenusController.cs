@@ -29,6 +29,9 @@ public class MyMenusController : ControllerBase
         return userId;
     }
 
+    /// <summary>
+    /// Cây menu sidebar của user đang đăng nhập; user có role SUPER_ADMIN nhận toàn bộ menu hệ thống.
+    /// </summary>
     [HttpGet]
     public async Task<ActionResult<ApiResponse<IEnumerable<MenusGetByUserIdResponse>>>> GetMyMenus(CancellationToken cancellationToken)
     {

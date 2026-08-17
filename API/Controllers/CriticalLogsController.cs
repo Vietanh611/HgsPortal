@@ -7,6 +7,11 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
+/// <summary>
+/// Đọc nhật ký lỗi hệ thống (bảng CriticalLogs do Serilog ghi) cho trang giám sát admin.
+/// Log là dữ liệu nhạy cảm toàn cục, không bị giới hạn theo phạm vi tổ chức — quyền truy cập
+/// được chốt bởi menu CRITICALLOGS.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [MenuPermission("CRITICALLOGS")]
@@ -19,6 +24,10 @@ public class CriticalLogsController : ControllerBase
         _criticalLogService = criticalLogService;
     }
 
+    /// <summary>
+    /// Danh sách critical log phân trang + lọc (level/khoảng thời gian/từ khóa); phân trang
+    /// được clamp trong service (PageNumber ≥ 1, PageSize ∈ [1, 200]) để chống DoS qua [FromQuery].
+    /// </summary>
     [HttpGet]
     public async Task<ActionResult<ApiResponse<PagedResponse<CriticalLogsGetAllResponse>>>> GetFiltered(
         [FromQuery] CriticalLogsFilterRequest request,

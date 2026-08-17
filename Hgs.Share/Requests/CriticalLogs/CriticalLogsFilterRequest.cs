@@ -9,7 +9,7 @@ public class CriticalLogsFilterRequest
     public int PageNumber { get; set; } = 1;
     public int PageSize { get; set; } = 20;
 
-    /// <summary>Mức độ log: "Error" | "Fatal" (để trống = tất cả).</summary>
+    /// <summary>Mức độ log: "Warning" | "Error" | "Fatal" (403/429 được ghi Warning; để trống = tất cả).</summary>
     public string? Level { get; set; }
 
     /// <summary>Tìm kiếm trong Message/MessageTemplate/Exception/Properties.</summary>

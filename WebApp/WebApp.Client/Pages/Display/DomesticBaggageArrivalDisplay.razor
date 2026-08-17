@@ -1,23 +1,34 @@
 ﻿@page "/display/DomesticBaggageArrivalDisplay"
 @attribute [AllowAnonymous]
 @layout EmptyLayout
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 @using Hgs.Share.Dtos
 @using Hgs.Share.Responses.ApiResponses
 @using Hgs.Share.Responses.CoreAssets
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
 @using WebApp.Client.Services
 @using WebApp.Client.Services.Network
 @inject ApiClient ApiClient
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 @inject KioskDeviceConfigService KioskConfig
+@inject AuthenticationStateProvider AuthState
 @implements IAsyncDisposable
 
 <link href="css/baggage-display.css" rel="stylesheet" />
 
 <div class="container-fluid display-page">
-    <KioskDeviceSetup Config="@kioskConfig" OnChanged="HandleConfigChanged" />
-    @if (isLoading)
+    @if (!isAuthenticated && kioskConfig == null)
+    {
+        <div class="kiosk-setup-screen">
+            <KioskDeviceSetup Config="@kioskConfig" OnChanged="HandleConfigChanged" />
+            <p class="text-muted mt-3 mb-0">
+                Nhập mã ghép phía trên để kích hoạt màn hình và bắt đầu hiển thị.
+            </p>
+        </div>
+    }
+    else if (isLoading)
     {
         <div class="text-center py-5">
             <div class="spinner-border text-primary" role="status">
@@ -31,13 +42,7 @@
             @errorMessage
         </div>
     }
-    else if (kioskConfig == null)
-    {
-        <div class="text-center py-5 text-muted">
-            Nhập cấu hình thiết bị ở trên để bắt đầu hiển thị.
-        </div>
-    }
-    else
+    else if (images?.Count > 0 || baggageData?.Count > 0)
     {
         <div>
             @if (!isLoading)
@@ -141,6 +146,12 @@
 
         </div>
     }
+    else
+    {
+        <div class="text-center py-5 text-muted">
+            Chưa có dữ liệu hiển thị.
+        </div>
+    }
 </div>
 
 @code {
@@ -152,11 +163,17 @@
     private int carouselKey = 0;
     private PeriodicTimer? timer;
     private CancellationTokenSource? cts;
+    private bool isAuthenticated;
     protected override async Task OnInitializedAsync()
     {
         cts = new CancellationTokenSource();
         kioskConfig = await KioskConfig.GetAsync();
-        await LoadData();
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        isAuthenticated = authState.User.Identity?.IsAuthenticated == true;
+        if (isAuthenticated || kioskConfig != null)
+        {
+            await LoadData();
+        }
         isLoading = false;
         timer = new PeriodicTimer(TimeSpan.FromMinutes(1));
 
@@ -168,7 +185,10 @@
         {
             while (await timer!.WaitForNextTickAsync(token))
             {
-                await InvokeAsync(LoadData);
+                if (isAuthenticated || kioskConfig != null)
+                {
+                    await InvokeAsync(LoadData);
+                }
             }
         }
         catch (OperationCanceledException)
@@ -250,7 +270,10 @@
     {
         kioskConfig = await KioskConfig.GetAsync();
         errorMessage = null;
-        await LoadData();
+        if (isAuthenticated || kioskConfig != null)
+        {
+            await LoadData();
+        }
         StateHasChanged();
     }
 

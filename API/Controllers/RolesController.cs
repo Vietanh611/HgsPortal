@@ -86,6 +86,9 @@ public class RolesController : ControllerBase
         return Ok(ApiResponse<RolesUpdateResponse>.SuccessResponse(MapToUpdateResponse(updatedRole)));
     }
 
+    /// <summary>
+    /// Từ chối xóa role còn đang được gán cho user (bảo vệ quyền của các user đang sử dụng role).
+    /// </summary>
     [HttpDelete("{id}")]
     public async Task<ActionResult<ApiResponse<bool>>> Delete(int id, CancellationToken cancellationToken)
     {

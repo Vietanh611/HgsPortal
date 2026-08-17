@@ -7,6 +7,10 @@ using System.Text.Json;
 
 namespace WebApp.Client.Services.Auth;
 
+/// <summary>
+/// Service xác thực phía client: gọi API auth (login/logout/refresh) và lưu access token
+/// vào storage. Logout luôn xóa token cục bộ kể cả khi API lỗi.
+/// </summary>
 public class AuthService
 {
     private readonly IHttpClientFactory _httpClientFactory;
@@ -34,6 +38,10 @@ public class AuthService
         return _httpClientFactory.CreateClient("AuthClient");
     }
 
+    /// <summary>
+    /// Đăng nhập; khi thành công, lưu access token và thời gian hết hạn vào storage
+    /// để các handler dùng cho những request tiếp theo.
+    /// </summary>
     public async Task<AuthenticateResponse?> LoginAsync(string username, string password)
     {
         try
@@ -66,6 +74,10 @@ public class AuthService
         }
     }
 
+    /// <summary>
+    /// Đăng xuất: gọi API logout (lỗi thì bỏ qua) rồi luôn xóa token cục bộ và quay về
+    /// trang đăng nhập, trừ khi đang ở trang công cộng.
+    /// </summary>
     public async Task LogoutAsync()
     {
         try
@@ -96,6 +108,10 @@ public class AuthService
         }
     }
 
+    /// <summary>
+    /// Refresh access token dựa trên refresh cookie và lưu token mới; trả về false khi thất
+    /// bại để caller quyết định xử lý (ví dụ chuyển sang trạng thái anonymous).
+    /// </summary>
     public async Task<bool> RefreshAccessTokenAsync()
     {
         try

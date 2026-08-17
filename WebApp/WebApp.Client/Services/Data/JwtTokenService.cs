@@ -3,8 +3,16 @@ using System.Security.Claims;
 
 namespace WebApp.Client.Services.Data;
 
+/// <summary>
+/// Trích xuất thông tin danh tính từ access token JWT ngay tại client (không cần gọi API),
+/// dùng khi xây dựng AuthenticationState cho Blazor.
+/// </summary>
 public class JwtTokenService
 {
+    /// <summary>
+    /// Trích user id từ claim sub (hoặc NameIdentifier); trả null khi token không hợp lệ
+    /// hoặc không có claim tương ứng.
+    /// </summary>
     public int? ExtractUserId(string token)
     {
         try
@@ -28,6 +36,10 @@ public class JwtTokenService
         }
     }
 
+    /// <summary>
+    /// Trích danh sách role từ claim role; luôn trả về một danh sách (rỗng khi token lỗi)
+    /// để caller khỏi phải xử lý null.
+    /// </summary>
     public IEnumerable<string> ExtractRoles(string token)
     {
         try

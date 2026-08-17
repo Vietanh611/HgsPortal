@@ -13,10 +13,15 @@ namespace API.Authorization;
 /// </summary>
 public class DeviceKeyAuthenticationHandler : AuthenticationHandler<DeviceKeyAuthenticationSchemeOptions>
 {
+    /// <summary>Header chứa mã định danh thiết bị (kiosk headless) khi gọi API.</summary>
     public const string HeaderDeviceId = "X-Device-Id";
+    /// <summary>Header chứa khóa bí mật của thiết bị (kiosk headless) khi gọi API.</summary>
     public const string HeaderDeviceKey = "X-Device-Key";
+    /// <summary>Tên claim mang mã định danh thiết bị — cố ý tách khỏi NameIdentifier của user để code kiểm tra scope không nhầm danh tính thiết bị với danh tính người dùng.</summary>
     public const string DeviceIdClaim = "device_id";
+    /// <summary>Khóa trong HttpContext.Items lưu id DB của thiết bị đã xác thực trong suốt request, để middleware phía sau nhận diện thiết bị.</summary>
     public const string AuthenticatedDeviceIdKey = "AuthenticatedDeviceId";
+    /// <summary>Tiền tố cache key dùng để giới hạn việc ghi LastSeenAt xuống tối đa 1 lần/phút/thiết bị.</summary>
     private const string LastSeenCachePrefix = "device:lastseen:";
 
     private readonly IDevicesService _devicesService;
@@ -34,6 +39,11 @@ public class DeviceKeyAuthenticationHandler : AuthenticationHandler<DeviceKeyAut
         _cacheService = cacheService;
     }
 
+    /// <summary>
+    /// Xác thực thiết bị bằng cặp header X-Device-Id/X-Device-Key qua IDevicesService. Khi thành
+    /// công, id DB của thiết bị được đưa vào HttpContext.Items và principal chỉ mang claim
+    /// device_id — cố ý không mang claim user.
+    /// </summary>
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         var deviceId = Request.Headers[HeaderDeviceId].ToString();
@@ -66,6 +76,10 @@ public class DeviceKeyAuthenticationHandler : AuthenticationHandler<DeviceKeyAut
         return AuthenticateResult.Success(new AuthenticationTicket(principal, Scheme.Name));
     }
 
+    /// <summary>
+    /// Cập nhật LastSeenAt/LastSeenIp của thiết bị, nhưng tối đa 1 lần/phút/thiết bị (chặn bằng
+    /// cache ngắn hạn) để tránh ghi DB mỗi request.
+    /// </summary>
     private async Task TouchLastSeenAsync(int deviceId, CancellationToken cancellationToken)
     {
         var cacheKey = $"{LastSeenCachePrefix}{deviceId}";

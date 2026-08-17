@@ -34,6 +34,10 @@ public class DevicesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Tạo mã ghép cho thiết bị mới (trạng thái PENDING); mã chỉ trả một lần và hết hạn
+    /// theo cấu hình PairingCodeTtlMinutes.
+    /// </summary>
     [HttpPost("pairing-code")]
     public async Task<ActionResult<ApiResponse<DevicePairingCodeCreateResponse>>> CreatePairingCode([FromBody] DevicePairingCodeCreateRequest request, CancellationToken cancellationToken)
     {
@@ -75,6 +79,9 @@ public class DevicesController : ControllerBase
         return Ok(ApiResponse<DeviceGetByIdResponse>.SuccessResponse(device, "Device retrieved successfully", 200));
     }
 
+    /// <summary>
+    /// Bật/tắt thiết bị (IsEnabled); từ chối (409) khi thiết bị đã bị thu hồi.
+    /// </summary>
     [HttpPatch("{id:int}/status")]
     public async Task<ActionResult<ApiResponse<DeviceStatusUpdateResponse>>> UpdateDeviceStatus(int id, [FromBody] DeviceStatusUpdateRequest request, CancellationToken cancellationToken)
     {
@@ -93,6 +100,10 @@ public class DevicesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Thu hồi thiết bị (mềm): chuyển trạng thái REVOKED và tắt thiết bị; chặn (409) nếu đã
+    /// thu hồi trước đó.
+    /// </summary>
     [HttpPost("{id:int}/revoke")]
     public async Task<ActionResult<ApiResponse<DeviceRevokeResponse>>> RevokeDevice(int id, CancellationToken cancellationToken)
     {
@@ -112,6 +123,10 @@ public class DevicesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Tạo mã ghép mới; từ chối (409) khi thiết bị đang ACTIVE (đã ghép) — chỉ tạo lại cho
+    /// thiết bị chưa ghép.
+    /// </summary>
     [HttpPost("{id:int}/regenerate-pairing-code")]
     public async Task<ActionResult<ApiResponse<DevicePairingCodeRegenerateResponse>>> RegeneratePairingCode(int id, CancellationToken cancellationToken)
     {
@@ -131,6 +146,9 @@ public class DevicesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Xóa mềm thiết bị; chỉ cho phép khi thiết bị đã bị thu hồi (chưa thu hồi → 409).
+    /// </summary>
     [HttpDelete("{id:int}")]
     public async Task<ActionResult<ApiResponse>> DeleteDevice(int id, CancellationToken cancellationToken)
     {
@@ -149,6 +167,10 @@ public class DevicesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Ghép thiết bị kiosk bằng mã ghép: ẩn danh, bỏ qua antiforgery, rate limit riêng
+    /// (DevicePairing, 5 req/phút/IP); trả DeviceKey chỉ một lần, mã sai/hết hạn → 400.
+    /// </summary>
     [HttpPost("pair")]
     [AllowAnonymous]
     [IgnoreAntiforgeryToken]

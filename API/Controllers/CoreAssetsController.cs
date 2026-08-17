@@ -25,8 +25,11 @@ public class CoreAssetsController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>
+    /// Danh sách core assets; chấp nhận xác thực bằng DeviceKey hoặc JWT (kiosk hoặc user WebApp).
+    /// </summary>
     [HttpGet]
-    [Authorize(AuthenticationSchemes = "DeviceKey,JwtBearer")]
+    [Authorize(AuthenticationSchemes = "DeviceKey,Bearer")]
     public async Task<ActionResult<ApiResponse<IEnumerable<CoreAssetsGetAllResponse>>>> GetCoreAssets(CancellationToken cancellationToken)
     {
         var assets = await _coreAssetsService.GetCoreAssetsAsync(cancellationToken);
