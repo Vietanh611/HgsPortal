@@ -5,12 +5,14 @@ using Hgs.Share.Exceptions;
 using Hgs.Share.Responses.ApiResponses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
     [MenuPermission("DISPLAY")]
+    [EnableRateLimiting("device")]
     public class DisplayController : Controller
     {
         private readonly IDisplayService _displayService;
@@ -19,7 +21,7 @@ namespace API.Controllers
             _displayService = displayService;
         }
         [HttpGet("GetDomesticBaggageArrivalDisplay")]
-        [AllowAnonymous]
+        [Authorize(AuthenticationSchemes = "DeviceKey")]
         public async Task<ActionResult<ApiResponse<List<BaggageArrivalDisplayDto>>>> GetDomesticBaggageArrivalDisplay(CancellationToken cancellationToken)
         {
             var display = await _displayService.GetDomesticBaggageArrivalDisplayAsync(cancellationToken);
@@ -30,7 +32,7 @@ namespace API.Controllers
             return Ok(ApiResponse<List<BaggageArrivalDisplayDto>>.SuccessResponse(display));
         }
         [HttpGet("GetInternationalBaggageArrivalDisplay")]
-        [AllowAnonymous]
+        [Authorize(AuthenticationSchemes = "DeviceKey")]
         public async Task<ActionResult<ApiResponse<List<BaggageArrivalDisplayDto>>>> GetInternationalBaggageArrivalDisplay(CancellationToken cancellationToken)
         {
             var display = await _displayService.GetInternationalBaggageArrivalDisplayAsync(cancellationToken);

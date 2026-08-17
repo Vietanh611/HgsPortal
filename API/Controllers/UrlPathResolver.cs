@@ -19,6 +19,6 @@ public static class UrlPathResolver
             return urlPath;
         }
 
-        return $"{request.Scheme}://{request.Host}{urlPath}";
+        return $"{request.Scheme}://{request.Host}{request.PathBase}{urlPath}";
     }
 }

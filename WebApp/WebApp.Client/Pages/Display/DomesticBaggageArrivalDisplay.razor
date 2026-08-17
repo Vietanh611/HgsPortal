@@ -5,15 +5,18 @@
 @using Hgs.Share.Responses.ApiResponses
 @using Hgs.Share.Responses.CoreAssets
 @using Microsoft.AspNetCore.Authorization
+@using WebApp.Client.Services
 @using WebApp.Client.Services.Network
 @inject ApiClient ApiClient
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
+@inject KioskDeviceConfigService KioskConfig
 @implements IAsyncDisposable
 
 <link href="css/baggage-display.css" rel="stylesheet" />
 
 <div class="container-fluid display-page">
+    <KioskDeviceSetup Config="@kioskConfig" OnChanged="HandleConfigChanged" />
     @if (isLoading)
     {
         <div class="text-center py-5">
@@ -26,6 +29,12 @@
     {
         <div class="alert alert-danger" role="alert">
             @errorMessage
+        </div>
+    }
+    else if (kioskConfig == null)
+    {
+        <div class="text-center py-5 text-muted">
+            Nhập cấu hình thiết bị ở trên để bắt đầu hiển thị.
         </div>
     }
     else
@@ -137,6 +146,7 @@
 @code {
     private List<BaggageArrivalDisplayDto>? baggageData;
     private List<CoreAssetsGetAllResponse>? images;
+    private KioskDeviceConfig? kioskConfig;
     private bool isLoading = true;
     private string? errorMessage;
     private int carouselKey = 0;
@@ -145,6 +155,7 @@
     protected override async Task OnInitializedAsync()
     {
         cts = new CancellationTokenSource();
+        kioskConfig = await KioskConfig.GetAsync();
         await LoadData();
         isLoading = false;
         timer = new PeriodicTimer(TimeSpan.FromMinutes(1));
@@ -201,14 +212,22 @@
 
         try
         {
-            var baggageResponse = await ApiClient.GetAsync<ApiResponse<IEnumerable<BaggageArrivalDisplayDto>>>("api/display/GetDomesticBaggageArrivalDisplay");
+            var headers = kioskConfig != null
+                ? new Dictionary<string, string>
+                {
+                    ["X-Device-Id"] = kioskConfig.DeviceId,
+                    ["X-Device-Key"] = kioskConfig.DeviceKey
+                }
+                : null;
+
+            var baggageResponse = await ApiClient.GetAsync<ApiResponse<IEnumerable<BaggageArrivalDisplayDto>>>("api/display/GetDomesticBaggageArrivalDisplay", headers: headers);
 
             if (baggageResponse != null && baggageResponse.Success && baggageResponse.Data != null)
             {
                 baggageData = baggageResponse.Data.ToList();
             }
 
-            var assetsResponse = await ApiClient.GetAsync<ApiResponse<IEnumerable<CoreAssetsGetAllResponse>>>("api/coreassets");
+            var assetsResponse = await ApiClient.GetAsync<ApiResponse<IEnumerable<CoreAssetsGetAllResponse>>>("api/coreassets", headers: headers);
             if (assetsResponse != null && assetsResponse.Success && assetsResponse.Data != null)
             {
                 images = assetsResponse.Data
@@ -225,6 +244,14 @@
         {
             carouselKey++;
         }
+    }
+
+    private async Task HandleConfigChanged()
+    {
+        kioskConfig = await KioskConfig.GetAsync();
+        errorMessage = null;
+        await LoadData();
+        StateHasChanged();
     }
 
 }

@@ -137,6 +137,7 @@ public class AuthService : IAuthService
         {
             user.FailedLoginCount = 0;
         }
+
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         await _auditLog.LogSecurityEventAsync(
@@ -263,12 +264,16 @@ public class AuthService : IAuthService
         return BuildAuthenticateResponse(accessToken, refreshToken);
     }
 
-    private AuthenticateResponse BuildAuthenticateResponse(string accessToken, string refreshToken) => new()
+    private AuthenticateResponse BuildAuthenticateResponse(string accessToken, string refreshToken)
     {
-        AccessToken = accessToken,
-        RefreshToken = refreshToken,
-        ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes)
-    };
+        var expires = new JwtSecurityTokenHandler().ReadJwtToken(accessToken).ValidTo;
+        return new AuthenticateResponse
+        {
+            AccessToken = accessToken,
+            RefreshToken = refreshToken,
+            ExpiresAt = expires
+        };
+    }
 
     private async Task SaveRefreshTokenAsync(int userId, string refreshToken, string jwtId, string? userAgent, string? ipAddress, Guid? tokenFamily, CancellationToken cancellationToken)
     {
@@ -292,6 +297,7 @@ public class AuthService : IAuthService
 
         foreach (var token in tokens)
         {
+            // 1 session mobile + 1 session desktop.
             if (IsMobile(token.UserAgent) == isMobile)
             {
                 token.IsRevoked = true;

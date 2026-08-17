@@ -1,0 +1,119 @@
+@using Hgs.Share.Responses.CriticalLogs
+@using BlazorBootstrap
+
+<Modal @ref="modal" Title="Chi tiết nhật ký lỗi" OnClose="Close" Size="ModalSize.Large">
+    <BodyTemplate>
+        @if (Log != null)
+        {
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">ID</label>
+                    <div>@Log.Id</div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Mức độ</label>
+                    <div>
+                        <Badge Color="@(GetLevelBadgeColor(Log.Level))">@Log.Level</Badge>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Thời gian (UTC)</label>
+                    <div>@Log.TimeStamp.ToString("yyyy-MM-dd HH:mm:ss")</div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Người dùng</label>
+                    <div>@(Log.User ?? "N/A")</div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Phương thức</label>
+                    <div>@(Log.Method ?? "N/A")</div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Path</label>
+                    <div>@(Log.Path ?? "N/A")</div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Request ID</label>
+                    <div>@(Log.RequestId ?? "N/A")</div>
+                </div>
+                <div class="col-12 mb-3">
+                    <label class="form-label fw-bold">Message</label>
+                    <pre class="bg-light p-3 rounded" style="max-height: 200px; overflow-y: auto;">@(Log.Message ?? "N/A")</pre>
+                </div>
+                @if (!string.IsNullOrEmpty(Log.MessageTemplate))
+                {
+                    <div class="col-12 mb-3">
+                        <label class="form-label fw-bold">Message template</label>
+                        <pre class="bg-light p-3 rounded" style="max-height: 200px; overflow-y: auto;">@Log.MessageTemplate</pre>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Log.Exception))
+                {
+                    <div class="col-12 mb-3">
+                        <label class="form-label fw-bold">Exception</label>
+                        <pre class="bg-light p-3 rounded" style="max-height: 400px; overflow-y: auto;">@Log.Exception</pre>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Log.Properties))
+                {
+                    <div class="col-12 mb-3">
+                        <label class="form-label fw-bold">Properties</label>
+                        <pre class="bg-light p-3 rounded" style="max-height: 300px; overflow-y: auto;">@FormatProperties(Log.Properties)</pre>
+                    </div>
+                }
+            </div>
+        }
+    </BodyTemplate>
+    <FooterTemplate>
+        <Button Color="ButtonColor.Secondary" @onclick="OnClose">Đóng</Button>
+    </FooterTemplate>
+</Modal>
+
+@code {
+    private Modal modal = default!;
+    [Parameter] public CriticalLogsGetAllResponse? Log { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    public async Task ShowAsync()
+    {
+        await modal.ShowAsync();
+    }
+
+    public async Task HideAsync()
+    {
+        await modal.HideAsync();
+    }
+
+    private async Task Close()
+    {
+        await HideAsync();
+        await OnClose.InvokeAsync();
+    }
+
+    // Properties do sink ghi dang XML — can le dep de doc hon khi tra cuu.
+    private static string FormatProperties(string? xml)
+    {
+        if (string.IsNullOrEmpty(xml))
+            return string.Empty;
+
+        try
+        {
+            var doc = System.Xml.Linq.XDocument.Parse(xml);
+            return doc.ToString();
+        }
+        catch
+        {
+            return xml;
+        }
+    }
+
+    private static BadgeColor GetLevelBadgeColor(string? level)
+    {
+        return level switch
+        {
+            "Fatal" => BadgeColor.Danger,
+            "Error" => BadgeColor.Warning,
+            _ => BadgeColor.Secondary
+        };
+    }
+}

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Serilog;
+using Serilog.Context;
 using WebApp.Client.Services;
 using WebApp.Client.Services.Auth;
 using WebApp.Client.Services.Components;
@@ -62,7 +63,6 @@ builder.Services.AddScoped<ApiClient>(sp =>
     return new ApiClient(httpClient, tokenStorage, navigationManager, apiBaseUrl);
 });
 builder.Services.AddScoped<CoreAssetsService>();
-builder.Services.AddScoped<DisplayDevicesService>();
 
 var app = builder.Build();
 
@@ -98,6 +98,19 @@ app.UseStaticFiles(new StaticFileOptions
     }
 });
 app.UseAntiforgery();
+
+// Đẩy thông tin request vào LogContext để Serilog MSSqlServer sink (CriticalLogs)
+// điền các cột phụ RequestId/User/Path/Method — khớp với cấu hình additionalColumns.
+app.Use(async (context, next) =>
+{
+    using (LogContext.PushProperty("RequestId", context.TraceIdentifier))
+    using (LogContext.PushProperty("User", context.User.Identity?.Name ?? "Anonymous"))
+    using (LogContext.PushProperty("Path", context.Request.Path))
+    using (LogContext.PushProperty("Method", context.Request.Method))
+    {
+        await next();
+    }
+});
 app.UseSerilogRequestLogging();
 
 app.MapRazorComponents<App>()

@@ -1,6 +1,6 @@
 ﻿using Domain.Entities.CustomerSatisfaction;
 using Domain.Entities.CoreAssets;
-using Domain.Entities.DisplayDevices;
+using Domain.Entities.DeviceManagement;
 using Domain.Entities.Identity;
 using Domain.Entities.System;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +14,7 @@ namespace Data.DbContexts
 
         public DbSet<Users> Users => Set<Users>();
         public DbSet<AuditLogs> AuditLogs => Set<AuditLogs>();
+        public DbSet<CriticalLogs> CriticalLogs => Set<CriticalLogs>();
         public DbSet<Roles> Roles => Set<Roles>();
         public DbSet<UserRoles> UserRoles => Set<UserRoles>();
         public DbSet<RefreshTokens> RefreshTokens => Set<RefreshTokens>();
@@ -22,8 +23,8 @@ namespace Data.DbContexts
         public DbSet<RoleMenus> RoleMenus => Set<RoleMenus>();
         public DbSet<OrganizationUnits> OrganizationUnits => Set<OrganizationUnits>();
 
-        #region DisplayDevices
-        public DbSet<DisplayDevices> DisplayDevices => Set<DisplayDevices>();
+        #region DeviceManagement
+        public DbSet<Device> ManagedDevices => Set<Device>();
         #endregion
 
         #region CoreAssets
@@ -72,6 +73,32 @@ namespace Data.DbContexts
                 .WithMany()
                 .HasForeignKey(a => a.TargetUserId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            #region DeviceManagement
+            modelBuilder.Entity<Device>(entity =>
+            {
+                entity.HasIndex(d => d.DeviceIdentifier).IsUnique();
+
+                entity.HasIndex(d => d.DeviceType);
+                entity.HasIndex(d => d.OrganizationUnitId);
+                entity.HasIndex(d => d.Status);
+
+                entity.HasOne(d => d.RevokedByUser)
+                    .WithMany()
+                    .HasForeignKey(d => d.RevokedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(d => d.DeletedByUser)
+                    .WithMany()
+                    .HasForeignKey(d => d.DeletedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(d => d.OrganizationUnit)
+                    .WithMany()
+                    .HasForeignKey(d => d.OrganizationUnitId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+            #endregion
         }
     }
 }

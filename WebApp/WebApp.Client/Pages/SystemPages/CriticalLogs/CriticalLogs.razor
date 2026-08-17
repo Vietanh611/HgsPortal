@@ -1,0 +1,111 @@
+@page "/critical-logs"
+@namespace WebApp.Client.Pages.SystemPages.CriticalLogs
+@using Hgs.Share.Responses.CriticalLogs
+@using BlazorBootstrap
+
+<PageTitle>Nhật ký lỗi</PageTitle>
+
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">Nhật ký lỗi</h1>
+                <span class="text-muted">Lỗi hệ thống (Error/Fatal) từ Serilog</span>
+            </div>
+
+            <Card class="mb-4">
+                <CardHeader>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Bộ lọc</h5>
+                        <Button Color="ButtonColor.Link" @onclick="ToggleFilterCollapse" aria-expanded="@filterExpanded">
+                            <Icon Name="@(filterExpanded ? IconName.ChevronUp : IconName.ChevronDown)" />
+                        </Button>
+                    </div>
+                </CardHeader>
+                <Collapse Class="@(filterExpanded ? "show" : "")">
+                    <CardBody>
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-4 col-lg-3">
+                                <label for="criticalLevel" class="form-label fw-bold">Mức độ</label>
+                                <select id="criticalLevel" class="form-select" @bind="filterLevel">
+                                    <option value="">Tất cả</option>
+                                    <option value="Error">Error</option>
+                                    <option value="Fatal">Fatal</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 col-lg-3">
+                                <label for="criticalKeyword" class="form-label fw-bold">Từ khóa</label>
+                                <input type="text" id="criticalKeyword" class="form-control" placeholder="Message, exception, requestId..."
+                                       @bind="filterKeyword" />
+                            </div>
+                            <div class="col-md-4 col-lg-3">
+                                <label for="criticalFromDate" class="form-label fw-bold">Từ ngày</label>
+                                <input type="date" id="criticalFromDate" class="form-control" @bind="filterFromDate" />
+                            </div>
+                            <div class="col-md-4 col-lg-3">
+                                <label for="criticalToDate" class="form-label fw-bold">Đến ngày</label>
+                                <input type="date" id="criticalToDate" class="form-control" @bind="filterToDate" />
+                            </div>
+                            <div class="col-12 col-lg-3 d-flex gap-2">
+                                <Button Color="ButtonColor.Primary" @onclick="ApplyFilters">
+                                    <Icon Name="IconName.Search" /> Áp dụng
+                                </Button>
+                                <Button Color="ButtonColor.Secondary" Outline="true" @onclick="ResetFilters">
+                                    <Icon Name="IconName.ArrowClockwise" /> Đặt lại
+                                </Button>
+                            </div>
+                        </div>
+                    </CardBody>
+                </Collapse>
+            </Card>
+
+            <Card>
+                <CardBody>
+                    @if (errorMessage != null)
+                    {
+                        <HgsErrorState Message="@errorMessage" RetryClick="@ApplyFilters" />
+                    }
+                    else if (showEmptyState)
+                    {
+                        <HgsEmptyState Title="Không có nhật ký lỗi"
+                                       Message="Thử điều chỉnh bộ lọc hoặc chọn khoảng thời gian khác." />
+                    }
+                    else
+                    {
+                        <Grid TItem="CriticalLogsGetAllResponse" @ref="grid" DataProvider="CriticalLogsDataProvider"
+                              AllowPaging="true" PageSize="20" Responsive="true"
+                              Class="table table-hover table-bordered table-striped">
+                            <GridColumn TItem="CriticalLogsGetAllResponse" HeaderText="ID">
+                                @context.Id
+                            </GridColumn>
+                            <GridColumn TItem="CriticalLogsGetAllResponse" HeaderText="Mức độ">
+                                <Badge Color="@(GetLevelBadgeColor(context.Level))">@context.Level</Badge>
+                            </GridColumn>
+                            <GridColumn TItem="CriticalLogsGetAllResponse" HeaderText="Thời gian (UTC)">
+                                @context.TimeStamp.ToString("yyyy-MM-dd HH:mm:ss")
+                            </GridColumn>
+                            <GridColumn TItem="CriticalLogsGetAllResponse" HeaderText="Người dùng">
+                                @(context.User ?? "N/A")
+                            </GridColumn>
+                            <GridColumn TItem="CriticalLogsGetAllResponse" HeaderText="Path">
+                                @(context.Method != null ? $"{context.Method} {context.Path}" : (context.Path ?? "N/A"))
+                            </GridColumn>
+                            <GridColumn TItem="CriticalLogsGetAllResponse" HeaderText="Message">
+                                @Truncate(context.Message, 120)
+                            </GridColumn>
+                            <GridColumn TItem="CriticalLogsGetAllResponse" HeaderText="Thao tác" AllowSorting="false">
+                                <Button Color="ButtonColor.Info" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowDetailModal(context)" aria-label="Xem chi tiết nhật ký lỗi">
+                                    <Icon Name="IconName.Eye" />
+                                </Button>
+                            </GridColumn>
+                        </Grid>
+                    }
+                </CardBody>
+            </Card>
+        </div>
+    </div>
+</div>
+
+<CriticalLogDetailModal @ref="detailModal"
+    Log="selectedLog"
+    OnClose="CloseDetailModal" />

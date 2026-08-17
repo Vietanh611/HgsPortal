@@ -1,0 +1,111 @@
+@using BlazorBootstrap
+@using Hgs.Share.Requests.Devices
+@using WebApp.Client.Services
+@inject KioskDeviceConfigService KioskConfig
+@inject DevicesService DevicesService
+@inject WebApp.Client.Services.Components.ToastService ToastService
+
+@if (Config == null)
+{
+    <div class="card kiosk-setup-card mb-4 shadow-sm">
+        <div class="card-body">
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <Icon Name="IconName.Display" Color="IconColor.Warning" />
+                <h5 class="mb-0">Kích hoạt màn hình kiosk</h5>
+            </div>
+            <p class="text-muted mb-3">
+                Màn hình này chưa được ghép cặp với hệ thống. Nhập <strong>mã ghép (pairing code) 8 ký tự</strong>
+                do quản trị viên cung cấp tại trang <em>Quản lý thiết bị</em> để kích hoạt.
+            </p>
+            <EditForm Model="FormModel" OnValidSubmit="Pair">
+                <DataAnnotationsValidator />
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <label class="form-label">Mã ghép (8 ký tự)</label>
+                        <InputText @bind-Value="FormModel.PairingCode" class="form-control font-monospace text-uppercase" placeholder="AB3F9K2Z" />
+                        <ValidationMessage For="() => FormModel.PairingCode" class="text-danger" />
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <Button Color="ButtonColor.Primary" Type="ButtonType.Submit" Disabled="isSaving">
+                            @if (isSaving)
+                            {
+                                <Spinner Color="SpinnerColor.Light" Size="SpinnerSize.Small" class="me-2" />
+                            }
+                            Kích hoạt
+                        </Button>
+                    </div>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+else
+{
+    <div class="d-flex justify-content-end mb-3">
+        <span class="badge text-bg-success align-self-center me-2">
+            <Icon Name="IconName.CheckCircleFill" /> Thiết bị: @Config.DeviceId
+        </span>
+        <Button Color="ButtonColor.Secondary" Outline="true" Size="ButtonSize.Small" @onclick="Clear">
+            <Icon Name="IconName.XLg" /> Xóa cấu hình
+        </Button>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public KioskDeviceConfig? Config { get; set; }
+
+    [Parameter]
+    public EventCallback OnChanged { get; set; }
+
+    private DevicePairRequest FormModel { get; set; } = new();
+    private bool isSaving = false;
+
+    private async Task Pair()
+    {
+        if (string.IsNullOrWhiteSpace(FormModel.PairingCode))
+        {
+            ToastService.ShowError("Vui lòng nhập mã ghép.");
+            return;
+        }
+
+        isSaving = true;
+        try
+        {
+            var result = await DevicesService.PairDeviceAsync(new DevicePairRequest
+            {
+                PairingCode = FormModel.PairingCode.Trim().ToUpperInvariant()
+            });
+
+            if (result == null)
+            {
+                ToastService.ShowError("Mã ghép không hợp lệ hoặc đã hết hạn. Vui lòng thử lại.");
+                return;
+            }
+
+            await KioskConfig.SaveAsync(new KioskDeviceConfig
+            {
+                DeviceId = result.DeviceId,
+                DeviceKey = result.DeviceKey
+            });
+            ToastService.ShowSuccess("Đã kích hoạt màn hình kiosk.");
+            await OnChanged.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error pairing kiosk device: {ex.Message}");
+            ToastService.ShowError("Không thể kích hoạt màn hình. Vui lòng thử lại.");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task Clear()
+    {
+        await KioskConfig.ClearAsync();
+        ToastService.ShowSuccess("Đã xóa cấu hình thiết bị.");
+        await OnChanged.InvokeAsync();
+    }
+}

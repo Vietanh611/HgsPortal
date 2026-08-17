@@ -1,0 +1,135 @@
+@page "/devices"
+@using Hgs.Share.Requests.Devices
+@using Hgs.Share.Responses.Devices
+@using Hgs.Share.Responses.OrganizationUnits
+@using BlazorBootstrap
+
+<PageTitle>Quản lý thiết bị</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h2 mb-1">Quản lý thiết bị</h1>
+        <p class="text-secondary mb-0">Kiosk và màn hình hiển thị kết nối vào hệ thống.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <Button Color="ButtonColor.Secondary" Outline="true" @onclick="LoadDevices" aria-label="Làm mới danh sách thiết bị">
+            <Icon Name="IconName.ArrowClockwise" /> Làm mới
+        </Button>
+        <Button Color="ButtonColor.Primary" @onclick="ShowCreateModal">
+            <Icon Name="IconName.PlusLg" /> Tạo mã ghép
+        </Button>
+    </div>
+</div>
+
+<Card>
+    <CardBody>
+        <div class="row g-3 mb-3">
+            <div class="col-md-3">
+                <label class="form-label" for="filterStatus">Trạng thái</label>
+                <select id="filterStatus" class="form-select" @bind="filterStatus">
+                    <option value="">Tất cả</option>
+                    <option value="ONLINE">Đang hoạt động</option>
+                    <option value="ACTIVE">Kích hoạt</option>
+                    <option value="PENDING">Chờ ghép cặp</option>
+                    <option value="DISABLED">Đã tắt</option>
+                    <option value="REVOKED">Đã thu hồi</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="filterOrgUnit">Đơn vị</label>
+                <select id="filterOrgUnit" class="form-select" @bind="filterOrgUnitId">
+                    <option value="">Tất cả</option>
+                    @foreach (var org in organizationUnits ?? Enumerable.Empty<OrganizationUnitsGetAllResponse>())
+                    {
+                        <option value="@org.Id">@org.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-6 d-flex align-items-end gap-2">
+                <Button Color="ButtonColor.Primary" @onclick="ApplyFilters">
+                    <Icon Name="IconName.Search" /> Lọc
+                </Button>
+                <Button Color="ButtonColor.Secondary" Outline="true" @onclick="ResetFilters">
+                    <Icon Name="IconName.XLg" /> Xóa bộ lọc
+                </Button>
+            </div>
+        </div>
+
+        @if (isLoading)
+        {
+            <div class="text-center py-5">
+                <Spinner Color="SpinnerColor.Primary" />
+            </div>
+        }
+        else if (errorMessage != null)
+        {
+            <HgsErrorState Message="@errorMessage" RetryClick="@LoadDevices" />
+        }
+        else if (devices != null && !devices.Any())
+        {
+            <HgsEmptyState Title="Chưa có thiết bị"
+                           Message="Nhấn Tạo mã ghép để đăng ký thiết bị đầu tiên."
+                           ShowAction="true"
+                           ActionText="Tạo mã ghép"
+                           ActionClick="@ShowCreateModal" />
+        }
+        else
+        {
+            <Grid TItem="DeviceGetAllResponse" Data="devices" AllowPaging="true" AllowSorting="true" Responsive="true"
+                  Class="table table-hover table-bordered table-striped" PageSize="10">
+                <GridColumn TItem="DeviceGetAllResponse" HeaderText="Tên thiết bị" SortKeySelector="item => item.DeviceName">
+                    @context.DeviceName
+                </GridColumn>
+                <GridColumn TItem="DeviceGetAllResponse" HeaderText="Trạng thái" SortKeySelector="item => item.Status">
+                    <Badge Color="@GetStatusColor(context.Status)">@GetStatusLabel(context.Status)</Badge>
+                </GridColumn>
+                <GridColumn TItem="DeviceGetAllResponse" HeaderText="Đơn vị" AllowSorting="false">
+                    @(GetOrgUnitName(context.OrganizationUnitId))
+                </GridColumn>
+                <GridColumn TItem="DeviceGetAllResponse" HeaderText="Hoạt động gần nhất" SortKeyExpression="item => item.LastSeenAt">
+                    @(context.LastSeenAt?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa từng")
+                </GridColumn>
+                <GridColumn TItem="DeviceGetAllResponse" HeaderText="Thao tác" AllowSorting="false">
+                    <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" class="me-1"
+                            @onclick="() => ShowDetail(context)" aria-label="Xem chi tiết thiết bị">
+                        <Icon Name="IconName.Eye" />
+                    </Button>
+                    @if (context.Status == "REVOKED")
+                    {
+                        <Button Color="ButtonColor.Secondary" Outline="true" Size="ButtonSize.Small" class="me-1"
+                                @onclick="() => DeleteDevice(context.Id, context.DeviceName)" aria-label="Xóa thiết bị">
+                            <Icon Name="IconName.Trash" />
+                        </Button>
+                    }
+                    else
+                    {
+                        <Button Color="@(context.IsEnabled ? ButtonColor.Warning : ButtonColor.Success)" Outline="true" Size="ButtonSize.Small" class="me-1"
+                                @onclick="() => ToggleStatus(context)" aria-label="@(context.IsEnabled ? "Tắt thiết bị" : "Bật thiết bị")">
+                            <Icon Name="@(context.IsEnabled ? IconName.ToggleOff : IconName.ToggleOn)" />
+                        </Button>
+                        @if (context.Status == "PENDING" || context.Status == "REVOKED")
+                        {
+                            <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" class="me-1"
+                                    @onclick="() => RegeneratePairingCode(context)" aria-label="Tạo lại mã ghép">
+                                <Icon Name="IconName.Key" />
+                            </Button>
+                        }
+                        <Button Color="ButtonColor.Danger" Outline="true" Size="ButtonSize.Small"
+                                @onclick="() => RevokeDevice(context)" aria-label="Thu hồi thiết bị">
+                            <Icon Name="IconName.Ban" />
+                        </Button>
+                    }
+                </GridColumn>
+            </Grid>
+        }
+    </CardBody>
+</Card>
+
+<DeviceCreateModal @ref="createModal"
+                   OrganizationUnits="@organizationUnits"
+                   IsSubmitting="@isCreating"
+                   ErrorMessage="@createErrorMessage"
+                   OnClose="CloseCreateModal"
+                   OnSubmit="HandleDeviceCreated" />
+
+<DeviceSecretModal @ref="secretModal" />

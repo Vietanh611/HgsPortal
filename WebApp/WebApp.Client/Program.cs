@@ -13,7 +13,12 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.Services.AddBlazoredLocalStorage();
 
 // Read configuration from wwwroot/appsettings.json
-var apiBaseUrl = builder.Configuration.GetValue<string>("ApiBaseUrl") ?? "http://localhost:5032";
+var apiBaseUrl = builder.Configuration.GetValue<string>("ApiBaseUrl");
+if (string.IsNullOrWhiteSpace(apiBaseUrl))
+{
+    throw new InvalidOperationException(
+        "ApiBaseUrl is not configured.");
+}
 
 // Register HttpClient factory for auth services (without handlers)
 builder.Services.AddHttpClient("AuthClient", client =>
@@ -62,6 +67,7 @@ builder.Services.AddBlazorBootstrap();
 builder.Services.AddScoped<ToastService>();
 builder.Services.AddScoped<DialogService>();
 builder.Services.AddScoped<CoreAssetsService>();
-builder.Services.AddScoped<DisplayDevicesService>();
+builder.Services.AddScoped<DevicesService>();
+builder.Services.AddScoped<KioskDeviceConfigService>();
 
 await builder.Build().RunAsync();

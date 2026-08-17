@@ -55,6 +55,22 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         };
+        // Tải file text cấu hình thiết bị (kiosk provisioning)
+        window.hgsDownloadTextFile = function (fileName, content) {
+            var blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+        // Copy text vào clipboard (dùng cho deviceIdentifier/pairingCode)
+        window.hgsCopyToClipboard = function (text) {
+            return navigator.clipboard.writeText(text);
+        };
     </script>
 
     <!-- Chart.js (dùng cho chart components) -->

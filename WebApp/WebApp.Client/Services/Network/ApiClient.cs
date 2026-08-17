@@ -156,7 +156,7 @@ public class ApiClient
         return new Uri(baseUri, endpoint.TrimStart('/'));
     }
 
-    public async Task<T?> GetAsync<T>(string endpoint, bool silent = false)
+    public async Task<T?> GetAsync<T>(string endpoint, bool silent = false, IDictionary<string, string>? headers = null)
     {
         IsLoading = true;
         LastError = null;
@@ -166,7 +166,16 @@ public class ApiClient
             var requestUri = BuildRequestUri(endpoint);
             var result = await ExecuteWithRetry(async () =>
             {
-                var response = await _httpClient.GetAsync(requestUri);
+                using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
+                if (headers != null)
+                {
+                    foreach (var header in headers)
+                    {
+                        request.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                    }
+                }
+
+                var response = await _httpClient.SendAsync(request);
                 if (await HandleResponse(response, silent))
                 {
                     return await response.Content.ReadFromJsonAsync<T>(_jsonOptions);
@@ -278,6 +287,42 @@ public class ApiClient
         catch (Exception ex)
         {
             LastError = $"DELETE {endpoint} failed: {ex.Message}";
+            Console.WriteLine(LastError);
+            return default;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    public async Task<T?> PatchAsync<T>(string endpoint, object data)
+    {
+        IsLoading = true;
+        LastError = null;
+
+        try
+        {
+            var requestUri = BuildRequestUri(endpoint);
+            var result = await ExecuteWithRetry(async () =>
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Patch, requestUri)
+                {
+                    Content = JsonContent.Create(data, null, _jsonOptions)
+                };
+                var response = await _httpClient.SendAsync(request);
+                if (await HandleResponse(response))
+                {
+                    return await response.Content.ReadFromJsonAsync<T>(_jsonOptions);
+                }
+                return default;
+            }, $"PATCH {endpoint}");
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            LastError = $"PATCH {endpoint} failed: {ex.Message}";
             Console.WriteLine(LastError);
             return default;
         }
@@ -449,6 +494,37 @@ public class ApiClient
         catch (Exception ex)
         {
             LastError = $"DELETE {endpoint} failed: {ex.Message}";
+            Console.WriteLine(LastError);
+            return false;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    public async Task<bool> PatchAsync(string endpoint, object data)
+    {
+        IsLoading = true;
+        LastError = null;
+
+        try
+        {
+            var result = await ExecuteWithRetry(async () =>
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Patch, endpoint)
+                {
+                    Content = JsonContent.Create(data, null, _jsonOptions)
+                };
+                var response = await _httpClient.SendAsync(request);
+                return await HandleResponse(response);
+            }, $"PATCH {endpoint}");
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            LastError = $"PATCH {endpoint} failed: {ex.Message}";
             Console.WriteLine(LastError);
             return false;
         }

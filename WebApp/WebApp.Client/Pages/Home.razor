@@ -5,7 +5,7 @@
 @using Hgs.Share.Responses.Users
 @using Hgs.Share.Responses.Roles
 @using Hgs.Share.Responses.OrganizationUnits
-@using Hgs.Share.Responses.DisplayDevices
+@using Hgs.Share.Responses.Devices
 @using Hgs.Share.Responses.CoreAssets
 @using Hgs.Share.Responses.AuditLogs
 @using WebApp.Client.Services
@@ -163,7 +163,7 @@ else
         new DashboardModule { Route = "users", Title = "Người dùng", Icon = IconName.PeopleFill, Color = IconColor.Primary, Href = "users" },
         new DashboardModule { Route = "roles", Title = "Vai trò", Icon = IconName.PersonBadgeFill, Color = IconColor.Info, Href = "roles" },
         new DashboardModule { Route = "organizations", Title = "Đơn vị", Icon = IconName.Building, Color = IconColor.Success, Href = "organizations" },
-        new DashboardModule { Route = "displaydevices", Title = "Thiết bị hiển thị", Icon = IconName.Display, Color = IconColor.Warning, Href = "displaydevices" },
+        new DashboardModule { Route = "devices", Title = "Quản lý thiết bị", Icon = IconName.Display, Color = IconColor.Warning, Href = "devices" },
         new DashboardModule { Route = "coreassets", Title = "Tài sản cốt lõi", Icon = IconName.BoxSeam, Color = IconColor.Danger, Href = "coreassets" }
     };
 
@@ -289,7 +289,7 @@ else
             "users" => await LoadCountAsync<UsersGetAllResponse>("api/users"),
             "roles" => await LoadCountAsync<RolesGetAllResponse>("api/roles"),
             "organizations" => await LoadCountAsync<OrganizationUnitsGetAllResponse>("api/organizationunits"),
-            "displaydevices" => await LoadCountAsync<DisplayDevicesGetAllResponse>("api/displaydevices"),
+            "devices" => await LoadCountAsync<DeviceGetAllResponse>("api/devices"),
             "coreassets" => await LoadCountAsync<CoreAssetsGetAllResponse>("api/coreassets"),
             _ => 0
         };

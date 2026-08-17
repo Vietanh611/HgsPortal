@@ -6,12 +6,14 @@ using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.CoreAssets;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 [MenuPermission("COREASSETS")]
+[EnableRateLimiting("device")]
 public class CoreAssetsController : ControllerBase
 {
     private readonly ICoreAssetsService _coreAssetsService;
@@ -24,7 +26,7 @@ public class CoreAssetsController : ControllerBase
     }
 
     [HttpGet]
-    [AllowAnonymous]
+    [Authorize(AuthenticationSchemes = "DeviceKey,JwtBearer")]
     public async Task<ActionResult<ApiResponse<IEnumerable<CoreAssetsGetAllResponse>>>> GetCoreAssets(CancellationToken cancellationToken)
     {
         var assets = await _coreAssetsService.GetCoreAssetsAsync(cancellationToken);

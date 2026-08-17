@@ -1,0 +1,103 @@
+@using Hgs.Share.Requests.Devices
+@using Hgs.Share.Responses.OrganizationUnits
+@using BlazorBootstrap
+
+<Modal @ref="modal" Title="Tạo mã ghép thiết bị" OnClose="Close" Size="ModalSize.Large">
+    <BodyTemplate>
+        <EditForm Model="@FormModel" OnValidSubmit="HandleSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" />
+
+            <div class="alert alert-info" role="alert">
+                <Icon Name="IconName.InfoCircle" />
+                <span>Mã ghép có hiệu lực <strong>10 phút</strong>. Sau khi kiosk nhập mã, thiết bị sẽ tự kích hoạt.</span>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Tên thiết bị *</label>
+                    <InputText @bind-Value="FormModel.DeviceName" class="form-control" placeholder="VD: Kiosk cửa quốc nội" />
+                    <ValidationMessage For="() => FormModel.DeviceName" class="text-danger" />
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Đơn vị</label>
+                    <select class="form-select" @bind="FormModel.OrganizationUnitId">
+                        <option value="">Không gán đơn vị</option>
+                        @if (OrganizationUnits != null)
+                        {
+                            @foreach (var org in OrganizationUnits)
+                            {
+                                <option value="@org.Id">@org.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+            {
+                <Alert Color="AlertColor.Danger" role="alert" class="mt-3">@ErrorMessage</Alert>
+            }
+        </EditForm>
+    </BodyTemplate>
+    <FooterTemplate>
+        <Button Color="ButtonColor.Secondary" @onclick="Close" Disabled="@IsSubmitting">Hủy</Button>
+        <Button Color="ButtonColor.Primary" @onclick="HandleSubmit" Disabled="@IsSubmitting">
+            @if (IsSubmitting)
+            {
+                <Spinner Color="SpinnerColor.Light" Size="SpinnerSize.Small" class="me-2" />
+            }
+            Tạo mã ghép
+        </Button>
+    </FooterTemplate>
+</Modal>
+
+@code {
+    private Modal modal = default!;
+
+    [Parameter]
+    public IEnumerable<OrganizationUnitsGetAllResponse>? OrganizationUnits { get; set; }
+
+    [Parameter]
+    public bool IsSubmitting { get; set; }
+
+    [Parameter]
+    public string? ErrorMessage { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    [Parameter]
+    public EventCallback OnSubmit { get; set; }
+
+    private DevicePairingCodeCreateRequest FormModel { get; set; } = new();
+
+    public async Task ShowAsync()
+    {
+        FormModel = new DevicePairingCodeCreateRequest();
+        ErrorMessage = null;
+        await modal.ShowAsync();
+    }
+
+    public async Task HideAsync()
+    {
+        await modal.HideAsync();
+    }
+
+    public DevicePairingCodeCreateRequest GetFormModel() => FormModel;
+
+    private async Task HandleSubmit()
+    {
+        await OnSubmit.InvokeAsync();
+    }
+
+    private async Task Close()
+    {
+        if (!IsSubmitting)
+        {
+            await HideAsync();
+            await OnClose.InvokeAsync();
+        }
+    }
+}

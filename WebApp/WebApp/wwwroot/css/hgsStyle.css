@@ -391,7 +391,16 @@ img.avatar-circle {
 .modal-backdrop {
     background-color: rgba(23,71,158,.45);
 }
-
+.bi-x-lg {
+    color: var(--hgs-orange);
+    -webkit-text-stroke: 0.3px currentColor;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+.bi-x-lg:hover {
+    color: #dc3545;
+    transform: scale(1.15);
+}
 /* Responsive modal sizing: keep dialogs comfortable on phones */
 @media (max-width: 575.98px) {
     .modal-dialog {

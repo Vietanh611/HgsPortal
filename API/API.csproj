@@ -14,6 +14,8 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.Abstractions" Version="8.0.29" />
     <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
     <PackageReference Include="Serilog.Extensions.Hosting" Version="10.0.0" />
+    <PackageReference Include="Serilog.Filters.Expressions" Version="2.1.0" />
+    <PackageReference Include="Serilog.Sinks.MSSqlServer" Version="10.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.4" />
     <PackageReference Include="Serilog.Settings.Configuration" Version="8.0.4" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
@@ -25,5 +27,9 @@
     <ProjectReference Include="..\Data\Data.csproj" />
     <ProjectReference Include="..\Domain\Domain.csproj" />
     <ProjectReference Include="..\Hgs.Share\Hgs.Share.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="uploads\**\*" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
