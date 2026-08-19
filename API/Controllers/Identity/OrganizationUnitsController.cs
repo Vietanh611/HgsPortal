@@ -6,7 +6,7 @@ using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.OrganizationUnits;
 using Microsoft.AspNetCore.Mvc;
 
-namespace API.Controllers;
+namespace API.Controllers.Identity;
 
 [ApiController]
 [Route("api/[controller]")]

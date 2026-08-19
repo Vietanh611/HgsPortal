@@ -6,7 +6,7 @@ using Hgs.Share.Requests.Audit;
 using System.Globalization;
 using System.Text;
 
-namespace Core.Services.Operations;
+namespace Core.Services.System;
 
 public class AuditLogExportService : IAuditLogExportService
 {

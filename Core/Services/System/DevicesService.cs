@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Security.Cryptography;
 
-namespace Core.Services.Operations;
+namespace Core.Services.System;
 
 public class DevicesService : IDevicesService
 {
@@ -71,7 +71,7 @@ public class DevicesService : IDevicesService
             "Devices",
             device.Id,
             null,
-            new { device.DeviceName, device.DeviceType, device.DeviceIdentifier, device.OrganizationUnitId, PairingCodeExpiresAt = device.PairingCodeExpiresAt });
+            new { device.DeviceName, device.DeviceType, device.DeviceIdentifier, device.OrganizationUnitId, device.PairingCodeExpiresAt });
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -233,7 +233,7 @@ public class DevicesService : IDevicesService
             "Devices",
             device.Id,
             new { device.DeviceName, device.DeviceIdentifier },
-            new { device.DeviceName, device.DeviceIdentifier, PairingCodeExpiresAt = device.PairingCodeExpiresAt });
+            new { device.DeviceName, device.DeviceIdentifier, device.PairingCodeExpiresAt });
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

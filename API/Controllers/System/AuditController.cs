@@ -6,7 +6,7 @@ using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.AuditLogs;
 using Microsoft.AspNetCore.Mvc;
 
-namespace API.Controllers;
+namespace API.Controllers.System;
 
 [ApiController]
 [Route("api/[controller]")]

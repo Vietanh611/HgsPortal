@@ -8,7 +8,7 @@ using Hgs.Share.Responses.RoleMenus;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
-namespace API.Controllers;
+namespace API.Controllers.Identity;
 
 /// <summary>
 /// Quản lý gán menu cho role — nền tảng của phân quyền menu (RBAC): mọi user mang role sẽ kế

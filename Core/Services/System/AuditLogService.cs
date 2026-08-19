@@ -13,7 +13,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
-namespace Core.Services.Operations
+namespace Core.Services.System
 {
     public class AuditLogService : IAuditLogService
     {
@@ -147,7 +147,7 @@ namespace Core.Services.Operations
                     UserId = a.UserId,
                     TargetUserId = a.TargetUserId,
                     // Ưu tiên cột Username (denormalize), fallback nav User.Username — không 2 nguồn mơ hồ
-                    Username = a.Username != null ? a.Username : (a.User != null ? a.User.Username : null),
+                    Username = a.Username != null ? a.Username : a.User != null ? a.User.Username : null,
                     TargetUsername = a.TargetUser != null ? a.TargetUser.Username : null,
                     EventCategory = a.EventCategory,
                     Success = a.Success,
@@ -233,9 +233,9 @@ namespace Core.Services.Operations
 
             if (!string.IsNullOrWhiteSpace(request.Keyword))
                 query = query.Where(a =>
-                    (a.Username != null && a.Username.Contains(request.Keyword)) ||
-                    (a.IpAddress != null && a.IpAddress.Contains(request.Keyword)) ||
-                    (a.EntityId != null && a.EntityId.ToString()!.Contains(request.Keyword)));
+                    a.Username != null && a.Username.Contains(request.Keyword) ||
+                    a.IpAddress != null && a.IpAddress.Contains(request.Keyword) ||
+                    a.EntityId != null && a.EntityId.ToString()!.Contains(request.Keyword));
 
             return query;
         }

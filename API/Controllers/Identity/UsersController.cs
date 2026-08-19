@@ -8,9 +8,8 @@ using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.Users;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using System.Security.Claims;
 
-namespace API.Controllers;
+namespace API.Controllers.Identity;
 
 [MenuPermission("USERS")]
 public class UsersController : BaseApiController

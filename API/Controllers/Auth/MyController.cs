@@ -7,7 +7,7 @@ using Hgs.Share.Responses.Roles;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace API.Controllers;
+namespace API.Controllers.Auth;
 
 /// <summary>
 /// Dữ liệu phân quyền của user đang đăng nhập (cây menu + role) — nguồn hiển thị cho sidebar

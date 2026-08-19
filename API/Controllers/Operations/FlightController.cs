@@ -5,7 +5,7 @@ using Hgs.Share.Exceptions;
 using Hgs.Share.Responses.ApiResponses;
 using Microsoft.AspNetCore.Mvc;
 
-namespace API.Controllers;
+namespace API.Controllers.Operations;
 
 [ApiController]
 [Route("api/[controller]")]

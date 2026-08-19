@@ -6,7 +6,7 @@ using Hgs.Share.Responses.PermissionDelegation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace API.Controllers;
+namespace API.Controllers.Identity;
 
 [ApiController]
 [Route("api/[controller]")]

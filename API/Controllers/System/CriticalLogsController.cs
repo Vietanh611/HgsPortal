@@ -5,7 +5,7 @@ using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.CriticalLogs;
 using Microsoft.AspNetCore.Mvc;
 
-namespace API.Controllers;
+namespace API.Controllers.System;
 
 /// <summary>
 /// Đọc nhật ký lỗi hệ thống (bảng CriticalLogs do Serilog ghi) cho trang giám sát admin.

@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 
-namespace API.Controllers;
+namespace API.Controllers.Operations;
 
 [ApiController]
 [Route("api/[controller]")]

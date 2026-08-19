@@ -5,7 +5,7 @@ using Hgs.Share.Exceptions;
 using Hgs.Share.Requests.CoreAssets;
 using Microsoft.EntityFrameworkCore;
 
-namespace Core.Services.Operations;
+namespace Core.Services.System;
 
 public class CoreAssetsService : ICoreAssetsService
 {

@@ -1,3 +1,4 @@
+using API.Extensions;
 using Core.Interfaces.Auth;
 using Domain.Entities.Identity;
 using Hgs.Share.Requests;
@@ -5,11 +6,10 @@ using Hgs.Share.Requests.Users;
 using Hgs.Share.Responses;
 using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.Users;
-using API.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace API.Controllers;
+namespace API.Controllers.Auth;
 
 [ApiController]
 [Route("[controller]")]

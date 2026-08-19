@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
-namespace API.Controllers;
+namespace API.Controllers.System;
 
 [ApiController]
 [Route("api/[controller]")]

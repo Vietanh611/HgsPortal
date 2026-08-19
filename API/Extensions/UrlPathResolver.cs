@@ -1,4 +1,4 @@
-namespace API.Controllers;
+namespace API.Extensions;
 
 /// <summary>
 /// Resolves URL paths stored in the database (relative to the API root, e.g. avatar or asset
