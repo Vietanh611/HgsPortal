@@ -1,4 +1,5 @@
 @page "/critical-logs"
+@inherits AuthorizedPageBase
 @namespace WebApp.Client.Pages.SystemPages.CriticalLogs
 @using Hgs.Share.Responses.CriticalLogs
 @using BlazorBootstrap
@@ -8,12 +9,11 @@
 <div class="container">
     <div class="row">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                 <h1 class="h2 mb-0">Nhật ký lỗi</h1>
-                <span class="text-muted">Lỗi hệ thống (Error/Fatal) từ Serilog</span>
             </div>
 
-            <Card class="mb-4">
+            <Card class="filter-card mb-2">
                 <CardHeader>
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Bộ lọc</h5>
@@ -47,7 +47,7 @@
                                 <label for="criticalToDate" class="form-label fw-bold">Đến ngày</label>
                                 <input type="date" id="criticalToDate" class="form-control" @bind="filterToDate" />
                             </div>
-                            <div class="col-12 col-lg-3 d-flex gap-2">
+                            <div class="col-12 col-lg-6 d-flex gap-2">
                                 <Button Color="ButtonColor.Primary" @onclick="ApplyFilters">
                                     <Icon Name="IconName.Search" /> Áp dụng
                                 </Button>
@@ -60,49 +60,45 @@
                 </Collapse>
             </Card>
 
-            <Card>
-                <CardBody>
-                    @if (errorMessage != null)
-                    {
-                        <HgsErrorState Message="@errorMessage" RetryClick="@ApplyFilters" />
-                    }
-                    else if (showEmptyState)
-                    {
-                        <HgsEmptyState Title="Không có nhật ký lỗi"
-                                       Message="Thử điều chỉnh bộ lọc hoặc chọn khoảng thời gian khác." />
-                    }
-                    else
-                    {
-                        <Grid TItem="CriticalLogsGetAllResponse" @ref="grid" DataProvider="CriticalLogsDataProvider"
-                              AllowPaging="true" PageSize="20" Responsive="true"
-                              Class="table table-hover table-bordered table-striped">
-                            <GridColumn TItem="CriticalLogsGetAllResponse" HeaderText="ID">
-                                @context.Id
-                            </GridColumn>
-                            <GridColumn TItem="CriticalLogsGetAllResponse" HeaderText="Mức độ">
-                                <Badge Color="@(GetLevelBadgeColor(context.Level))">@context.Level</Badge>
-                            </GridColumn>
-                            <GridColumn TItem="CriticalLogsGetAllResponse" HeaderText="Thời gian (UTC)">
-                                @context.TimeStamp.ToString("yyyy-MM-dd HH:mm:ss")
-                            </GridColumn>
-                            <GridColumn TItem="CriticalLogsGetAllResponse" HeaderText="Người dùng">
-                                @(context.User ?? "N/A")
-                            </GridColumn>
-                            <GridColumn TItem="CriticalLogsGetAllResponse" HeaderText="Path">
-                                @(context.Method != null ? $"{context.Method} {context.Path}" : (context.Path ?? "N/A"))
-                            </GridColumn>
-                            <GridColumn TItem="CriticalLogsGetAllResponse" HeaderText="Message">
-                                @Truncate(context.Message, 120)
-                            </GridColumn>
-                            <GridColumn TItem="CriticalLogsGetAllResponse" HeaderText="Thao tác" AllowSorting="false">
-                                <Button Color="ButtonColor.Info" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowDetailModal(context)" aria-label="Xem chi tiết nhật ký lỗi">
-                                    <Icon Name="IconName.Eye" />
-                                </Button>
-                            </GridColumn>
-                        </Grid>
-                    }
-                </CardBody>
-            </Card>
+            @if (errorMessage != null)
+            {
+                <HgsErrorState Message="@errorMessage" RetryClick="@ApplyFilters" />
+            }
+            else if (showEmptyState)
+            {
+                <HgsEmptyState Title="Không có nhật ký lỗi"
+                               Message="Thử điều chỉnh bộ lọc hoặc chọn khoảng thời gian khác." />
+            }
+            else
+            {
+                <Grid TItem="CriticalLogsGetAllResponse" @ref="grid" DataProvider="CriticalLogsDataProvider"
+                      AllowPaging="true" PageSize="20" Responsive="true"
+                      Class="table table-hover table-bordered table-striped critical-grid">
+                    <GridColumn TItem="CriticalLogsGetAllResponse" HeaderText="ID">
+                        @context.Id
+                    </GridColumn>
+                    <GridColumn TItem="CriticalLogsGetAllResponse" HeaderText="Mức độ">
+                        <Badge Color="@(GetLevelBadgeColor(context.Level))">@context.Level</Badge>
+                    </GridColumn>
+                    <GridColumn TItem="CriticalLogsGetAllResponse" HeaderText="Thời gian">
+                        @context.TimeStamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
+                    </GridColumn>
+                    <GridColumn TItem="CriticalLogsGetAllResponse" HeaderText="Người dùng">
+                        @(context.User ?? "N/A")
+                    </GridColumn>
+                    <GridColumn TItem="CriticalLogsGetAllResponse" HeaderText="Path">
+                        @(context.Method != null ? $"{context.Method} {context.Path}" : (context.Path ?? "N/A"))
+                    </GridColumn>
+                    <GridColumn TItem="CriticalLogsGetAllResponse" HeaderText="Message">
+                        @Truncate(context.Message, 120)
+                    </GridColumn>
+                    <GridColumn TItem="CriticalLogsGetAllResponse" HeaderText="Thao tác" AllowSorting="false">
+                        <Button Color="ButtonColor.Info" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowDetailModal(context)" aria-label="Xem chi tiết nhật ký lỗi">
+                            <Icon Name="IconName.Eye" />
+                        </Button>
+                    </GridColumn>
+                </Grid>
+            }
         </div>
     </div>
 </div>

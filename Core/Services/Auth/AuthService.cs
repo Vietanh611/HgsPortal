@@ -1,11 +1,12 @@
 using Core.Helpers;
-using Core.Interfaces;
+using Core.Constants;
 using Core.Services.Notifications;
 using Core.Services.Settings;
 using Data.DbContexts;
 using Domain.Entities.Identity;
 using Hgs.Share.Exceptions;
 using Hgs.Share.Requests;
+using Hgs.Share.Requests.Notifications;
 using Hgs.Share.Requests.Users;
 using Hgs.Share.Responses;
 using Microsoft.AspNetCore.Http;
@@ -14,6 +15,10 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Cryptography;
+using Core.Interfaces.Auth;
+using Core.Interfaces.Identity;
+using Core.Interfaces.Operations;
+using Core.Interfaces.Notifications;
 
 namespace Core.Services.Auth;
 
@@ -23,6 +28,8 @@ public class AuthService : IAuthService
     private readonly ITokenService _tokenService;
     private readonly IMailService _mailService;
     private readonly IAuditLogService _auditLog;
+    private readonly INotificationService _notificationService;
+    private readonly IMenuService _menuService;
     private readonly JwtSettings _jwtSettings;
     private readonly CookieSettings _cookieSettings;
     private readonly LockoutSettings _lockoutSettings;
@@ -34,6 +41,8 @@ public class AuthService : IAuthService
         ITokenService tokenService,
         IMailService mailService,
         IAuditLogService auditLog,
+        INotificationService notificationService,
+        IMenuService menuService,
         IOptions<JwtSettings> jwtSettings,
         IOptions<CookieSettings> cookieSettings,
         IOptions<LockoutSettings> lockoutSettings,
@@ -44,6 +53,8 @@ public class AuthService : IAuthService
         _tokenService = tokenService;
         _mailService = mailService;
         _auditLog = auditLog;
+        _notificationService = notificationService;
+        _menuService = menuService;
         _jwtSettings = jwtSettings.Value;
         _cookieSettings = cookieSettings.Value;
         _lockoutSettings = lockoutSettings.Value;
@@ -66,6 +77,33 @@ public class AuthService : IAuthService
         var user = await _dbContext.Users
             .Where(u => u.Username == request.Username && !u.IsDeleted)
             .FirstOrDefaultAsync(cancellationToken);
+
+        // Kiểm tra trạng thái khóa TRƯỚC khi kiểm tra mật khẩu: user đang bị khóa luôn nhận
+        // được thông báo "đã khóa" bất kể nhập đúng hay sai mật khẩu, và các lần nhập sai trong
+        // lúc khóa không làm gia hạn thêm thời gian khóa.
+        if (user is not null && user.LockoutEnd.HasValue)
+        {
+            if (user.LockoutEnd > DateTime.UtcNow)
+            {
+                var minutesLeft = Math.Ceiling((user.LockoutEnd.Value - DateTime.UtcNow).TotalMinutes);
+                _logger.LogWarning("Locked user '{Username}' tried to login.", request.Username);
+
+                await _auditLog.LogSecurityEventAsync(
+                    action: "LOGIN_FAIL_LOCKED",
+                    eventCategory: "Auth", success: false, severity: "Warning",
+                    userId: user.Id, username: user.Username,
+                    detail: $"Tài khoản đang bị khóa, thử lại sau {minutesLeft} phút");
+
+                throw new AccountLockedException(
+                    $"Tài khoản đã bị khóa do đăng nhập sai nhiều lần. Vui lòng thử lại sau {minutesLeft} phút hoặc liên hệ quản trị viên.");
+            }
+
+            // Lockout đã hết hạn → gỡ trạng thái khóa để user đăng nhập bình thường
+            user.LockoutEnd = null;
+            user.IsLocked = false;
+            user.FailedLoginCount = 0;
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
 
         if (user is null || !PasswordHelper.VerifyPassword(request.Password, user.PasswordHash))
         {
@@ -91,6 +129,7 @@ public class AuthService : IAuthService
                 if (user.FailedLoginCount >= _lockoutSettings.MaxFailedAttempts)
                 {
                     user.LockoutEnd = DateTime.UtcNow.AddMinutes(_lockoutSettings.LockoutMinutes);
+                    user.IsLocked = true;
                     user.FailedLoginCount = 0;
                     _logger.LogWarning("User '{Username}' locked out until {LockoutEnd}.", request.Username, user.LockoutEnd);
 
@@ -99,24 +138,22 @@ public class AuthService : IAuthService
                         eventCategory: "Security", success: true, severity: "Critical",
                         targetUserId: user.Id, username: user.Username,
                         detail: "Khóa tự động sau khi vượt ngưỡng đăng nhập sai");
+
+                    await TryNotifyAsync(() => _notificationService.NotifyByCategoryAsync(new NotifyRequest
+                    {
+                        Category = NotificationCategories.Security,
+                        Severity = "Critical",
+                        Title = "Tài khoản bị khóa",
+                        Body = $"Tài khoản '{user.Username}' bị khóa tự động sau khi đăng nhập sai quá {_lockoutSettings.MaxFailedAttempts} lần.",
+                        ActionUrl = "/users",
+                        SourceEntityName = "Users",
+                        SourceEntityId = user.Id.ToString(),
+                        TriggeredByUserId = user.Id
+                    }, null, cancellationToken));
                 }
                 await _dbContext.SaveChangesAsync(cancellationToken);
             }
             throw new UnauthorizedException("Invalid username or password.");
-        }
-
-        if (user.LockoutEnd.HasValue && user.LockoutEnd > DateTime.UtcNow)
-        {
-            var minutesLeft = Math.Ceiling((user.LockoutEnd.Value - DateTime.UtcNow).TotalMinutes);
-            _logger.LogWarning("Locked user '{Username}' tried to login.", request.Username);
-
-            await _auditLog.LogSecurityEventAsync(
-                action: "LOGIN_FAIL_LOCKED",
-                eventCategory: "Auth", success: false, severity: "Warning",
-                userId: user.Id, username: user.Username,
-                detail: $"Tài khoản đang bị khóa, thử lại sau {minutesLeft} phút");
-
-            throw new UnauthorizedException($"Account is temporarily locked. Try again in {minutesLeft} minute(s).");
         }
 
         if (!user.IsActive)
@@ -136,6 +173,12 @@ public class AuthService : IAuthService
         if (user.FailedLoginCount != 0)
         {
             user.FailedLoginCount = 0;
+        }
+
+        // Đăng nhập thành công chỉ xảy ra khi không còn lockout hoạt động → gỡ cờ khóa còn sót nếu có
+        if (user.IsLocked)
+        {
+            user.IsLocked = false;
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -167,38 +210,42 @@ public class AuthService : IAuthService
 
         if (tokenEntity is null)
         {
-            // Token không còn khớp bản ghi hợp lệ — nhưng có thể là token CŨ đã bị rotate ra.
-            // Nếu hash khớp PreviousTokenHash của một token đã revoke → tái sử dụng token cũ (dấu hiệu bị đánh cắp).
+            // Token không khớp bản ghi nào (cũ hơn một vòng xoay). Nếu hash khớp PreviousTokenHash
+            // của một token đã revoke → đang dùng lại token rất cũ. Chỉ báo động "đánh cắp" khi
+            // nằm NGOÀI cửa sổ reuse; trong cửa sổ (nhiều tab cùng phiên refresh gần đồng thời)
+            // chỉ là hành vi bình thường.
             var reusedOldToken = await _dbContext.RefreshTokens
-                .AnyAsync(rt => rt.PreviousTokenHash == tokenHash && rt.IsRevoked, cancellationToken);
+                .FirstOrDefaultAsync(rt => rt.PreviousTokenHash == tokenHash && rt.IsRevoked, cancellationToken);
 
-            if (reusedOldToken)
+            if (reusedOldToken is not null)
             {
-                _logger.LogWarning("Refresh token reuse attempt detected (replayed old token).");
+                if (IsWithinReuseInterval(reusedOldToken.RevokedAt))
+                {
+                    return await RotateFromActiveFamilyTokenAsync(reusedOldToken, userAgent, ipAddress, cancellationToken);
+                }
 
-                await _auditLog.LogSecurityEventAsync(
-                    action: "REFRESH_TOKEN_REUSE_DETECTED",
-                    eventCategory: "Security", success: false, severity: "Critical",
-                    detail: "Phát hiện sử dụng lại refresh token cũ đã bị thu hồi (PreviousTokenHash)");
+                await LogTokenReuseAsync(reusedOldToken);
             }
 
             throw new UnauthorizedException("Invalid or expired refresh token.");
         }
 
-        if (tokenEntity.IsRevoked || tokenEntity.ExpiresAt < DateTime.UtcNow)
+        if (tokenEntity.ExpiresAt < DateTime.UtcNow)
         {
-            if (tokenEntity.IsRevoked)
-            {
-                // Token này ĐÃ bị revoke (sau khi rotate / logout) nhưng vẫn được dùng lại → reuse detection
-                _logger.LogWarning("Refresh token reuse attempt detected (revoked token for user {UserId}).", tokenEntity.UserId);
+            throw new UnauthorizedException("Invalid or expired refresh token.");
+        }
 
-                await _auditLog.LogSecurityEventAsync(
-                    action: "REFRESH_TOKEN_REUSE_DETECTED",
-                    eventCategory: "Security", success: false, severity: "Critical",
-                    userId: tokenEntity.UserId,
-                    detail: "Phát hiện sử dụng lại refresh token đã bị thu hồi");
+        if (tokenEntity.IsRevoked)
+        {
+            // Token đã bị revoke do vòng xoay trước đó (rotate/logout). Trong cửa sổ reuse → một
+            // tab khác cùng phiên vừa xoay token (multi-tab) → coi là hợp lệ; ngoài cửa sổ → tái
+            // sử dụng token đã thu hồi → nghi vấn đánh cắp.
+            if (IsWithinReuseInterval(tokenEntity.RevokedAt))
+            {
+                return await RotateFromActiveFamilyTokenAsync(tokenEntity, userAgent, ipAddress, cancellationToken);
             }
 
+            await LogTokenReuseAsync(tokenEntity);
             throw new UnauthorizedException("Invalid or expired refresh token.");
         }
 
@@ -208,18 +255,97 @@ public class AuthService : IAuthService
             throw new UnauthorizedException("Invalid user for refresh token.");
         }
 
+        return await IssueNextTokensAsync(tokenEntity, user, userAgent, ipAddress, cancellationToken);
+    }
+
+    /// <summary>
+    /// Xoay vòng: thu hồi token hiện tại và cấp token mới cùng <see cref="RefreshTokens.TokenFamily"/>.
+    /// Dùng chung cho luồng refresh bình thường và luồng refresh đồng thời từ tab khác (multi-tab).
+    /// </summary>
+    private async Task<AuthenticateResponse> IssueNextTokensAsync(
+        RefreshTokens tokenToRevoke,
+        Users user,
+        string? userAgent,
+        string? ipAddress,
+        CancellationToken cancellationToken)
+    {
         var newAccessToken = _tokenService.GenerateAccessToken(user.Id, user.Username);
         var newJwtId = new JwtSecurityTokenHandler().ReadJwtToken(newAccessToken).Id;
         var newRefreshToken = _tokenService.GenerateRefreshToken();
 
-        tokenEntity.IsRevoked = true;
-        tokenEntity.RevokedAt = DateTime.UtcNow;
-        tokenEntity.ReplacedByToken = newRefreshToken;
+        tokenToRevoke.IsRevoked = true;
+        tokenToRevoke.RevokedAt = DateTime.UtcNow;
+        tokenToRevoke.ReplacedByToken = newRefreshToken;
 
-        await SaveRefreshTokenAsync(user.Id, newRefreshToken, newJwtId, userAgent, ipAddress, tokenEntity.TokenFamily, cancellationToken);
+        await SaveRefreshTokenAsync(user.Id, newRefreshToken, newJwtId, userAgent, ipAddress, tokenToRevoke.TokenFamily, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return BuildAuthenticateResponse(newAccessToken, newRefreshToken);
+    }
+
+    /// <summary>
+    /// Một token đã revoke nhưng nằm trong cửa sổ reuse được dùng lại → tab khác cùng phiên vừa
+    /// xoay token. Xoay tiếp từ token ACTIVE hiện tại trong cùng TokenFamily để giữ chuỗi liên tục
+    /// mà không báo động "đánh cắp" và không làm gián đoạn phiên (cho phép mở nhiều tab cùng lúc).
+    /// Nếu không còn token active trong family → phiên đã thực sự kết thúc, trả về lỗi thông thường.
+    /// </summary>
+    private async Task<AuthenticateResponse> RotateFromActiveFamilyTokenAsync(
+        RefreshTokens revokedToken,
+        string? userAgent,
+        string? ipAddress,
+        CancellationToken cancellationToken)
+    {
+        var active = await _dbContext.RefreshTokens
+            .Include(rt => rt.User)
+            .Where(rt => rt.TokenFamily == revokedToken.TokenFamily && !rt.IsRevoked && rt.ExpiresAt >= DateTime.UtcNow)
+            .OrderByDescending(rt => rt.CreatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (active is null || active.User is null || active.User.IsDeleted || !active.User.IsActive)
+        {
+            throw new UnauthorizedException("Invalid or expired refresh token.");
+        }
+
+        _logger.LogInformation("Concurrent refresh detected within reuse window (multiple tabs); rotating from active token of user {UserId}.", active.UserId);
+
+        return await IssueNextTokensAsync(active, active.User, userAgent, ipAddress, cancellationToken);
+    }
+
+    /// <summary>
+    /// True nếu token bị revoke trong cửa sổ reuse — nhiều tab của cùng một phiên có thể gửi refresh
+    /// gần đồng thời, token thua cuộc bị revoke chỉ vài giây trước đó nên không được coi là đánh cắp.
+    /// </summary>
+    private bool IsWithinReuseInterval(DateTime? revokedAt)
+    {
+        if (revokedAt is null) return false;
+        var reuseIntervalSeconds = Math.Max(0, _jwtSettings.RefreshReuseIntervalSeconds);
+        return DateTime.UtcNow - revokedAt.Value <= TimeSpan.FromSeconds(reuseIntervalSeconds);
+    }
+
+    /// <summary>
+    /// Tái sử dụng token đã revoke ngoài cửa sổ reuse → ghi nhận sự kiện bảo mật, cảnh báo quản trị
+    /// và từ chối. Đây là dấu hiệu token có thể đã bị đánh cắp.
+    /// </summary>
+    private async Task LogTokenReuseAsync(RefreshTokens token)
+    {
+        _logger.LogWarning("Refresh token reuse attempt detected (revoked token for user {UserId}).", token.UserId);
+
+        await _auditLog.LogSecurityEventAsync(
+            action: "REFRESH_TOKEN_REUSE_DETECTED",
+            eventCategory: "Security", success: false, severity: "Critical",
+            userId: token.UserId,
+            detail: "Phát hiện sử dụng lại refresh token đã bị thu hồi");
+
+        await TryNotifyAsync(() => _notificationService.NotifySuperAdminsAsync(new NotifyRequest
+        {
+            Category = NotificationCategories.Security,
+            Severity = "Critical",
+            Title = "Phát hiện tái sử dụng refresh token",
+            Body = $"User #{token.UserId} dùng lại refresh token đã bị thu hồi — nghi vấn token bị đánh cắp.",
+            ActionUrl = "/audit",
+            SourceEntityName = "RefreshTokens",
+            SourceEntityId = token.UserId.ToString()
+        }, CancellationToken.None));
     }
 
     public async Task LogoutAsync(LogoutRequest request, CancellationToken cancellationToken = default)
@@ -307,6 +433,22 @@ public class AuthService : IAuthService
         await _dbContext.RefreshTokens.AddAsync(tokenEntity, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
+    /// <summary>
+    /// Gọi thông báo trong try/catch: lỗi gửi thông báo KHÔNG được làm fail nghiệp vụ chính
+    /// (login/refresh) cũng như không được trả lỗi cho client — chỉ log cảnh báo.
+    /// </summary>
+    private async Task TryNotifyAsync(Func<Task> notify)
+    {
+        try
+        {
+            await notify();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Không gửi được notification cho sự kiện bảo mật");
+        }
+    }
+
     public static bool IsMobile(string? userAgent)
     {
         if (string.IsNullOrWhiteSpace(userAgent))
@@ -434,6 +576,7 @@ public class AuthService : IAuthService
         user.PasswordResetTokenExpiresAt = null;
         user.FailedLoginCount = 0;
         user.LockoutEnd = null;
+        user.IsLocked = false;
 
         var activeTokens = await _dbContext.RefreshTokens
             .Where(rt => rt.UserId == user.Id && !rt.IsRevoked)

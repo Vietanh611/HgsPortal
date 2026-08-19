@@ -1,5 +1,6 @@
 using Core.Constants;
-using Core.Interfaces;
+using Core.Interfaces.Identity;
+using Core.Interfaces.Operations;
 using Data.DbContexts;
 using Domain.Entities.System;
 using Hgs.Share.Requests.Menus;
@@ -285,13 +286,20 @@ public class MenuService : IMenuService
             .OrderBy(x => x.SortOrder)
             .ToListAsync(cancellationToken);
 
-        var menuLookup = allMenus.ToDictionary(x => x.Id);
+        // Menu ngưng hoạt động (IsActive=false) hoặc ẩn (IsVisible=false) không được
+        // dùng để dựng cây — menu không hiển thị thì không cấp quyền truy cập.
+        var activeMenus = allMenus
+            .Where(m => m.IsActive && m.IsVisible)
+            .ToList();
 
-        // Tập menu được phép hiển thị
-        var visibleMenuIds = new HashSet<int>(allAccessibleMenuIds);
+        var menuLookup = activeMenus.ToDictionary(x => x.Id);
 
-        // Thêm toàn bộ menu cha
-        foreach (var menuId in allAccessibleMenuIds)
+        // Tập menu được phép hiển thị (chỉ giữ menu đang active + hiển thị)
+        var visibleMenuIds = new HashSet<int>(
+            allAccessibleMenuIds.Where(id => menuLookup.ContainsKey(id)));
+
+        // Thêm toàn bộ menu cha active + hiển thị; cha ẩn/ngưng thì dừng nhánh đó
+        foreach (var menuId in visibleMenuIds.ToList())
         {
             if (!menuLookup.TryGetValue(menuId, out var menu))
                 continue;
@@ -300,10 +308,10 @@ public class MenuService : IMenuService
 
             while (parentId.HasValue)
             {
-                if (!visibleMenuIds.Add(parentId.Value))
+                if (!menuLookup.TryGetValue(parentId.Value, out var parent))
                     break;
 
-                if (!menuLookup.TryGetValue(parentId.Value, out var parent))
+                if (!visibleMenuIds.Add(parentId.Value))
                     break;
 
                 parentId = parent.ParentId;
@@ -311,7 +319,7 @@ public class MenuService : IMenuService
         }
 
         // Chỉ lấy menu được phép
-        var visibleMenus = allMenus
+        var visibleMenus = activeMenus
             .Where(x => visibleMenuIds.Contains(x.Id))
             .ToList();
 
@@ -342,14 +350,16 @@ public class MenuService : IMenuService
 
         var directCodes = await _dbContext.UserMenus
             .AsNoTracking()
-            .Where(x => x.UserId == userId)
+            .Where(x => x.UserId == userId && x.Menu.IsActive && x.Menu.IsVisible)
             .Select(x => x.Menu.Code)
             .ToListAsync(cancellationToken);
 
         var roleCodes = await _dbContext.UserRoles
             .AsNoTracking()
             .Where(x => x.UserId == userId)
-            .SelectMany(x => x.Role.RoleMenus.Select(rm => rm.Menu.Code))
+            .SelectMany(x => x.Role.RoleMenus.Select(rm => rm.Menu))
+            .Where(m => m.IsActive && m.IsVisible)
+            .Select(m => m.Code)
             .ToListAsync(cancellationToken);
 
         var codes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -380,6 +390,35 @@ public class MenuService : IMenuService
         await _cacheService.SetAsync(cacheKey, (bool?)isSuperAdmin, cancellationToken: cancellationToken);
 
         return isSuperAdmin;
+    }
+
+    public async Task<List<int>> GetUserIdsWithMenuCodeAsync(string menuCode, CancellationToken cancellationToken = default)
+    {
+        var directUserIds = await _dbContext.UserMenus
+            .AsNoTracking()
+            .Where(x => x.Menu.Code == menuCode)
+            .Select(x => x.UserId)
+            .ToListAsync(cancellationToken);
+
+        var roleUserIds = await _dbContext.UserRoles
+            .AsNoTracking()
+            .Where(x => x.Role.RoleMenus.Any(rm => rm.Menu.Code == menuCode))
+            .Select(x => x.UserId)
+            .ToListAsync(cancellationToken);
+
+        // SUPER_ADMIN nắm toàn bộ menu nên phải nhận thông báo dù không có dòng
+        // UserMenus/RoleMenus trực tiếp cho mã menu này.
+        var superAdminUserIds = await _dbContext.UserRoles
+            .AsNoTracking()
+            .Where(x => x.Role.Code == RoleCodes.SuperAdmin && x.Role.IsActive)
+            .Select(x => x.UserId)
+            .ToListAsync(cancellationToken);
+
+        return directUserIds
+            .Union(roleUserIds)
+            .Union(superAdminUserIds)
+            .Distinct()
+            .ToList();
     }
 
     private static List<MenusGetByUserIdResponse> BuildMenuHierarchy(

@@ -40,6 +40,18 @@
                 firstField.focus();
             }
         });
+
+        // Ctrl+K: focus ô tìm kiếm chức năng ở top bar
+        document.addEventListener('keydown', function (event) {
+            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+                event.preventDefault();
+                var input = document.getElementById('hgsSearchInput');
+                if (input) {
+                    input.focus();
+                    input.select();
+                }
+            }
+        });
     </script>
 
     <script>

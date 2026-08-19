@@ -3,13 +3,14 @@ using Hgs.Share.Requests.Menus;
 using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.Menus;
 using Microsoft.AspNetCore.Components;
+using WebApp.Client.Components;
 using WebApp.Client.Services.Components;
 using WebApp.Client.Services.Network;
 using CustomToastService = WebApp.Client.Services.Components.ToastService;
 
 namespace WebApp.Client.Pages.Account.Menus;
 
-public partial class Menus
+public partial class Menus : AuthorizedPageBase
 {
     [Inject] private CustomToastService ToastService { get; set; } = default!;
     [Inject] private ApiClient ApiClient { get; set; } = default!;
@@ -24,7 +25,7 @@ public partial class Menus
     private bool isSubmitting = false;
     private int editingMenuId = 0;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnInitializedAuthorizedAsync()
     {
         await LoadMenus();
     }

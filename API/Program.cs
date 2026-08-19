@@ -1,6 +1,10 @@
 using API.Authorization;
 using API.Middleware;
 using Core.Interfaces;
+using Core.Interfaces.Auth;
+using Core.Interfaces.Identity;
+using Core.Interfaces.Notifications;
+using Core.Interfaces.Operations;
 using Core.Services.Auth;
 using Core.Services.Identity;
 using Core.Services.Notifications;
@@ -56,6 +60,7 @@ try
     builder.Services.AddScoped<IAuditLogService, AuditLogService>();
     builder.Services.AddScoped<IAuditLogExportService, AuditLogExportService>();
     builder.Services.AddScoped<ICriticalLogService, CriticalLogService>();
+    builder.Services.AddScoped<INotificationService, NotificationService>();
     builder.Services.AddScoped<IPermissionDelegationService, PermissionDelegationService>();
     builder.Services.AddScoped<ICacheService, CacheService>();
     builder.Services.AddScoped<IOrgScopeService, OrgScopeService>();
@@ -70,6 +75,7 @@ try
     builder.Services.Configure<StorageSettings>(builder.Configuration.GetSection("Storage"));
     builder.Services.AddSingleton<OAuth2TokenProvider>();
     builder.Services.AddScoped<IMailService, MailService>();
+    builder.Services.AddHostedService<API.Services.NotificationCleanupService>();
     var rateLimitSettings = builder.Configuration.GetSection("RateLimiting");
 
     builder.Services.AddRateLimiter(options =>

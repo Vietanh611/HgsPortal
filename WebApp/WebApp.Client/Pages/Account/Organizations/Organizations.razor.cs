@@ -2,6 +2,7 @@ using Hgs.Share.Requests.OrganizationUnits;
 using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.OrganizationUnits;
 using Microsoft.AspNetCore.Components;
+using WebApp.Client.Components;
 using WebApp.Client.Services.Components;
 using WebApp.Client.Services.Network;
 using BlazorBootstrap;
@@ -9,7 +10,7 @@ using CustomToastService = WebApp.Client.Services.Components.ToastService;
 
 namespace WebApp.Client.Pages.Account.Organizations;
 
-public partial class Organizations : ComponentBase
+public partial class Organizations : AuthorizedPageBase
 {
     [Inject] private CustomToastService ToastService { get; set; } = default!;
     [Inject] private ApiClient ApiClient { get; set; } = default!;
@@ -22,7 +23,7 @@ public partial class Organizations : ComponentBase
     private bool isSubmitting = false;
     private int editingOrganizationId = 0;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnInitializedAuthorizedAsync()
     {
         await LoadOrganizations();
     }

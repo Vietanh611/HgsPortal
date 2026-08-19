@@ -190,6 +190,7 @@
 </style>
 
 @code {
+    private const string AccountLockedErrorCode = "ACCOUNT_LOCKED";
     private AuthenticateRequest loginRequest = new();
     private string errorMessage = string.Empty;
     private bool isLoading = false;
@@ -207,9 +208,18 @@
         {
             var loginResult = await AuthStateProvider.LoginAsync(loginRequest.Username, loginRequest.Password);
 
-            if (loginResult == null)
+            if (loginResult == null || !loginResult.Success)
             {
-                errorMessage = "Tên đăng nhập hoặc mật khẩu không đúng.";
+                if (loginResult?.ErrorCode == AccountLockedErrorCode)
+                {
+                    errorMessage = string.IsNullOrWhiteSpace(loginResult.Message)
+                        ? "Tài khoản đã bị khóa do đăng nhập sai nhiều lần. Vui lòng thử lại sau hoặc liên hệ quản trị viên."
+                        : loginResult.Message;
+                }
+                else
+                {
+                    errorMessage = "Tên đăng nhập hoặc mật khẩu không đúng.";
+                }
                 return;
             }
 

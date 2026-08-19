@@ -5,6 +5,7 @@ public class ApiResponse
     public bool Success { get; set; }
     public string? Message { get; set; }
     public int? StatusCode { get; set; }
+    public string? ErrorCode { get; set; }
 
     public static ApiResponse SuccessResponse(string? message = null, int? statusCode = null)
     {

@@ -1,8 +1,13 @@
+using Core.Constants;
 using Core.Interfaces;
+using Core.Interfaces.Notifications;
+using Core.Interfaces.Operations;
 using Data.DbContexts;
 using Domain.Entities.CustomerSatisfaction;
 using Hgs.Share.Requests.CustomerSatisfaction;
+using Hgs.Share.Requests.Notifications;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Core.Services.Operations;
 
@@ -10,11 +15,15 @@ public class CustomerSatisfactionService : ICustomerSatisfactionService
 {
     private readonly HgsDbContext _dbContext;
     private readonly IAuditLogService _auditLog;
+    private readonly INotificationService _notificationService;
+    private readonly ILogger<CustomerSatisfactionService> _logger;
 
-    public CustomerSatisfactionService(HgsDbContext dbContext, IAuditLogService auditLog)
+    public CustomerSatisfactionService(HgsDbContext dbContext, IAuditLogService auditLog, INotificationService notificationService, ILogger<CustomerSatisfactionService> logger)
     {
         _dbContext = dbContext;
         _auditLog = auditLog;
+        _notificationService = notificationService;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<Devices>> GetDevicesAsync(CancellationToken cancellationToken = default)
@@ -362,6 +371,13 @@ public class CustomerSatisfactionService : ICustomerSatisfactionService
             });
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        // Rating mức 1 (rất không hài lòng) → báo cho admin màn CSAT; lỗi gửi không làm hỏng lưu đánh giá
+        if (evaluation.RatingLevel == 1)
+        {
+            await TryNotifyLowRatingAsync(evaluation, cancellationToken);
+        }
+
         return evaluation;
     }
 
@@ -467,6 +483,13 @@ public class CustomerSatisfactionService : ICustomerSatisfactionService
             });
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        // Chỉ báo khi rating chuyển sang mức 1 (không báo lại khi admin sửa các trường khác)
+        if (evaluation.RatingLevel == 1 && oldSnapshot.RatingLevel != 1)
+        {
+            await TryNotifyLowRatingAsync(evaluation, cancellationToken);
+        }
+
         return evaluation;
     }
 
@@ -506,5 +529,41 @@ public class CustomerSatisfactionService : ICustomerSatisfactionService
         _dbContext.Evaluations.Remove(evaluation);
         await _dbContext.SaveChangesAsync(cancellationToken);
         return true;
+    }
+
+    private async Task TryNotifyLowRatingAsync(Domain.Entities.CustomerSatisfaction.Evaluations evaluation, CancellationToken cancellationToken)
+    {
+        try
+        {
+            // Chỉ user có menu CUSTOMERSATISFACTION và thuộc org quản lý quầy/staff của đánh giá
+            // được nhận; org lấy từ StaffUser của đánh giá (đánh giá không có staff thì fallback
+            // về toàn bộ user có menu). SUPER_ADMIN luôn nằm trong danh sách nhận.
+            int? orgUnitId = null;
+            if (evaluation.StaffUserId is int staffUserId)
+            {
+                orgUnitId = await _dbContext.Users
+                    .Where(u => u.Id == staffUserId)
+                    .Select(u => (int?)u.OrganizationUnitId)
+                    .FirstOrDefaultAsync(cancellationToken);
+            }
+
+            // Menu (quyền) của category CustomerSatisfaction do NotificationCategories resolve;
+            // chưa có màn hình CSAT nên không đính ActionUrl
+            await _notificationService.NotifyByCategoryAsync(new NotifyRequest
+            {
+                Category = NotificationCategories.CustomerSatisfaction,
+                Severity = "Warning",
+                Title = "Khách hàng đánh giá rất không hài lòng",
+                Body = string.IsNullOrWhiteSpace(evaluation.CheckinCounterName)
+                    ? $"Đánh giá mức 1 (rất không hài lòng) tại thiết bị #{evaluation.DeviceId}."
+                    : $"Đánh giá mức 1 (rất không hài lòng) tại quầy '{evaluation.CheckinCounterName}'.",
+                SourceEntityName = "Evaluations",
+                SourceEntityId = evaluation.Id.ToString()
+            }, orgUnitId, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Không gửi được notification cho đánh giá mức 1 #{EvaluationId}", evaluation.Id);
+        }
     }
 }

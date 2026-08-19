@@ -7,6 +7,8 @@ using WebApp.Client.Services.Auth;
 using WebApp.Client.Services.Components;
 using WebApp.Client.Services.Data;
 using WebApp.Client.Services.Network;
+using WebApp.Client.Services.Notification;
+using WebApp.Client.Services.Operation;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 // Add Blazored.LocalStorage
@@ -47,12 +49,15 @@ builder.Services.AddScoped<AuthorizationHandler>();
 builder.Services.AddScoped<TokenRefreshHandler>();
 builder.Services.AddScoped<CredentialsHandler>();
 
-// Register HttpClient with handlers for ApiClient
+// Register HttpClient with handlers for ApiClient.
+// Thứ tự quan trọng: TokenRefreshHandler chạy TRƯỚC (outermost) để refresh token trong storage
+// trước, rồi AuthorizationHandler (inner) mới gắn Bearer header từ token ĐÃ tươi. Nếu ngược lại,
+// header mang token cũ/hết hạn trong khi refresh chỉ cập nhật storage → server trả 401.
 builder.Services.AddHttpClient("ApiClient", client =>
 {
     client.BaseAddress = new Uri(apiBaseUrl);
-}).AddHttpMessageHandler<AuthorizationHandler>()
-  .AddHttpMessageHandler<TokenRefreshHandler>();
+}).AddHttpMessageHandler<TokenRefreshHandler>()
+  .AddHttpMessageHandler<AuthorizationHandler>();
 
 // Register ApiClient with all its dependencies
 builder.Services.AddScoped<ApiClient>(sp =>
@@ -69,5 +74,7 @@ builder.Services.AddScoped<DialogService>();
 builder.Services.AddScoped<CoreAssetsService>();
 builder.Services.AddScoped<DevicesService>();
 builder.Services.AddScoped<KioskDeviceConfigService>();
+builder.Services.AddScoped<NotificationService>();
+builder.Services.AddScoped<NotificationPollingService>();
 
 await builder.Build().RunAsync();

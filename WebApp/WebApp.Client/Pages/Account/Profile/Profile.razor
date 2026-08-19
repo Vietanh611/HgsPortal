@@ -1,11 +1,12 @@
 @page "/profile"
+@inherits AuthorizedPageBase
 @using BlazorBootstrap
 
 <PageTitle>Tài khoản cá nhân</PageTitle>
 
 <div class="container py-4">
     <div class="row">
-        <div class="col-12 mb-4">
+        <div class="col-12 mb-2">
             <h1 class="h2 mb-0">Tài khoản cá nhân</h1>
         </div>
     </div>
@@ -47,7 +48,7 @@
                             {
                                 <Spinner Color="SpinnerColor.Primary" Size="SpinnerSize.Small" class="me-2" />
                             }
-                            <Icon Name="IconName.Upload" /> Tải lên ảnh đại diện
+                            <Icon Name="IconName.Upload" /> @(currentUser != null && !string.IsNullOrWhiteSpace(currentUser.AvatarUrl) ? "Đổi ảnh" : "Tải ảnh")
                         </label>
                     </div>
                 </CardBody>
@@ -107,7 +108,7 @@
 
                                         <div class="mb-3">
                                             <label class="form-label">Đăng nhập lần cuối</label>
-                                            <input class="form-control" value="@(currentUser?.LastLoginAt?.ToString("dd/MM/yyyy HH:mm:ss") ?? "Chưa đăng nhập")" disabled />
+                                            <input class="form-control" value="@(currentUser?.LastLoginAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss") ?? "Chưa đăng nhập")" disabled />
                                         </div>
 
                                         <Button Type="ButtonType.Submit" Color="ButtonColor.Primary" Disabled="@isSubmitting">

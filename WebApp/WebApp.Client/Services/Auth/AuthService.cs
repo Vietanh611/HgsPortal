@@ -16,16 +16,19 @@ public class AuthService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly Data.ITokenStorage _tokenStorage;
     private readonly NavigationManager _navigationManager;
+    private readonly TokenRefreshService _tokenRefreshService;
     private readonly JsonSerializerOptions _jsonOptions;
 
     public AuthService(
         IHttpClientFactory httpClientFactory,
         Data.ITokenStorage tokenStorage,
-        NavigationManager navigationManager)
+        NavigationManager navigationManager,
+        TokenRefreshService tokenRefreshService)
     {
         _httpClientFactory = httpClientFactory;
         _tokenStorage = tokenStorage;
         _navigationManager = navigationManager;
+        _tokenRefreshService = tokenRefreshService;
         _jsonOptions = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true,
@@ -40,32 +43,36 @@ public class AuthService
 
     /// <summary>
     /// Đăng nhập; khi thành công, lưu access token và thời gian hết hạn vào storage
-    /// để các handler dùng cho những request tiếp theo.
+    /// để các handler dùng cho những request tiếp theo. Trả về envelope <see cref="ApiResponse{T}"/>
+    /// để caller nhận được ErrorCode/Message khi thất bại (ví dụ "ACCOUNT_LOCKED" — tài khoản
+    /// bị khóa do đăng nhập sai nhiều lần) thay vì chỉ nhận null.
     /// </summary>
-    public async Task<AuthenticateResponse?> LoginAsync(string username, string password)
+    public async Task<ApiResponse<AuthenticateResponse>?> LoginAsync(string username, string password)
     {
         try
         {
             var request = new AuthenticateRequest { Username = username, Password = password };
             var response = await CreateHttpClient().PostAsJsonAsync("auth/login", request, _jsonOptions);
 
-            if (!response.IsSuccessStatusCode)
+            var content = await response.Content.ReadAsStringAsync();
+            var apiResponse = JsonSerializer.Deserialize<ApiResponse<AuthenticateResponse>>(content, _jsonOptions);
+
+            if (apiResponse is null)
             {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"Login failed: {response.StatusCode} - {errorContent}");
-                return null;
+                Console.WriteLine($"Login failed: {response.StatusCode} - {(string.IsNullOrWhiteSpace(content) ? "(empty)" : content)}");
+                return response.IsSuccessStatusCode
+                    ? null
+                    : ApiResponse<AuthenticateResponse>.FailResponse("Đăng nhập thất bại, vui lòng thử lại.", (int)response.StatusCode);
             }
 
-            var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse<AuthenticateResponse>>(_jsonOptions);
-            if (apiResponse?.Success == true && apiResponse.Data != null)
+            if (apiResponse.Success && apiResponse.Data != null)
             {
                 await _tokenStorage.SetAccessTokenAsync(
                     apiResponse.Data.AccessToken,
                     apiResponse.Data.ExpiresAt);
-                return apiResponse.Data;
             }
 
-            return null;
+            return apiResponse;
         }
         catch (Exception ex)
         {
@@ -111,29 +118,14 @@ public class AuthService
     /// <summary>
     /// Refresh access token dựa trên refresh cookie và lưu token mới; trả về false khi thất
     /// bại để caller quyết định xử lý (ví dụ chuyển sang trạng thái anonymous).
+    /// Đi qua <see cref="TokenRefreshService"/> để mọi lần refresh trong phiên dùng chung một
+    /// khóa — chống 2 request song song cùng gửi refresh cookie cũ (race gây reuse detection).
     /// </summary>
     public async Task<bool> RefreshAccessTokenAsync()
     {
         try
         {
-            var response = await CreateHttpClient().PostAsync("auth/refresh-token", null!);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                Console.WriteLine($"Token refresh failed: {response.StatusCode}");
-                return false;
-            }
-
-            var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse<AuthenticateResponse>>(_jsonOptions);
-            if (apiResponse?.Success == true && apiResponse.Data != null)
-            {
-                await _tokenStorage.SetAccessTokenAsync(
-                    apiResponse.Data.AccessToken,
-                    apiResponse.Data.ExpiresAt);
-                return true;
-            }
-
-            return false;
+            return await _tokenRefreshService.RefreshTokenAsync() == TokenRefreshResult.Success;
         }
         catch (Exception ex)
         {

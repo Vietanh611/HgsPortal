@@ -17,8 +17,8 @@
                     </div>
                 </div>
                 <div class="col-md-6 mb-3">
-                    <label class="form-label fw-bold">Thời gian (UTC)</label>
-                    <div>@Log.TimeStamp.ToString("yyyy-MM-dd HH:mm:ss")</div>
+                    <label class="form-label fw-bold">Thời gian</label>
+                    <div>@Log.TimeStamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</div>
                 </div>
                 <div class="col-md-6 mb-3">
                     <label class="form-label fw-bold">Người dùng</label>

@@ -46,6 +46,16 @@ public class ApiClient
     {
         if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
+            // Request nền/tùy chọn (silent) như polling chuông thông báo: 401 tạm thời
+            // (token vừa hết hạn, refresh chưa kịp) KHÔNG được tự logout/redirect — chờ
+            // request tương tác (silent=false) xử lý khi user thao tác. Nếu redirect ngay,
+            // user đang làm việc bị đá ra trang login giữa chừng.
+            if (silent)
+            {
+                Console.WriteLine("401 Unauthorized (silent) - ignored for background request");
+                return false;
+            }
+
             var currentUri = _navigationManager.Uri;
             var loginUri = _navigationManager.ToAbsoluteUri("/login").ToString();
             var rootUri = _navigationManager.ToAbsoluteUri("/").ToString();
@@ -212,6 +222,55 @@ public class ApiClient
         finally
         {
             IsLoading = false;
+        }
+    }
+
+    /// <summary>
+    /// GET nền dành cho các tác vụ lặp (polling): KHÔNG redirect khi 401/403, KHÔNG retry,
+    /// KHÔNG đụng đến IsLoading/LastError (tránh giao diện bị gián đoạn). Vẫn đi qua
+    /// AuthorizationHandler + TokenRefreshHandler. Trả về <see cref="ApiCallResult{T}"/> để
+    /// caller xử lý 401 bằng cách refresh + thử lại đúng một lần.
+    /// </summary>
+    public async Task<ApiCallResult<T>> GetSilentAsync<T>(string endpoint, IDictionary<string, string>? headers = null)
+    {
+        try
+        {
+            var requestUri = BuildRequestUri(endpoint);
+            using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
+            if (headers != null)
+            {
+                foreach (var header in headers)
+                {
+                    request.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                }
+            }
+
+            var response = await _httpClient.SendAsync(request);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                return new ApiCallResult<T> { IsUnauthorized = true };
+            }
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            {
+                return new ApiCallResult<T> { IsForbidden = true };
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"GET {endpoint} failed: {response.StatusCode} - {errorContent}");
+                return new ApiCallResult<T> { ErrorMessage = $"API Error: {response.StatusCode}" };
+            }
+
+            var data = await response.Content.ReadFromJsonAsync<T>(_jsonOptions);
+            return new ApiCallResult<T> { Success = true, Data = data };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"GET {endpoint} failed: {ex.Message}");
+            return new ApiCallResult<T> { ErrorMessage = ex.Message };
         }
     }
 

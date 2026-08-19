@@ -3,13 +3,14 @@ using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.Users;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
+using WebApp.Client.Components;
 using WebApp.Client.Services.Components;
 using WebApp.Client.Services.Network;
 using CustomToastService = WebApp.Client.Services.Components.ToastService;
 
 namespace WebApp.Client.Pages.Account.Profile;
 
-public partial class Profile : ComponentBase
+public partial class Profile : AuthorizedPageBase
 {
     [Inject] private CustomToastService ToastService { get; set; } = default!;
     [Inject] private ApiClient ApiClient { get; set; } = default!;
@@ -21,7 +22,7 @@ public partial class Profile : ComponentBase
     private bool isChangingPassword = false;
     private bool isUploadingAvatar = false;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnInitializedAuthorizedAsync()
     {
         await LoadCurrentUser();
     }

@@ -1,0 +1,6 @@
+@media (max-width: 767.98px) {
+    ::deep .audit-grid th:nth-child(1),
+    ::deep .audit-grid td:nth-child(1) {
+        display: none;
+    }
+}

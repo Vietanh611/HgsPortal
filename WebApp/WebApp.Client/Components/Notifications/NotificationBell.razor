@@ -1,0 +1,45 @@
+@using Hgs.Share.Responses.Notifications
+@using WebApp.Client.Services.Data
+
+<Dropdown @ref="dropdown">
+    <DropdownToggleButton type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="true" aria-label="Thông báo">
+        <span class="hgs-bell-wrap">
+            <Icon Name="IconName.Bell" />
+            @if (UnreadCount > 0)
+            {
+                <span class="hgs-bell-badge">@(UnreadCount > 99 ? "99+" : UnreadCount.ToString())</span>
+            }
+        </span>
+    </DropdownToggleButton>
+    <DropdownMenu Class="hgs-bell-menu p-0" Position="DropdownMenuPosition.End">
+        <div class="hgs-bell-header">
+            <span class="fw-bold">Thông báo</span>
+            <a href="/notifications">Xem tất cả</a>
+        </div>
+        @if (IsLoading)
+        {
+            <div class="p-3 text-center text-muted small">
+                <Spinner Size="SpinnerSize.Small" /> Đang tải...
+            </div>
+        }
+        else if (Notifications.Count == 0)
+        {
+            <div class="p-3 text-center text-muted small">Không có thông báo nào</div>
+        }
+        else
+        {
+            @foreach (var item in Notifications)
+            {
+                <button type="button" class="hgs-bell-item @(item.IsRead ? "" : "unread")" @onclick="() => OpenNotification(item)">
+                    <span class="hgs-bell-item-title">@item.Title</span>
+                    <span class="hgs-bell-item-time">@FormatTime(item.CreatedAt)</span>
+                </button>
+            }
+        }
+        <div class="hgs-bell-footer">
+            <button type="button" class="btn btn-sm btn-outline-secondary w-100" @onclick="MarkAllRead">
+                <Icon Name="IconName.CheckAll" /> Đánh dấu tất cả đã đọc
+            </button>
+        </div>
+    </DropdownMenu>
+</Dropdown>

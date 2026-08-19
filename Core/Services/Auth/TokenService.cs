@@ -1,4 +1,4 @@
-using Core.Interfaces;
+using Core.Interfaces.Auth;
 using Core.Services.Settings;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;

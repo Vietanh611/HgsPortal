@@ -1,5 +1,5 @@
 using ClosedXML.Excel;
-using Core.Interfaces;
+using Core.Interfaces.Operations;
 using Domain.Entities.Identity;
 using Hgs.Share.Exceptions;
 using Hgs.Share.Requests.Audit;

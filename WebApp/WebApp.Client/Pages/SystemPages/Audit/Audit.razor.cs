@@ -6,13 +6,14 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using System.Globalization;
 using System.Net;
+using WebApp.Client.Components;
 using WebApp.Client.Services.Components;
 using WebApp.Client.Services.Network;
 using CustomToastService = WebApp.Client.Services.Components.ToastService;
 
 namespace WebApp.Client.Pages.SystemPages.Audit;
 
-public partial class Audit : ComponentBase
+public partial class Audit : AuthorizedPageBase
 {
     [Inject] private ApiClient ApiClient { get; set; } = default!;
     [Inject] private CustomToastService ToastService { get; set; } = default!;
@@ -37,6 +38,11 @@ public partial class Audit : ComponentBase
 
     private async Task<GridDataProviderResult<AuditLogsGetAllResponse>> AuditLogsDataProvider(GridDataProviderRequest<AuditLogsGetAllResponse> request)
     {
+        if (!IsInteractive)
+        {
+            return new GridDataProviderResult<AuditLogsGetAllResponse> { Data = Array.Empty<AuditLogsGetAllResponse>(), TotalCount = 0 };
+        }
+
         errorMessage = null;
         showEmptyState = false;
 

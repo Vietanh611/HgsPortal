@@ -72,7 +72,7 @@
     public string Username { get; set; } = string.Empty;
 
     [Parameter]
-    public IEnumerable<MenusGetAllResponse>? Menus { get; set; }
+    public IEnumerable<MenusGetByUserIdResponse>? Menus { get; set; }
 
     [Parameter]
     public List<int> SelectedMenuIds { get; set; } = new();

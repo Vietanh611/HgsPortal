@@ -1,4 +1,5 @@
 using Hgs.Share.Responses;
+using Hgs.Share.Responses.ApiResponses;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using System.Security.Claims;
@@ -88,11 +89,11 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
         }
     }
 
-    public async Task<AuthenticateResponse?> LoginAsync(string username, string password)
+    public async Task<ApiResponse<AuthenticateResponse>?> LoginAsync(string username, string password)
     {
         var result = await _authService.LoginAsync(username, password);
 
-        if (result != null)
+        if (result?.Success == true)
         {
             //var authState = await GetAuthenticationStateAsync();
             //NotifyAuthenticationStateChanged(Task.FromResult(authState));

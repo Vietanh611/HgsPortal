@@ -1,0 +1,38 @@
+@using Hgs.Share.Responses.Menus
+
+<div class="hgs-global-search">
+    <div class="position-relative">
+        <Icon Name="IconName.Search" class="hgs-search-icon" />
+        <input id="hgsSearchInput"
+               class="form-control hgs-search-input"
+               type="search"
+               placeholder="Tìm kiếm chức năng (Ctrl+K)"
+               autocomplete="off"
+               @bind="query"
+               @bind:event="oninput"
+               @onfocus="OpenResults"
+               @onblur="CloseAfterDelay"
+               @onkeydown="HandleKeyDown" />
+        @if (_results.Count > 0)
+        {
+            <ul class="hgs-search-results" role="listbox" aria-label="Kết quả tìm kiếm chức năng">
+                @for (var i = 0; i < _results.Count; i++)
+                {
+                    var r = _results[i];
+                    var isSelected = i == _selectedIndex;
+                    <li>
+                        <button type="button" class="@(isSelected ? "hgs-search-result hgs-search-result-selected" : "hgs-search-result")"
+                                role="option" aria-selected="@isSelected"
+                                @onmousedown="() => NavigateTo(r)" @onmouseover="() => SelectResult(i)">
+                            <span class="hgs-search-result-name">@r.Name</span>
+                            @if (!string.IsNullOrEmpty(r.ParentName))
+                            {
+                                <span class="hgs-search-result-parent">@r.ParentName</span>
+                            }
+                        </button>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</div>

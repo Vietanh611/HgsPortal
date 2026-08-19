@@ -1,5 +1,5 @@
 using API.Authorization;
-using Core.Interfaces;
+using Core.Interfaces.Identity;
 using Hgs.Share.Requests.PermissionDelegation;
 using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.PermissionDelegation;
@@ -126,6 +126,35 @@ public class PermissionDelegationController : ControllerBase
         {
             _logger.LogError(ex, "Error revoking role");
             return StatusCode(500, ApiResponse.FailResponse("Error revoking role", 500));
+        }
+    }
+
+    /// <summary>
+    /// Ủy quyền theo "tập đầy đủ": danh sách role gửi lên là trạng thái mong muốn — gán role chưa có,
+    /// thu hồi role gán được không còn trong danh sách. Tương ứng mô hình tick/bỏ trên giao diện.
+    /// </summary>
+    [HttpPost("assign-roles")]
+    public async Task<ActionResult<ApiResponse>> AssignRoles([FromBody] AssignRolesRequest request)
+    {
+        try
+        {
+            await _permissionDelegationService.AssignRolesAsync(request);
+            return Ok(ApiResponse.SuccessResponse("Roles assigned successfully", 200));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized access to assign roles");
+            return StatusCode(403, ApiResponse.FailResponse("Bạn không có quyền thực hiện thao tác này", 403));
+        }
+        catch (KeyNotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Target user not found for roles assignment");
+            return NotFound(ApiResponse.FailResponse("Target user not found", 404));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error assigning roles");
+            return StatusCode(500, ApiResponse.FailResponse("Error assigning roles", 500));
         }
     }
 

@@ -8,6 +8,8 @@ using WebApp.Client.Services.Auth;
 using WebApp.Client.Services.Components;
 using WebApp.Client.Services.Data;
 using WebApp.Client.Services.Network;
+using WebApp.Client.Services.Notification;
+using WebApp.Client.Services.Operation;
 using WebApp.Components;
 using WebApp.Services;
 
@@ -72,6 +74,11 @@ builder.Services.AddScoped<CoreAssetsService>();
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<KioskDeviceConfigService>();
 builder.Services.AddScoped<DevicesService>();
+
+// NotificationBell/MainLayout (chuông thông báo + poll nền) được prerender ở server
+// trước khi WASM interactive tải lên, nên 2 service này phải resolve được từ server DI.
+builder.Services.AddScoped<NotificationService>();
+builder.Services.AddScoped<NotificationPollingService>();
 
 var app = builder.Build();
 

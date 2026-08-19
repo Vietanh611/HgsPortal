@@ -1,5 +1,6 @@
 using Core.Helpers;
-using Core.Interfaces;
+using Core.Interfaces.Identity;
+using Core.Interfaces.Operations;
 using Core.Services.Settings;
 using Data.DbContexts;
 using Domain.Entities.FlyOps;
@@ -305,6 +306,33 @@ public class UsersService : IUsersService
             entityId: user.Id,
             oldValue: oldSnapshot,
             newValue: user);
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<bool> UnlockAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var user = await _dbContext.Users
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (user is null || user.IsDeleted)
+        {
+            return false;
+        }
+
+        EnsureScope(await _orgScope.IsUserInScopeAsync(id, cancellationToken));
+
+        user.LockoutEnd = null;
+        user.IsLocked = false;
+        user.FailedLoginCount = 0;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _auditLog.LogSecurityEventAsync(
+            action: "USER_UNLOCKED",
+            eventCategory: "Security", success: true, severity: "Warning",
+            targetUserId: user.Id, username: user.Username,
+            entityName: "Users", entityId: user.Id,
+            detail: "Mở khóa tài khoản bị khóa do đăng nhập sai nhiều lần");
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         return true;

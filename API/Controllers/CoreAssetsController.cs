@@ -1,6 +1,7 @@
 using API.Authorization;
-using Core.Interfaces;
+using Core.Interfaces.Operations;
 using Domain.Entities.CoreAssets;
+using Hgs.Share.Exceptions;
 using Hgs.Share.Requests.CoreAssets;
 using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.CoreAssets;
@@ -17,11 +18,13 @@ namespace API.Controllers;
 public class CoreAssetsController : ControllerBase
 {
     private readonly ICoreAssetsService _coreAssetsService;
+    private readonly IWebHostEnvironment _env;
     private readonly ILogger<CoreAssetsController> _logger;
 
-    public CoreAssetsController(ICoreAssetsService coreAssetsService, ILogger<CoreAssetsController> logger)
+    public CoreAssetsController(ICoreAssetsService coreAssetsService, IWebHostEnvironment env, ILogger<CoreAssetsController> logger)
     {
         _coreAssetsService = coreAssetsService;
+        _env = env;
         _logger = logger;
     }
 
@@ -67,6 +70,50 @@ public class CoreAssetsController : ControllerBase
         catch (InvalidOperationException ex)
         {
             return Conflict(ApiResponse<CoreAssetsCreateResponse>.FailResponse(ex.Message, 409));
+        }
+    }
+
+    [HttpPut("{id:int}")]
+    [Authorize]
+    public async Task<ActionResult<ApiResponse<CoreAssetsCreateResponse>>> UpdateCoreAsset(int id, [FromBody] CoreAssetsUpdateRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var asset = await _coreAssetsService.UpdateCoreAssetAsync(id, request, cancellationToken);
+            _logger.LogInformation("Updated core asset '{Code}'.", asset.Code);
+            return Ok(ApiResponse<CoreAssetsCreateResponse>.SuccessResponse(MapToCreateResponse(asset), "Core asset updated successfully", 200));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ApiResponse<CoreAssetsCreateResponse>.FailResponse(ex.Message, 400));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ApiResponse<CoreAssetsCreateResponse>.FailResponse(ex.Message, 409));
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ApiResponse<CoreAssetsCreateResponse>.FailResponse(ex.Message, 404));
+        }
+    }
+
+    /// <summary>
+    /// Xóa vĩnh viễn core asset; cố xóa file vật lý theo StoragePath nếu file nằm trong
+    /// thư mục server API (best-effort, không thấy thì bỏ qua).
+    /// </summary>
+    [HttpDelete("{id:int}")]
+    [Authorize]
+    public async Task<ActionResult<ApiResponse>> DeleteCoreAsset(int id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _coreAssetsService.DeleteCoreAssetAsync(id, _env.ContentRootPath, cancellationToken);
+            _logger.LogInformation("Deleted core asset '{Id}'.", id);
+            return Ok(ApiResponse.SuccessResponse("Core asset deleted successfully", 200));
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ApiResponse.FailResponse(ex.Message, 404));
         }
     }
 

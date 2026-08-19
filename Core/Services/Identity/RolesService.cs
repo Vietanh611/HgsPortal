@@ -1,7 +1,12 @@
-using Core.Interfaces;
+using Core.Constants;
+using Core.Interfaces.Identity;
+using Core.Interfaces.Notifications;
+using Core.Interfaces.Operations;
 using Data.DbContexts;
 using Domain.Entities.Identity;
+using Hgs.Share.Requests.Notifications;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Core.Services.Identity;
 
@@ -9,11 +14,15 @@ public class RolesService : IRolesService
 {
     private readonly HgsDbContext _dbContext;
     private readonly IAuditLogService _auditLog;
+    private readonly INotificationService _notificationService;
+    private readonly ILogger<RolesService> _logger;
 
-    public RolesService(HgsDbContext dbContext, IAuditLogService auditLog)
+    public RolesService(HgsDbContext dbContext, IAuditLogService auditLog, INotificationService notificationService, ILogger<RolesService> logger)
     {
         _dbContext = dbContext;
         _auditLog = auditLog;
+        _notificationService = notificationService;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<Roles>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -136,6 +145,17 @@ public class RolesService : IRolesService
                 detail: $"Role hệ thống '{role.Code}' bị sửa",
                 oldValue: oldSnapshot,
                 newValue: role);
+
+            await TryNotifyAsync(() => _notificationService.NotifySuperAdminsAsync(new NotifyRequest
+            {
+                Category = NotificationCategories.Security,
+                Severity = "Critical",
+                Title = "Role hệ thống bị sửa",
+                Body = $"Role hệ thống '{role.Code}' ({role.Name}) vừa bị sửa đổi.",
+                ActionUrl = "/roles",
+                SourceEntityName = "Roles",
+                SourceEntityId = role.Id.ToString()
+            }));
         }
         else
         {
@@ -176,5 +196,18 @@ public class RolesService : IRolesService
         _dbContext.Roles.Remove(role);
         await _dbContext.SaveChangesAsync(cancellationToken);
         return true;
+    }
+
+    /// <summary>Lỗi gửi thông báo không được làm hỏng nghiệp vụ sửa role — chỉ log cảnh báo.</summary>
+    private async Task TryNotifyAsync(Func<Task> notify)
+    {
+        try
+        {
+            await notify();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Không gửi được notification cho sự kiện SYSTEM_ROLE_MODIFIED");
+        }
     }
 }

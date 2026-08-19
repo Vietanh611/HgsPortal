@@ -1,13 +1,13 @@
-using Core.Interfaces;
+using Core.Interfaces.Auth;
 using Domain.Entities.Identity;
 using Hgs.Share.Requests;
 using Hgs.Share.Requests.Users;
 using Hgs.Share.Responses;
 using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.Users;
+using API.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace API.Controllers;
 
@@ -141,8 +141,7 @@ public class AuthController : ControllerBase
     [Authorize]
     public async Task<ActionResult<ApiResponse<UsersGetByIdResponse>>> GetCurrentUser(CancellationToken cancellationToken)
     {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrWhiteSpace(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+        if (!User.TryGetCurrentUserId(out var userId))
         {
             return Unauthorized(ApiResponse<UsersGetByIdResponse>.FailResponse("Invalid user token", 401));
         }

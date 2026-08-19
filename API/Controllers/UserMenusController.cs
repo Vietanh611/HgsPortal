@@ -1,5 +1,5 @@
 using API.Authorization;
-using Core.Interfaces;
+using Core.Interfaces.Identity;
 using Hgs.Share.Dtos;
 using Hgs.Share.Requests.UserMenus;
 using Hgs.Share.Responses.ApiResponses;

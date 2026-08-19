@@ -61,7 +61,7 @@
 @code {
     private Modal modal = default!;
     [Parameter] public string RoleName { get; set; } = string.Empty;
-    [Parameter] public IEnumerable<MenusGetAllResponse>? Menus { get; set; }
+    [Parameter] public IEnumerable<MenusGetByUserIdResponse>? Menus { get; set; }
     [Parameter] public List<int> SelectedMenuIds { get; set; } = new();
     [Parameter] public HashSet<int> ExpandedMenuIds { get; set; } = new();
     [Parameter] public bool IsLoadingMenus { get; set; }

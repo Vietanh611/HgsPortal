@@ -1,27 +1,33 @@
-using Core.Interfaces;
+using Core.Constants;
+using Core.Interfaces.Identity;
+using Core.Interfaces.Notifications;
+using Core.Interfaces.Operations;
 using Data.DbContexts;
 using Domain.Entities.Identity;
-using Domain.Entities.System;
+using Hgs.Share.Requests.Notifications;
 using Hgs.Share.Requests.UserRoles;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Core.Services.Identity;
 
 public class UserRoleService : IUserRoleService
 {
     private readonly HgsDbContext _dbContext;
-    private readonly IUserMenuService _userMenuService;
     private readonly IAuditLogService _auditLog;
+    private readonly INotificationService _notificationService;
     private readonly ICacheService _cacheService;
     private readonly IOrgScopeService _orgScope;
+    private readonly ILogger<UserRoleService> _logger;
 
-    public UserRoleService(HgsDbContext dbContext, IUserMenuService userMenuService, IAuditLogService auditLog, ICacheService cacheService, IOrgScopeService orgScope)
+    public UserRoleService(HgsDbContext dbContext, IAuditLogService auditLog, INotificationService notificationService, ICacheService cacheService, IOrgScopeService orgScope, ILogger<UserRoleService> logger)
     {
         _dbContext = dbContext;
-        _userMenuService = userMenuService;
         _auditLog = auditLog;
+        _notificationService = notificationService;
         _cacheService = cacheService;
         _orgScope = orgScope;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<UserRoles>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -126,8 +132,7 @@ public class UserRoleService : IUserRoleService
             detail: $"Gán role '{role.Name}' cho user '{user.Username}'",
             newValue: new { role.Id, role.Name, targetUserId = user.Id });
 
-        // Automatically assign all role menus to the user
-        await AssignRoleMenusToUserAsync(request.RoleId, request.UserId, assignedBy, cancellationToken);
+        await TryNotifyAsync(() => NotifyRoleAssignedAsync(user.Username, role.Name, user.Id));
 
         await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
         return userRole;
@@ -181,6 +186,11 @@ public class UserRoleService : IUserRoleService
             detail: $"Gỡ role '{userRole.Role?.Name}' khỏi user '{userRole.User?.Username}'",
             oldValue: new { userRole.RoleId, RoleName = userRole.Role?.Name, userRole.UserId });
 
+        if (userRole.User is not null)
+        {
+            await TryNotifyAsync(() => NotifyRoleRevokedAsync(userRole.User.Username, userRole.Role?.Name, userRole.UserId));
+        }
+
         await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
         return true;
     }
@@ -211,6 +221,7 @@ public class UserRoleService : IUserRoleService
         var newRoleIds = roleIds.Except(existingRoleIds).ToList();
 
         var createdUserRoles = new List<UserRoles>();
+        var createdRoleNames = new List<string>();
         foreach (var roleId in newRoleIds)
         {
             // Check if role exists
@@ -237,6 +248,7 @@ public class UserRoleService : IUserRoleService
 
             _dbContext.UserRoles.Add(userRole);
             createdUserRoles.Add(userRole);
+            createdRoleNames.Add(role.Name);
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -255,10 +267,9 @@ public class UserRoleService : IUserRoleService
                 newValue: new { roleId = userRole.RoleId, userId });
         }
 
-        // Automatically assign all role menus to the user for each new role
-        foreach (var roleId in newRoleIds)
+        if (createdRoleNames.Count > 0)
         {
-            await AssignRoleMenusToUserAsync(roleId, userId, assignedBy, cancellationToken);
+            await TryNotifyAsync(() => NotifyRolesAssignedAsync(user.Username, createdRoleNames, userId));
         }
 
         await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
@@ -312,42 +323,81 @@ public class UserRoleService : IUserRoleService
                 oldValue: new { userRole.RoleId, RoleName = userRole.Role?.Name, userId });
         }
 
+        if (rolesToRemove.Count > 0)
+        {
+            var removedRoleNames = rolesToRemove.Select(r => r.Role?.Name).Where(n => !string.IsNullOrEmpty(n)).Cast<string>().ToList();
+            await TryNotifyAsync(() => NotifyRolesRevokedAsync(user.Username, removedRoleNames, userId));
+        }
+
         await _cacheService.ClearAllMenuCacheAsync(cancellationToken);
     }
 
-    private async Task AssignRoleMenusToUserAsync(int roleId, int userId, int assignedBy, CancellationToken cancellationToken = default)
+    private async Task NotifyRoleAssignedAsync(string username, string roleName, int userId)
     {
-        // Get all menus assigned to this role
-        var roleMenuIds = await _dbContext.RoleMenus
-            .Where(rm => rm.RoleId == roleId)
-            .Select(rm => rm.MenuId)
-            .ToListAsync(cancellationToken);
-
-        if (!roleMenuIds.Any())
-            return;
-
-        // Get existing user menu assignments
-        var existingUserMenuIds = await _dbContext.UserMenus
-            .Where(um => um.UserId == userId)
-            .Select(um => um.MenuId)
-            .ToListAsync(cancellationToken);
-
-        // Filter out menus the user already has
-        var newMenuIds = roleMenuIds.Except(existingUserMenuIds).ToList();
-
-        // Assign new menus to user
-        foreach (var menuId in newMenuIds)
+        await _notificationService.NotifyUsersAsync(new NotifyRequest
         {
-            var userMenu = new UserMenus
-            {
-                UserId = userId,
-                MenuId = menuId,
-                AssignedAt = DateTime.UtcNow,
-                AssignedBy = assignedBy
-            };
-            _dbContext.UserMenus.Add(userMenu);
-        }
+            Category = NotificationCategories.Permission,
+            Severity = "Info",
+            Title = "Bạn được gán vai trò mới",
+            Body = $"Bạn vừa được gán vai trò '{roleName}'.",
+            ActionUrl = "/profile",
+            SourceEntityName = "UserRoles",
+            SourceEntityId = userId.ToString()
+        }, new[] { userId });
+    }
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+    private async Task NotifyRolesAssignedAsync(string username, IEnumerable<string> roleNames, int userId)
+    {
+        await _notificationService.NotifyUsersAsync(new NotifyRequest
+        {
+            Category = NotificationCategories.Permission,
+            Severity = "Info",
+            Title = "Bạn được gán vai trò mới",
+            Body = $"Bạn vừa được gán các vai trò: {string.Join(", ", roleNames)}.",
+            ActionUrl = "/profile",
+            SourceEntityName = "UserRoles",
+            SourceEntityId = userId.ToString()
+        }, new[] { userId });
+    }
+
+    private async Task NotifyRoleRevokedAsync(string username, string? roleName, int userId)
+    {
+        await _notificationService.NotifyUsersAsync(new NotifyRequest
+        {
+            Category = NotificationCategories.Permission,
+            Severity = "Info",
+            Title = "Vai trò của bạn bị thu hồi",
+            Body = $"Vai trò '{roleName}' của bạn vừa bị thu hồi.",
+            ActionUrl = "/profile",
+            SourceEntityName = "UserRoles",
+            SourceEntityId = userId.ToString()
+        }, new[] { userId });
+    }
+
+    private async Task NotifyRolesRevokedAsync(string username, IEnumerable<string> roleNames, int userId)
+    {
+        await _notificationService.NotifyUsersAsync(new NotifyRequest
+        {
+            Category = NotificationCategories.Permission,
+            Severity = "Info",
+            Title = "Vai trò của bạn bị thu hồi",
+            Body = $"Các vai trò của bạn vừa bị thu hồi: {string.Join(", ", roleNames)}.",
+            ActionUrl = "/profile",
+            SourceEntityName = "UserRoles",
+            SourceEntityId = userId.ToString()
+        }, new[] { userId });
+    }
+
+    /// <summary>Lỗi gửi thông báo không được làm hỏng nghiệp vụ gán/gỡ role — chỉ log cảnh báo.</summary>
+    private async Task TryNotifyAsync(Func<Task> notify)
+    {
+        try
+        {
+            await notify();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Không gửi được notification cho sự kiện ROLE_ASSIGNED/ROLE_REVOKED");
+        }
     }
 }

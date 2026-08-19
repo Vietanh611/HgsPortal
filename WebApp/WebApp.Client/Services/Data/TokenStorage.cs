@@ -19,6 +19,8 @@ public class TokenStorage : ITokenStorage
         _localStorageService = localStorageService;
     }
 
+    public bool IsServerSidePrerender => false;
+
     public async Task<string?> GetAccessTokenAsync()
     {
         try

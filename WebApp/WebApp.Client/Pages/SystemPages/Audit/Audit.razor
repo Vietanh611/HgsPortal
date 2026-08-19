@@ -1,4 +1,5 @@
 @page "/audit"
+@inherits AuthorizedPageBase
 @namespace WebApp.Client.Pages.SystemPages.Audit
 @using Hgs.Share.Responses.AuditLogs
 @using BlazorBootstrap
@@ -8,9 +9,9 @@
 <div class="container">
     <div class="row">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                 <h1 class="h2 mb-0">Nhật ký hoạt động</h1>
-                <Button Color="ButtonColor.Success" Disabled="@isExporting" Loading="@isExporting" LoadingText="Đang tải..." @onclick="ExportXlsx">
+                <Button Color="ButtonColor.Success" Disabled="@isExporting" Loading="@isExporting" LoadingText="Đang tải..." @onclick="ExportXlsx" Class="text-nowrap">
                     @if (!isExporting)
                     {
                         <Icon Name="IconName.Download" />
@@ -19,7 +20,7 @@
                 </Button>
             </div>
 
-            <Card class="mb-4">
+            <Card class="filter-card mb-2">
                 <CardHeader>
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Bộ lọc</h5>
@@ -99,65 +100,61 @@
                 </Collapse>
             </Card>
 
-            <Card>
-                <CardBody>
-                    @if (errorMessage != null)
-                    {
-                        <HgsErrorState Message="@errorMessage" RetryClick="@ApplyFilters" />
-                    }
-                    else if (showEmptyState)
-                    {
-                        <HgsEmptyState Title="Không có nhật ký hoạt động"
-                                       Message="Thử điều chỉnh bộ lọc hoặc chọn khoảng thời gian khác." />
-                    }
-                    else
-                    {
-                        <Grid TItem="AuditLogsGetAllResponse" @ref="grid" DataProvider="AuditLogsDataProvider"
-                              AllowPaging="true" PageSize="20" Responsive="true"
-                              Class="table table-hover table-bordered table-striped">
-                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="ID">
-                                @context.Id
-                            </GridColumn>
-                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Người dùng">
-                                @(context.Username ?? "N/A")
-                            </GridColumn>
-                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Loại sự kiện">
-                                <Badge Color="@(GetEventCategoryBadgeColor(context.EventCategory))">@context.EventCategory</Badge>
-                            </GridColumn>
-                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Hành động">
-                                <Badge Color="@(GetActionBadgeColor(context.Action))">@context.Action</Badge>
-                            </GridColumn>
-                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Kết quả">
-                                @if (context.Success)
-                                {
-                                    <Badge Color="BadgeColor.Success">Thành công</Badge>
-                                }
-                                else
-                                {
-                                    <Badge Color="BadgeColor.Danger">Thất bại</Badge>
-                                }
-                            </GridColumn>
-                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Mức độ">
-                                <Badge Color="@(GetSeverityBadgeColor(context.Severity))">@context.Severity</Badge>
-                            </GridColumn>
-                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Đối tượng">
-                                @(context.TargetUsername ?? context.EntityName)
-                            </GridColumn>
-                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Địa chỉ IP">
-                                @(context.IpAddress ?? "N/A")
-                            </GridColumn>
-                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Thời gian">
-                                @context.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")
-                            </GridColumn>
-                            <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Thao tác" AllowSorting="false">
-                                <Button Color="ButtonColor.Info" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowDetailModal(context)" aria-label="Xem chi tiết nhật ký">
-                                    <Icon Name="IconName.Eye" />
-                                </Button>
-                            </GridColumn>
-                        </Grid>
-                    }
-                </CardBody>
-            </Card>
+            @if (errorMessage != null)
+            {
+                <HgsErrorState Message="@errorMessage" RetryClick="@ApplyFilters" />
+            }
+            else if (showEmptyState)
+            {
+                <HgsEmptyState Title="Không có nhật ký hoạt động"
+                               Message="Thử điều chỉnh bộ lọc hoặc chọn khoảng thời gian khác." />
+            }
+            else
+            {
+                <Grid TItem="AuditLogsGetAllResponse" @ref="grid" DataProvider="AuditLogsDataProvider"
+                      AllowPaging="true" PageSize="20" Responsive="true"
+                      Class="table table-hover table-bordered table-striped audit-grid">
+                    <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="ID">
+                        @context.Id
+                    </GridColumn>
+                    <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Người dùng">
+                        @(context.Username ?? "N/A")
+                    </GridColumn>
+                    <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Loại sự kiện">
+                        <Badge Color="@(GetEventCategoryBadgeColor(context.EventCategory))">@context.EventCategory</Badge>
+                    </GridColumn>
+                    <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Hành động">
+                        <Badge Color="@(GetActionBadgeColor(context.Action))">@context.Action</Badge>
+                    </GridColumn>
+                    <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Kết quả">
+                        @if (context.Success)
+                        {
+                            <Badge Color="BadgeColor.Success">Thành công</Badge>
+                        }
+                        else
+                        {
+                            <Badge Color="BadgeColor.Danger">Thất bại</Badge>
+                        }
+                    </GridColumn>
+                    <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Mức độ">
+                        <Badge Color="@(GetSeverityBadgeColor(context.Severity))">@context.Severity</Badge>
+                    </GridColumn>
+                    <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Đối tượng">
+                        @(context.TargetUsername ?? context.EntityName)
+                    </GridColumn>
+                    <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Địa chỉ IP">
+                        @(context.IpAddress ?? "N/A")
+                    </GridColumn>
+                    <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Thời gian">
+                        @context.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
+                    </GridColumn>
+                    <GridColumn TItem="AuditLogsGetAllResponse" HeaderText="Thao tác" AllowSorting="false">
+                        <Button Color="ButtonColor.Info" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowDetailModal(context)" aria-label="Xem chi tiết nhật ký">
+                            <Icon Name="IconName.Eye" />
+                        </Button>
+                    </GridColumn>
+                </Grid>
+            }
         </div>
     </div>
 </div>

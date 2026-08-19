@@ -1,5 +1,5 @@
 using API.Authorization;
-using Core.Interfaces;
+using Core.Interfaces.Identity;
 using Domain.Entities.Identity;
 using Hgs.Share.Exceptions;
 using Hgs.Share.Requests.UserRoles;

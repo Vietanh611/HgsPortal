@@ -4,14 +4,15 @@ using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.Devices;
 using Hgs.Share.Responses.OrganizationUnits;
 using Microsoft.AspNetCore.Components;
-using WebApp.Client.Services;
+using WebApp.Client.Components;
 using WebApp.Client.Services.Components;
 using WebApp.Client.Services.Network;
+using WebApp.Client.Services.Operation;
 using CustomToastService = WebApp.Client.Services.Components.ToastService;
 
 namespace WebApp.Client.Pages.Devices;
 
-public partial class Devices
+public partial class Devices : AuthorizedPageBase
 {
     [Inject] private ApiClient ApiClient { get; set; } = default!;
     [Inject] private DevicesService DevicesService { get; set; } = default!;
@@ -30,7 +31,7 @@ public partial class Devices
     private DeviceCreateModal createModal = default!;
     private DeviceSecretModal secretModal = default!;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnInitializedAuthorizedAsync()
     {
         await Task.WhenAll(LoadDevices(), LoadOrganizationUnits());
     }

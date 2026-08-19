@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
+using WebApp.Client.Services.Auth;
 
 namespace WebApp.Client.Services.Network;
 
@@ -46,7 +47,10 @@ public class TokenRefreshHandler : DelegatingHandler
                     
                     var refreshResult = await _tokenRefreshService.RefreshTokenAsync();
                     
-                    if (refreshResult == null)
+                    // Chỉ đăng xuất khi refresh cookie thực sự không còn hợp lệ (phiên chết).
+                    // Lỗi mạng/server tạm thời (NetworkError): giữ phiên, cứ gửi request — nếu
+                    // server trả 401 thì ApiClient (silent) sẽ bỏ qua, request tương tác xử lý sau.
+                    if (refreshResult == TokenRefreshResult.SessionExpired)
                     {
                         Console.WriteLine("Token refresh failed, logging out");
                         await _tokenStorage.ClearTokensAsync();
@@ -74,7 +78,14 @@ public class TokenRefreshHandler : DelegatingHandler
                         return new HttpResponseMessage(System.Net.HttpStatusCode.Unauthorized);
                     }
                     
-                    Console.WriteLine("Token refreshed successfully");
+                    if (refreshResult == TokenRefreshResult.Success)
+                    {
+                        Console.WriteLine("Token refreshed successfully");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Token refresh failed (network error) - sending request as-is");
+                    }
                 }
             }
 

@@ -3,30 +3,31 @@ using Hgs.Share.Requests.PermissionDelegation;
 using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.PermissionDelegation;
 using Microsoft.AspNetCore.Components;
+using WebApp.Client.Components;
 using WebApp.Client.Services.Components;
 using WebApp.Client.Services.Network;
 using CustomToastService = WebApp.Client.Services.Components.ToastService;
-using AssignRoleDialog = WebApp.Client.Pages.Account.PermissionDelegation.AssignRoleDialog;
-using RevokeRoleDialog = WebApp.Client.Pages.Account.PermissionDelegation.RevokeRoleDialog;
 
 namespace WebApp.Client.Pages.Account.PermissionDelegation;
 
-public partial class PermissionDelegationPage : ComponentBase
+public partial class PermissionDelegationPage : AuthorizedPageBase
 {
     [Inject] private CustomToastService ToastService { get; set; } = default!;
     [Inject] private ApiClient ApiClient { get; set; } = default!;
-    private AssignRoleDialog assignRoleDialog = default!;
-    private RevokeRoleDialog revokeRoleDialog = default!;
+    private AssignPermissionModal assignPermissionModal = default!;
     private IEnumerable<ManageableUserResponse>? manageableUsers;
     private IEnumerable<AssignableRoleResponse>? assignableRoles;
     public List<RoleInfo> userRoles = new();
+    public List<MenuInfo> userMenus = new();
+    private List<int> selectedRoleIds = new();
     private int selectedUserId = 0;
     private string selectedUsername = string.Empty;
     private bool isLoading = true;
+    private bool isLoadingPermissions = false;
+    private bool isSavingPermissions = false;
     private string? errorMessage;
-    private bool isPermissionsViewVisible = false;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnInitializedAuthorizedAsync()
     {
         await LoadManageableUsers();
         await LoadAssignableRoles();
@@ -92,100 +93,103 @@ public partial class PermissionDelegationPage : ComponentBase
             if (response != null && response.Success && response.Data != null)
             {
                 userRoles = response.Data.Roles;
+                userMenus = response.Data.Menus;
             }
             else
             {
                 userRoles = new List<RoleInfo>();
+                userMenus = new List<MenuInfo>();
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading user roles: {ex.Message}");
             userRoles = new List<RoleInfo>();
+            userMenus = new List<MenuInfo>();
         }
     }
 
-    private void ShowPermissionsView(ManageableUserResponse user)
+    private async Task ShowAssignPermissionModal(ManageableUserResponse user)
     {
         selectedUserId = user.Id;
         selectedUsername = user.Username;
-        isPermissionsViewVisible = true;
-        _ = LoadUserRoles(user.Id);
+        isLoadingPermissions = true;
+        try
+        {
+            await LoadUserRoles(user.Id);
+            var assignableRoleIds = (assignableRoles ?? Enumerable.Empty<AssignableRoleResponse>())
+                .Select(r => r.Id)
+                .ToHashSet();
+            selectedRoleIds = userRoles
+                .Where(r => assignableRoleIds.Contains(r.Id))
+                .Select(r => r.Id)
+                .ToList();
+            await assignPermissionModal.ShowAsync();
+        }
+        finally
+        {
+            isLoadingPermissions = false;
+        }
     }
 
-    private void ClosePermissionsView()
+    private void OnPermissionCheckboxChanged(int roleId, string? value)
     {
-        isPermissionsViewVisible = false;
+        if (bool.TryParse(value, out var isChecked))
+        {
+            if (isChecked)
+            {
+                if (!selectedRoleIds.Contains(roleId))
+                {
+                    selectedRoleIds.Add(roleId);
+                }
+            }
+            else
+            {
+                selectedRoleIds.Remove(roleId);
+            }
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleAssignPermissions()
+    {
+        var request = new AssignRolesRequest
+        {
+            TargetUserId = selectedUserId,
+            RoleIds = selectedRoleIds
+        };
+
+        isSavingPermissions = true;
+        try
+        {
+            var success = await ApiClient.PostAsync("api/permissiondelegation/assign-roles", request);
+            if (success)
+            {
+                ToastService.ShowSuccess("Đã cập nhật phân quyền");
+                await LoadUserRoles(selectedUserId);
+                await assignPermissionModal.HideAsync();
+            }
+            else
+            {
+                var message = !string.IsNullOrEmpty(ApiClient.LastError)
+                    ? $"Không thể cập nhật phân quyền: {ApiClient.LastError}"
+                    : "Không thể cập nhật phân quyền";
+                ToastService.ShowError(message);
+            }
+        }
+        finally
+        {
+            isSavingPermissions = false;
+        }
+    }
+
+    private async Task CloseAssignPermissionModal()
+    {
+        await assignPermissionModal.HideAsync();
         selectedUserId = 0;
         selectedUsername = string.Empty;
+        selectedRoleIds = new List<int>();
         userRoles = new List<RoleInfo>();
-    }
-
-    private async Task ShowAssignRoleDialog()
-    {
-        await assignRoleDialog.ShowAsync();
-    }
-
-    private async Task CloseAssignRoleDialog()
-    {
-        await assignRoleDialog.HideAsync();
-    }
-
-    private async Task HandleAssignRole(int roleId)
-    {
-        var request = new AssignRoleRequest
-        {
-            TargetUserId = selectedUserId,
-            RoleId = roleId
-        };
-
-        var success = await ApiClient.PostAsync("api/permissiondelegation/assign-role", request);
-        if (success)
-        {
-            ToastService.ShowSuccess("Đã gán quyền");
-            await LoadUserRoles(selectedUserId);
-            await assignRoleDialog.HideAsync();
-        }
-        else
-        {
-            var errorMessage = !string.IsNullOrEmpty(ApiClient.LastError) 
-                ? $"Không thể gán quyền: {ApiClient.LastError}" 
-                : "Không thể gán quyền";
-            ToastService.ShowError(errorMessage);
-        }
-    }
-
-    private async Task ShowRevokeRoleDialog()
-    {
-        await revokeRoleDialog.ShowAsync();
-    }
-
-    private async Task CloseRevokeRoleDialog()
-    {
-        await revokeRoleDialog.HideAsync();
-    }
-
-    private async Task HandleRevokeRole(int roleId)
-    {
-        var request = new RevokeRoleRequest
-        {
-            TargetUserId = selectedUserId,
-            RoleId = roleId
-        };
-
-        var success = await ApiClient.PostAsync("api/permissiondelegation/revoke-role", request);
-        if (success)
-        {
-            ToastService.ShowSuccess("Đã gỡ quyền");
-            await LoadUserRoles(selectedUserId);
-            await revokeRoleDialog.HideAsync();
-        }
-        else
-        {
-            var errorMessage = !string.IsNullOrEmpty(ApiClient.LastError) 
-                ? $"Không thể gỡ quyền: {ApiClient.LastError}" 
-                : "Không thể gỡ quyền";
-            ToastService.ShowError(errorMessage);
-        }
+        userMenus = new List<MenuInfo>();
     }
 }

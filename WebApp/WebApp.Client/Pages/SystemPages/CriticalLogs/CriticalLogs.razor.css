@@ -1,0 +1,16 @@
+@media (max-width: 767.98px) {
+    ::deep .critical-grid th:nth-child(1),
+    ::deep .critical-grid td:nth-child(1) {
+        display: none;
+    }
+
+    ::deep .critical-grid th:nth-child(5),
+    ::deep .critical-grid td:nth-child(5) {
+        min-width: 160px;
+    }
+
+    ::deep .critical-grid th:nth-child(6),
+    ::deep .critical-grid td:nth-child(6) {
+        min-width: 220px;
+    }
+}

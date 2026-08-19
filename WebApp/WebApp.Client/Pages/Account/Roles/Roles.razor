@@ -1,4 +1,5 @@
 @page "/roles"
+@inherits AuthorizedPageBase
 @using Hgs.Share.Responses.Roles
 @using BlazorBootstrap
 
@@ -7,88 +8,84 @@
 <div class="container">
     <div class="row">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                 <h1 class="h2 mb-0">Quản lý vai trò</h1>
-                <Button Color="ButtonColor.Primary" @onclick="ShowCreateModal">
+                <Button Color="ButtonColor.Primary" @onclick="ShowCreateModal" Class="text-nowrap">
                     <Icon Name="IconName.PlusLg" /> Thêm vai trò
                 </Button>
             </div>
 
-            <Card>
-                <CardBody>
-                    @if (isLoading)
-                    {
-                        <div class="text-center py-5">
-                            <Spinner Color="SpinnerColor.Primary" />
-                        </div>
-                    }
-                    else if (errorMessage != null)
-                    {
-                        <HgsErrorState Message="@errorMessage" RetryClick="@LoadRoles" />
-                    }
-                    else if (roles != null && !roles.Any())
-                    {
-                        <HgsEmptyState Title="Chưa có vai trò"
-                                       Message="Nhấn Thêm vai trò để tạo vai trò đầu tiên."
-                                       ShowAction="true"
-                                       ActionText="Thêm vai trò"
-                                       ActionClick="@ShowCreateModal" />
-                    }
-                    else
-                    {
-                        <Grid TItem="RolesGetAllResponse" Data="roles" AllowPaging="true" AllowSorting="true"
-                              Responsive="true"
-                              Class="table table-hover table-bordered table-striped" PageSize="10">
-                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Mã" SortKeyExpression="item => item.Code">
-                                @context.Code
-                            </GridColumn>
-                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Tên" SortKeyExpression="item => item.Name">
-                                @context.Name
-                            </GridColumn>
-                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Mô tả" SortKeyExpression="item => item.Description">
-                                @(context.Description ?? "N/A")
-                            </GridColumn>
-                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Đơn vị" SortKeyExpression="item => item.OrganizationUnitName">
-                                @(context.OrganizationUnitName ?? "N/A")
-                            </GridColumn>
-                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Phạm vi dữ liệu" SortKeyExpression="item => item.DataScope">
-                                @context.DataScope
-                            </GridColumn>
-                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Vai trò hệ thống">
-                                @if (context.IsSystemRole)
-                                {
-                                    <Badge Color="BadgeColor.Info">Có</Badge>
-                                }
-                                else
-                                {
-                                    <Badge Color="BadgeColor.Secondary">Không</Badge>
-                                }
-                            </GridColumn>
-                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Trạng thái">
-                                @if (context.IsActive)
-                                {
-                                    <Badge Color="BadgeColor.Success">Hoạt động</Badge>
-                                }
-                                else
-                                {
-                                    <Badge Color="BadgeColor.Secondary">Ngừng hoạt động</Badge>
-                                }
-                            </GridColumn>
-                            <GridColumn TItem="RolesGetAllResponse" HeaderText="Thao tác" AllowSorting="false">
-                                <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowEditModal(context)" class="me-1" aria-label="Sửa vai trò">
-                                    <Icon Name="IconName.Pencil" />
-                                </Button>
-                                <Button Color="ButtonColor.Info" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowAssignMenuModal(context)" class="me-1" aria-label="Gán menu">
-                                    <Icon Name="IconName.ListCheck" />
-                                </Button>
-                                <Button Color="ButtonColor.Danger" Outline="true" Size="ButtonSize.Small" @onclick="() => DeleteRole(context.Id)" aria-label="Xóa vai trò">
-                                    <Icon Name="IconName.Trash" />
-                                </Button>
-                            </GridColumn>
-                        </Grid>
-                    }
-                </CardBody>
-            </Card>
+            @if (isLoading)
+            {
+                <div class="text-center py-5">
+                    <Spinner Color="SpinnerColor.Primary" />
+                </div>
+            }
+            else if (errorMessage != null)
+            {
+                <HgsErrorState Message="@errorMessage" RetryClick="@LoadRoles" />
+            }
+            else if (roles != null && !roles.Any())
+            {
+                <HgsEmptyState Title="Chưa có vai trò"
+                               Message="Nhấn Thêm vai trò để tạo vai trò đầu tiên."
+                               ShowAction="true"
+                               ActionText="Thêm vai trò"
+                               ActionClick="@ShowCreateModal" />
+            }
+            else
+            {
+                <Grid TItem="RolesGetAllResponse" Data="roles" AllowPaging="true" AllowSorting="true"
+                      Responsive="true"
+                      Class="table table-hover table-bordered table-striped" PageSize="10">
+                    <GridColumn TItem="RolesGetAllResponse" HeaderText="Mã" SortKeyExpression="item => item.Code">
+                        @context.Code
+                    </GridColumn>
+                    <GridColumn TItem="RolesGetAllResponse" HeaderText="Tên" SortKeyExpression="item => item.Name">
+                        @context.Name
+                    </GridColumn>
+                    <GridColumn TItem="RolesGetAllResponse" HeaderText="Mô tả" SortKeyExpression="item => item.Description">
+                        @(context.Description ?? "N/A")
+                    </GridColumn>
+                    <GridColumn TItem="RolesGetAllResponse" HeaderText="Đơn vị" SortKeyExpression="item => item.OrganizationUnitName">
+                        @(context.OrganizationUnitName ?? "N/A")
+                    </GridColumn>
+                    <GridColumn TItem="RolesGetAllResponse" HeaderText="Phạm vi dữ liệu" SortKeyExpression="item => item.DataScope">
+                        @context.DataScope
+                    </GridColumn>
+                    <GridColumn TItem="RolesGetAllResponse" HeaderText="Vai trò hệ thống">
+                        @if (context.IsSystemRole)
+                        {
+                            <Badge Color="BadgeColor.Info">Có</Badge>
+                        }
+                        else
+                        {
+                            <Badge Color="BadgeColor.Secondary">Không</Badge>
+                        }
+                    </GridColumn>
+                    <GridColumn TItem="RolesGetAllResponse" HeaderText="Trạng thái">
+                        @if (context.IsActive)
+                        {
+                            <Badge Color="BadgeColor.Success">Hoạt động</Badge>
+                        }
+                        else
+                        {
+                            <Badge Color="BadgeColor.Secondary">Ngừng hoạt động</Badge>
+                        }
+                    </GridColumn>
+                    <GridColumn TItem="RolesGetAllResponse" HeaderText="Thao tác" AllowSorting="false">
+                        <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowEditModal(context)" class="me-1" aria-label="Sửa vai trò">
+                            <Icon Name="IconName.Pencil" />
+                        </Button>
+                        <Button Color="ButtonColor.Info" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowAssignMenuModal(context)" class="me-1" aria-label="Gán menu">
+                            <Icon Name="IconName.ListCheck" />
+                        </Button>
+                        <Button Color="ButtonColor.Danger" Outline="true" Size="ButtonSize.Small" @onclick="() => DeleteRole(context.Id)" aria-label="Xóa vai trò">
+                            <Icon Name="IconName.Trash" />
+                        </Button>
+                    </GridColumn>
+                </Grid>
+            }
         </div>
     </div>
 </div>

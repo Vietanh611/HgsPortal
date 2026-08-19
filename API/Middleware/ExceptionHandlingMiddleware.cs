@@ -167,6 +167,11 @@ public class ExceptionHandlingMiddleware
 
         var response = ApiResponse<object>.FailResponse(message, statusCode);
 
+        if (exception is BaseException baseEx)
+        {
+            response.ErrorCode = baseEx.ErrorCode;
+        }
+
         response.Data = data;
 
         if (_env.IsDevelopment())

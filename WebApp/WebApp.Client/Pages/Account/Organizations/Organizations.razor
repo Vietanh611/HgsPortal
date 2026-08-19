@@ -1,4 +1,5 @@
 @page "/organizations"
+@inherits AuthorizedPageBase
 @using Hgs.Share.Responses.OrganizationUnits
 @inject NavigationManager Navigation
 
@@ -8,77 +9,73 @@
 <div class="container">
     <div class="row">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                 <h1 class="h2 mb-0">Quản lý đơn vị</h1>
-                <Button Color="ButtonColor.Primary" @onclick="ShowCreateModal">
+                <Button Color="ButtonColor.Primary" @onclick="ShowCreateModal" Class="text-nowrap">
                     <Icon Name="IconName.PlusLg" /> Thêm đơn vị
                 </Button>
             </div>
 
-            <Card>
-                <CardBody>
-                    @if (isLoading)
-                    {
-                        <div class="text-center py-5">
-                            <Spinner Color="SpinnerColor.Primary" />
-                        </div>
-                    }
-                    else if (errorMessage != null)
-                    {
-                        <HgsErrorState Message="@errorMessage" RetryClick="@LoadOrganizations" />
-                    }
-                    else if (organizations != null && !organizations.Any())
-                    {
-                        <HgsEmptyState Title="Chưa có đơn vị"
-                                       Message="Nhấn Thêm đơn vị để tạo đơn vị đầu tiên."
-                                       ShowAction="true"
-                                       ActionText="Thêm đơn vị"
-                                       ActionClick="@ShowCreateModal" />
-                    }
-                    else
-                    {
-                        <Grid TItem="OrganizationUnitsGetAllResponse" Data="organizations" AllowPaging="true" AllowSorting="true" PageSize="10" Responsive="true"
-                              Class="table table-hover table-bordered table-striped">
-                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Mã" SortKeySelector="item => item.Code">
-                                @context.Code
-                            </GridColumn>
-                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Tên" SortKeySelector="item => item.Name">
-                                @context.Name
-                            </GridColumn>
-                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Đơn vị cha" SortKeySelector="item => item.ParentId">
-                                @(context.ParentId?.ToString() ?? "N/A")
-                            </GridColumn>
-                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Cấp" SortKeySelector="item => item.Level">
-                                @context.Level
-                            </GridColumn>
-                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Thứ tự" SortKeySelector="item => item.SortOrder">
-                                @context.SortOrder
-                            </GridColumn>
-                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Trạng thái">
-                                @if (context.IsActive)
-                                {
-                                    <Badge Color="BadgeColor.Success">Hoạt động</Badge>
-                                }
-                                else
-                                {
-                                    <Badge Color="BadgeColor.Secondary">Ngừng hoạt động</Badge>
-                                }
-                            </GridColumn>
-                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Ngày tạo" SortKeyExpression="item => item.CreatedAt">
-                                @context.CreatedAt.ToString("dd/MM/yyyy HH:mm")
-                            </GridColumn>
-                            <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Thao tác" AllowSorting="false">
-                                <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowEditModal(context)" class="me-1" aria-label="Sửa đơn vị">
-                                    <Icon Name="IconName.Pencil" />
-                                </Button>
-                                <Button Color="ButtonColor.Danger" Outline="true" Size="ButtonSize.Small" @onclick="() => DeleteOrganization(context.Id)" aria-label="Xóa đơn vị">
-                                    <Icon Name="IconName.Trash" />
-                                </Button>
-                            </GridColumn>
-                        </Grid>
-                    }
-                </CardBody>
-            </Card>
+            @if (isLoading)
+            {
+                <div class="text-center py-5">
+                    <Spinner Color="SpinnerColor.Primary" />
+                </div>
+            }
+            else if (errorMessage != null)
+            {
+                <HgsErrorState Message="@errorMessage" RetryClick="@LoadOrganizations" />
+            }
+            else if (organizations != null && !organizations.Any())
+            {
+                <HgsEmptyState Title="Chưa có đơn vị"
+                               Message="Nhấn Thêm đơn vị để tạo đơn vị đầu tiên."
+                               ShowAction="true"
+                               ActionText="Thêm đơn vị"
+                               ActionClick="@ShowCreateModal" />
+            }
+            else
+            {
+                <Grid TItem="OrganizationUnitsGetAllResponse" Data="organizations" AllowPaging="true" AllowSorting="true" PageSize="10" Responsive="true"
+                      Class="table table-hover table-bordered table-striped">
+                    <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Mã" SortKeySelector="item => item.Code">
+                        @context.Code
+                    </GridColumn>
+                    <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Tên" SortKeySelector="item => item.Name">
+                        @context.Name
+                    </GridColumn>
+                    <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Đơn vị cha" SortKeySelector="item => item.ParentId">
+                        @(context.ParentId?.ToString() ?? "N/A")
+                    </GridColumn>
+                    <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Cấp" SortKeySelector="item => item.Level">
+                        @context.Level
+                    </GridColumn>
+                    <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Thứ tự" SortKeySelector="item => item.SortOrder">
+                        @context.SortOrder
+                    </GridColumn>
+                    <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Trạng thái">
+                        @if (context.IsActive)
+                        {
+                            <Badge Color="BadgeColor.Success">Hoạt động</Badge>
+                        }
+                        else
+                        {
+                            <Badge Color="BadgeColor.Secondary">Ngừng hoạt động</Badge>
+                        }
+                    </GridColumn>
+                    <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Ngày tạo" SortKeyExpression="item => item.CreatedAt">
+                        @context.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                    </GridColumn>
+                    <GridColumn TItem="OrganizationUnitsGetAllResponse" HeaderText="Thao tác" AllowSorting="false">
+                        <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowEditModal(context)" class="me-1" aria-label="Sửa đơn vị">
+                            <Icon Name="IconName.Pencil" />
+                        </Button>
+                        <Button Color="ButtonColor.Danger" Outline="true" Size="ButtonSize.Small" @onclick="() => DeleteOrganization(context.Id)" aria-label="Xóa đơn vị">
+                            <Icon Name="IconName.Trash" />
+                        </Button>
+                    </GridColumn>
+                </Grid>
+            }
         </div>
     </div>
 </div>

@@ -39,6 +39,11 @@ namespace Data.DbContexts
 
         #endregion
 
+        #region Notifications
+        public DbSet<Notifications> Notifications => Set<Notifications>();
+        public DbSet<NotificationRecipients> NotificationRecipients => Set<NotificationRecipients>();
+        #endregion
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             //var entities = modelBuilder.Model.GetEntityTypes();
@@ -96,6 +101,32 @@ namespace Data.DbContexts
                 entity.HasOne(d => d.OrganizationUnit)
                     .WithMany()
                     .HasForeignKey(d => d.OrganizationUnitId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+            #endregion
+
+            #region Notifications
+            modelBuilder.Entity<Notifications>(entity =>
+            {
+                entity.HasOne(n => n.TriggeredByUser)
+                    .WithMany()
+                    .HasForeignKey(n => n.TriggeredByUserId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            modelBuilder.Entity<NotificationRecipients>(entity =>
+            {
+                entity.HasIndex(r => new { r.UserId, r.IsRead });
+                entity.HasIndex(r => new { r.NotificationId, r.UserId }).IsUnique();
+
+                entity.HasOne(r => r.Notification)
+                    .WithMany(n => n.Recipients)
+                    .HasForeignKey(r => r.NotificationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(r => r.User)
+                    .WithMany()
+                    .HasForeignKey(r => r.UserId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
             #endregion

@@ -13,7 +13,12 @@
     background: var(--surface);
     padding-bottom: var(--space-lg);
 }
-
+.card-body{
+padding: 0;
+}
+.table-responsive {
+    border-radius: 0px;
+}
 /* Màn hình chưa ghép cặp: căn giữa card kích hoạt theo cả 2 trục */
 .display-page .kiosk-setup-screen {
     min-height: 100vh;
@@ -60,7 +65,7 @@
 
 /* Bảng điều phối không chịu ảnh hưởng của card/toàn cục */
 .display-page .card {
-    border: 1px solid var(--border);
+    /*border: 1px solid var(--border);*/
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
     overflow: hidden;
@@ -74,15 +79,16 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    background: var(--hgs-blue);
+    /*background: var(--hgs-blue);*/
+    background-color:white;
     border: none;
-    border-bottom: 4px solid var(--hgs-orange);
-    padding: var(--space-md);
+    /*border-bottom: 4px solid var(--hgs-orange);*/
+    padding: var(--space-xs);
 }
 
 .display-page .current-flights-title {
     margin: 0;
-    color: #ffffff;
+    color: var(--hgs-blue);
     font-size: 42px;
     font-weight: 700;
     text-align: center;
@@ -137,6 +143,10 @@
 .display-page .arrival-display-table tbody tr:hover td {
     background: var(--hover);
 }
+    .display-page .arrival-display-table tbody td img {
+        display: block;
+        margin: 0 auto;
+    }
 
 .display-page .route {
     font-size: 1.2rem;

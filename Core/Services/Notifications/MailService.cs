@@ -1,4 +1,4 @@
-using Core.Interfaces;
+using Core.Interfaces.Notifications;
 using Core.Services.Settings;
 using Hgs.Share.Exceptions;
 using MailKit.Net.Smtp;

@@ -19,21 +19,21 @@
 <link href="css/baggage-display.css" rel="stylesheet" />
 
 <div class="container-fluid display-page">
-    @if (!isAuthenticated && kioskConfig == null)
+    @if (isChecking || isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (!isAuthenticated && kioskConfig == null)
     {
         <div class="kiosk-setup-screen">
             <KioskDeviceSetup Config="@kioskConfig" OnChanged="HandleConfigChanged" />
             <p class="text-muted mt-3 mb-0">
                 Nhập mã ghép phía trên để kích hoạt màn hình và bắt đầu hiển thị.
             </p>
-        </div>
-    }
-    else if (isLoading)
-    {
-        <div class="text-center py-5">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
         </div>
     }
     else if (errorMessage != null)
@@ -48,33 +48,15 @@
             @if (!isLoading)
             {
                 <Carousel ShowIndicators="false"
+                          ShowPreviousNextControls="false"
                           Crossfade="true"
                           Interval="5000"
                           Autoplay="CarouselAutoPlay.StartOnPageLoad">
 
-                    @{
-                        var isFirstItem = true;
-                    }
-
-                    @if (images != null && images.Any())
-                    {
-                        @foreach (var image in images)
-                        {
-                            <CarouselItem class="@(isFirstItem ? "active" : "")">
-                                <div class="d-flex justify-content-center align-items-center w-100">
-                                    <img src="@image.StoragePath"
-                                         class="display-image"
-                                         alt="@image.FileName" />
-                                </div>
-                            </CarouselItem>
-
-                            isFirstItem = false;
-                        }
-                    }
-
                     @if (baggageData != null && baggageData.Any())
                     {
-                        <CarouselItem class="@(isFirstItem ? "active" : "")">
+                        <!-- CÓ DATA → CHỈ HIỂN THỊ DATA -->
+                        <CarouselItem class="active">
                             <div class="arrival-item">
                                 <div class="arrival-logo">
                                     <img src="@($"{Navigation.BaseUri}assets/hgs/new%20logo/logo.png")"
@@ -137,8 +119,24 @@
                                 </div>
                             </div>
                         </CarouselItem>
+                    }
+                    else if (images != null && images.Any())
+                    {
+                        <!-- KHÔNG CÓ DATA → CHỈ HIỂN THỊ ẢNH -->
+                        var isFirstItem = true;
 
-                        isFirstItem = false;
+                        @foreach (var image in images)
+                        {
+                            <CarouselItem class="@(isFirstItem ? "active" : "")">
+                                <div class="d-flex justify-content-center align-items-center w-100">
+                                    <img src="@image.StoragePath"
+                                         class="display-image"
+                                         alt="@image.FileName" />
+                                </div>
+                            </CarouselItem>
+
+                            isFirstItem = false;
+                        }
                     }
 
                 </Carousel>
@@ -158,6 +156,7 @@
     private List<BaggageArrivalDisplayDto>? baggageData;
     private List<CoreAssetsGetAllResponse>? images;
     private KioskDeviceConfig? kioskConfig;
+    private bool isChecking = true;
     private bool isLoading = true;
     private string? errorMessage;
     private int carouselKey = 0;
@@ -171,6 +170,7 @@
         kioskConfig = await KioskConfig.GetAsync();
         var authState = await AuthState.GetAuthenticationStateAsync();
         isAuthenticated = authState.User.Identity?.IsAuthenticated == true;
+        isChecking = false;
         if (isAuthenticated || kioskConfig != null)
         {
             await LoadData();

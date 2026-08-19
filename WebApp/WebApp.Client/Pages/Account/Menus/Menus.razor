@@ -1,4 +1,5 @@
 @page "/menus"
+@inherits AuthorizedPageBase
 @using Hgs.Share.Responses.Menus
 @using BlazorBootstrap
 
@@ -7,147 +8,143 @@
 <div class="container">
     <div class="row">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                 <h1 class="h2 mb-0">Quản lý menu</h1>
-                <Button Color="ButtonColor.Primary" @onclick="ShowCreateModal">
+                <Button Color="ButtonColor.Primary" @onclick="ShowCreateModal" Class="text-nowrap">
                     <Icon Name="IconName.PlusLg" /> Thêm menu
                 </Button>
             </div>
 
-            <Card>
-                <CardBody>
-                    @if (isLoading)
-                    {
-                        <div class="text-center py-5">
-                            <Spinner Color="SpinnerColor.Primary" />
-                        </div>
-                    }
-                    else if (errorMessage != null)
-                    {
-                        <HgsErrorState Message="@errorMessage" RetryClick="@LoadMenus" />
-                    }
-                    else if (menus != null && !menus.Any())
-                    {
-                        <HgsEmptyState Title="Chưa có menu"
-                                       Message="Nhấn Thêm menu để tạo menu đầu tiên."
-                                       ShowAction="true"
-                                       ActionText="Thêm menu"
-                                       ActionClick="@ShowCreateModal" />
-                    }
-                    else
-                    {
-                        <Grid TItem="MenusGetAllResponse" Data="menus" AllowDetailView="true" AllowSorting="true" Responsive="true"
-                              Class="table table-hover table-bordered table-striped">
-                            <GridColumns>
-                                <GridColumn TItem="MenusGetAllResponse" HeaderText="Mã" SortKeySelector="item => item.Code">
-                                    @context.Code
-                                </GridColumn>
-                                <GridColumn TItem="MenusGetAllResponse" HeaderText="Tên" SortKeySelector="item => item.Name">
-                                    <i class="bi @(context.Children.Any() ? "bi-folder2" : "bi-file-earmark-text") me-2 @(context.Children.Any() ? "text-primary" : "text-secondary")"></i>
-                                    @context.Name
-                                </GridColumn>
-                                <GridColumn TItem="MenusGetAllResponse" HeaderText="Đường dẫn" SortKeySelector="item => item.Route">
-                                    @(context.Route ?? "N/A")
-                                </GridColumn>
-                                <GridColumn TItem="MenusGetAllResponse" HeaderText="Biểu tượng" SortKeySelector="item => item.Icon">
-                                    @(context.Icon ?? "N/A")
-                                </GridColumn>
-                                <GridColumn TItem="MenusGetAllResponse" HeaderText="Thứ tự" SortKeySelector="item => item.SortOrder">
-                                    @context.SortOrder
-                                </GridColumn>
-                                <GridColumn TItem="MenusGetAllResponse" HeaderText="Hiển thị">
-                                    @if (context.IsVisible)
-                                    {
-                                        <Badge Color="BadgeColor.Success">Có</Badge>
-                                    }
-                                    else
-                                    {
-                                        <Badge Color="BadgeColor.Secondary">Không</Badge>
-                                    }
-                                </GridColumn>
-                                <GridColumn TItem="MenusGetAllResponse" HeaderText="Trạng thái">
-                                    @if (context.IsActive)
-                                    {
-                                        <Badge Color="BadgeColor.Success">Hoạt động</Badge>
-                                    }
-                                    else
-                                    {
-                                        <Badge Color="BadgeColor.Secondary">Ngừng hoạt động</Badge>
-                                    }
-                                </GridColumn>
-                                <GridColumn TItem="MenusGetAllResponse" HeaderText="Thao tác" AllowSorting="false">
-                                    <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowEditModal(context)" class="me-1" aria-label="Sửa menu">
-                                        <Icon Name="IconName.Pencil" />
-                                    </Button>
-                                    <Button Color="ButtonColor.Danger" Outline="true" Size="ButtonSize.Small" @onclick="() => DeleteMenu(context.Id)" aria-label="Xóa menu">
-                                        <Icon Name="IconName.Trash" />
-                                    </Button>
-                                </GridColumn>
-                            </GridColumns>
-                            <GridDetailView TItem="MenusGetAllResponse">
-                                @if (context.Children.Any())
-                                {
-                                    <Grid TItem="MenusGetAllResponse" Data="context.Children" AllowSorting="true" Responsive="true"
-                                          Class="table table-hover table-bordered table-sm">
-                                        <GridColumns>
-                                            <GridColumn TItem="MenusGetAllResponse" Context="childMenu" HeaderText="Mã" SortKeySelector="item => item.Code">
-                                                @childMenu.Code
-                                            </GridColumn>
-                                            <GridColumn TItem="MenusGetAllResponse" Context="childMenu" HeaderText="Tên" SortKeySelector="item => item.Name">
-                                                <span class="ms-4">
-                                                    <i class="bi @(childMenu.Children.Any() ? "bi-folder2" : "bi-file-earmark-text") me-2 @(childMenu.Children.Any() ? "text-primary" : "text-secondary")"></i>
-                                                    @childMenu.Name
-                                                </span>
-                                            </GridColumn>
-                                            <GridColumn TItem="MenusGetAllResponse" Context="childMenu" HeaderText="Đường dẫn" SortKeySelector="item => item.Route">
-                                                @(childMenu.Route ?? "N/A")
-                                            </GridColumn>
-                                            <GridColumn TItem="MenusGetAllResponse" Context="childMenu" HeaderText="Biểu tượng" SortKeySelector="item => item.Icon">
-                                                @(childMenu.Icon ?? "N/A")
-                                            </GridColumn>
-                                            <GridColumn TItem="MenusGetAllResponse" Context="childMenu" HeaderText="Thứ tự" SortKeySelector="item => item.SortOrder">
-                                                @childMenu.SortOrder
-                                            </GridColumn>
-                                            <GridColumn TItem="MenusGetAllResponse" Context="childMenu" HeaderText="Hiển thị">
-                                                @if (childMenu.IsVisible)
-                                                {
-                                                    <Badge Color="BadgeColor.Success">Có</Badge>
-                                                }
-                                                else
-                                                {
-                                                    <Badge Color="BadgeColor.Secondary">Không</Badge>
-                                                }
-                                            </GridColumn>
-                                            <GridColumn TItem="MenusGetAllResponse" Context="childMenu" HeaderText="Trạng thái">
-                                                @if (childMenu.IsActive)
-                                                {
-                                                    <Badge Color="BadgeColor.Success">Hoạt động</Badge>
-                                                }
-                                                else
-                                                {
-                                                    <Badge Color="BadgeColor.Secondary">Ngừng hoạt động</Badge>
-                                                }
-                                            </GridColumn>
-                                            <GridColumn TItem="MenusGetAllResponse" Context="childMenu" HeaderText="Thao tác" AllowSorting="false">
-                                                <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowEditModal(childMenu)" class="me-1" aria-label="Sửa menu">
-                                                    <Icon Name="IconName.Pencil" />
-                                                </Button>
-                                                <Button Color="ButtonColor.Danger" Outline="true" Size="ButtonSize.Small" @onclick="() => DeleteMenu(childMenu.Id)" aria-label="Xóa menu">
-                                                    <Icon Name="IconName.Trash" />
-                                                </Button>
-                                            </GridColumn>
-                                        </GridColumns>
-                                    </Grid>
-                                }
-                                else
-                                {
-                                    <div class="text-muted py-2 ms-4">Không có menu con.</div>
-                                }
-                            </GridDetailView>
-                        </Grid>
-                    }
-                </CardBody>
-            </Card>
+            @if (isLoading)
+            {
+                <div class="text-center py-5">
+                    <Spinner Color="SpinnerColor.Primary" />
+                </div>
+            }
+            else if (errorMessage != null)
+            {
+                <HgsErrorState Message="@errorMessage" RetryClick="@LoadMenus" />
+            }
+            else if (menus != null && !menus.Any())
+            {
+                <HgsEmptyState Title="Chưa có menu"
+                               Message="Nhấn Thêm menu để tạo menu đầu tiên."
+                               ShowAction="true"
+                               ActionText="Thêm menu"
+                               ActionClick="@ShowCreateModal" />
+            }
+            else
+            {
+                <Grid TItem="MenusGetAllResponse" Data="menus" AllowDetailView="true" AllowSorting="true" Responsive="true"
+                      Class="table table-hover table-bordered table-striped menus-grid">
+                    <GridColumns>
+                        <GridColumn TItem="MenusGetAllResponse" HeaderText="Mã" SortKeySelector="item => item.Code">
+                            @context.Code
+                        </GridColumn>
+                        <GridColumn TItem="MenusGetAllResponse" HeaderText="Tên" SortKeySelector="item => item.Name">
+                            <i class="bi @(context.Children.Any() ? "bi-folder2" : "bi-file-earmark-text") me-2 @(context.Children.Any() ? "text-primary" : "text-secondary")"></i>
+                            @context.Name
+                        </GridColumn>
+                        <GridColumn TItem="MenusGetAllResponse" HeaderText="Đường dẫn" SortKeySelector="item => item.Route">
+                            @(context.Route ?? "N/A")
+                        </GridColumn>
+                        <GridColumn TItem="MenusGetAllResponse" HeaderText="Biểu tượng" SortKeySelector="item => item.Icon">
+                            @(context.Icon ?? "N/A")
+                        </GridColumn>
+                        <GridColumn TItem="MenusGetAllResponse" HeaderText="Thứ tự" SortKeySelector="item => item.SortOrder">
+                            @context.SortOrder
+                        </GridColumn>
+                        <GridColumn TItem="MenusGetAllResponse" HeaderText="Hiển thị">
+                            @if (context.IsVisible)
+                            {
+                                <Badge Color="BadgeColor.Success">Có</Badge>
+                            }
+                            else
+                            {
+                                <Badge Color="BadgeColor.Secondary">Không</Badge>
+                            }
+                        </GridColumn>
+                        <GridColumn TItem="MenusGetAllResponse" HeaderText="Trạng thái">
+                            @if (context.IsActive)
+                            {
+                                <Badge Color="BadgeColor.Success">Hoạt động</Badge>
+                            }
+                            else
+                            {
+                                <Badge Color="BadgeColor.Secondary">Ngừng hoạt động</Badge>
+                            }
+                        </GridColumn>
+                        <GridColumn TItem="MenusGetAllResponse" HeaderText="Thao tác" AllowSorting="false">
+                            <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowEditModal(context)" class="me-1" aria-label="Sửa menu">
+                                <Icon Name="IconName.Pencil" />
+                            </Button>
+                            <Button Color="ButtonColor.Danger" Outline="true" Size="ButtonSize.Small" @onclick="() => DeleteMenu(context.Id)" aria-label="Xóa menu">
+                                <Icon Name="IconName.Trash" />
+                            </Button>
+                        </GridColumn>
+                    </GridColumns>
+                    <GridDetailView TItem="MenusGetAllResponse">
+                        @if (context.Children.Any())
+                        {
+                            <Grid TItem="MenusGetAllResponse" Data="context.Children" AllowSorting="true" Responsive="true"
+                                  Class="table table-hover table-bordered table-sm">
+                                <GridColumns>
+                                    <GridColumn TItem="MenusGetAllResponse" Context="childMenu" HeaderText="Mã" SortKeySelector="item => item.Code">
+                                        @childMenu.Code
+                                    </GridColumn>
+                                    <GridColumn TItem="MenusGetAllResponse" Context="childMenu" HeaderText="Tên" SortKeySelector="item => item.Name">
+                                        <span class="ms-4">
+                                            <i class="bi @(childMenu.Children.Any() ? "bi-folder2" : "bi-file-earmark-text") me-2 @(childMenu.Children.Any() ? "text-primary" : "text-secondary")"></i>
+                                            @childMenu.Name
+                                        </span>
+                                    </GridColumn>
+                                    <GridColumn TItem="MenusGetAllResponse" Context="childMenu" HeaderText="Đường dẫn" SortKeySelector="item => item.Route">
+                                        @(childMenu.Route ?? "N/A")
+                                    </GridColumn>
+                                    <GridColumn TItem="MenusGetAllResponse" Context="childMenu" HeaderText="Biểu tượng" SortKeySelector="item => item.Icon">
+                                        @(childMenu.Icon ?? "N/A")
+                                    </GridColumn>
+                                    <GridColumn TItem="MenusGetAllResponse" Context="childMenu" HeaderText="Thứ tự" SortKeySelector="item => item.SortOrder">
+                                        @childMenu.SortOrder
+                                    </GridColumn>
+                                    <GridColumn TItem="MenusGetAllResponse" Context="childMenu" HeaderText="Hiển thị">
+                                        @if (childMenu.IsVisible)
+                                        {
+                                            <Badge Color="BadgeColor.Success">Có</Badge>
+                                        }
+                                        else
+                                        {
+                                            <Badge Color="BadgeColor.Secondary">Không</Badge>
+                                        }
+                                    </GridColumn>
+                                    <GridColumn TItem="MenusGetAllResponse" Context="childMenu" HeaderText="Trạng thái">
+                                        @if (childMenu.IsActive)
+                                        {
+                                            <Badge Color="BadgeColor.Success">Hoạt động</Badge>
+                                        }
+                                        else
+                                        {
+                                            <Badge Color="BadgeColor.Secondary">Ngừng hoạt động</Badge>
+                                        }
+                                    </GridColumn>
+                                    <GridColumn TItem="MenusGetAllResponse" Context="childMenu" HeaderText="Thao tác" AllowSorting="false">
+                                        <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" @onclick="() => ShowEditModal(childMenu)" class="me-1" aria-label="Sửa menu">
+                                            <Icon Name="IconName.Pencil" />
+                                        </Button>
+                                        <Button Color="ButtonColor.Danger" Outline="true" Size="ButtonSize.Small" @onclick="() => DeleteMenu(childMenu.Id)" aria-label="Xóa menu">
+                                            <Icon Name="IconName.Trash" />
+                                        </Button>
+                                    </GridColumn>
+                                </GridColumns>
+                            </Grid>
+                        }
+                        else
+                        {
+                            <div class="text-muted py-2 ms-4">Không có menu con.</div>
+                        }
+                    </GridDetailView>
+                </Grid>
+            }
         </div>
     </div>
 </div>

@@ -1,4 +1,4 @@
-﻿using Core.Interfaces;
+﻿using Core.Interfaces.Operations;
 using Hgs.Share.Dtos;
 using Hgs.Share.Exceptions;
 using Hgs.Share.Responses.ApiResponses;

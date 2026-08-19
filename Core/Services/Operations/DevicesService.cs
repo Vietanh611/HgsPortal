@@ -1,4 +1,5 @@
-using Core.Interfaces;
+using Core.Interfaces.Auth;
+using Core.Interfaces.Operations;
 using Core.Services.Settings;
 using Data.DbContexts;
 using Domain.Entities.DeviceManagement;

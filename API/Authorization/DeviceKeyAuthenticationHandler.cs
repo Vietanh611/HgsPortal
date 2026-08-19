@@ -1,4 +1,4 @@
-using Core.Interfaces;
+using Core.Interfaces.Operations;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;

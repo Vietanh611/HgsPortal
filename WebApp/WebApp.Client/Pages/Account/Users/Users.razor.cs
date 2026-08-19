@@ -10,13 +10,14 @@ using Hgs.Share.Responses.Users;
 using Hgs.Share.Responses.Menus;
 using Hgs.Share.Responses.UserMenus;
 using Microsoft.AspNetCore.Components;
+using WebApp.Client.Components;
 using WebApp.Client.Services.Components;
 using WebApp.Client.Services.Network;
 using CustomToastService = WebApp.Client.Services.Components.ToastService;
 
 namespace WebApp.Client.Pages.Account.Users;
 
-public partial class Users
+public partial class Users : AuthorizedPageBase
 {
     [Inject] private CustomToastService ToastService { get; set; } = default!;
     [Inject] private ApiClient ApiClient { get; set; } = default!;
@@ -27,7 +28,7 @@ public partial class Users
     private AssignRoleModal assignRoleModal = default!;
     private IEnumerable<UsersGetAllResponse>? users;
     private IEnumerable<OrganizationUnitsGetAllResponse>? organizationUnits;
-    private IEnumerable<MenusGetAllResponse>? menus;
+    private IEnumerable<MenusGetByUserIdResponse>? menus;
     private IEnumerable<RolesGetAllResponse>? roles;
     private List<int> assignedMenuIds = new();
     private List<int> selectedMenuIds = new();
@@ -54,7 +55,7 @@ public partial class Users
     private bool isAssigningRoles = false;
     private int editingUserId = 0;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnInitializedAuthorizedAsync()
     {
         await Task.WhenAll(LoadUsers(), LoadOrganizationUnits());
     }
@@ -111,7 +112,7 @@ public partial class Users
         isLoadingMenus = true;
         try
         {
-            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<MenusGetAllResponse>>>("api/menus", silent: true);
+            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<MenusGetByUserIdResponse>>>("api/my/menus", silent: true);
             if (response != null && response.Success && response.Data != null)
             {
                 menus = response.Data;
@@ -159,7 +160,7 @@ public partial class Users
         isLoadingRoles = true;
         try
         {
-            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<RolesGetAllResponse>>>("api/roles", silent: true);
+            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<RolesGetAllResponse>>>("api/my/roles", silent: true);
             if (response != null && response.Success && response.Data != null)
             {
                 roles = response.Data;
@@ -520,6 +521,42 @@ public partial class Users
             {
                 ToastService.ShowError($"Lỗi khi xóa người dùng: {ex.Message}");
             }
+        }
+    }
+
+    private async Task UnlockUser(UsersGetAllResponse user)
+    {
+        var confirmation = await DialogService.ShowConfirmAsync(
+            "Mở khóa tài khoản",
+            $"Bạn có chắc muốn mở khóa tài khoản '{user.Username}'?",
+            new ConfirmDialogOptions
+            {
+                YesButtonText = "Mở khóa",
+                NoButtonText = "Hủy",
+                YesButtonColor = ButtonColor.Success
+            });
+
+        if (!confirmation)
+        {
+            return;
+        }
+
+        try
+        {
+            var success = await ApiClient.PutAsync($"api/users/{user.Id}/unlock", new { });
+            if (success)
+            {
+                ToastService.ShowSuccess("Đã mở khóa tài khoản");
+                await LoadUsers();
+            }
+            else
+            {
+                ToastService.ShowError("Không thể mở khóa tài khoản");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Lỗi khi mở khóa tài khoản: {ex.Message}");
         }
     }
 }

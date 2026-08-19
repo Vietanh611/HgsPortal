@@ -1,0 +1,11 @@
+@media (max-width: 767.98px) {
+    ::deep .notif-grid th:nth-child(3),
+    ::deep .notif-grid td:nth-child(3) {
+        display: none;
+    }
+
+    ::deep .notif-grid th:nth-child(1),
+    ::deep .notif-grid td:nth-child(1) {
+        min-width: 260px;
+    }
+}

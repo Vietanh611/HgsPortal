@@ -1,4 +1,5 @@
-using Core.Interfaces;
+using Core.Interfaces.Identity;
+using Core.Interfaces.Operations;
 using Data.DbContexts;
 using Domain.Entities.System;
 using Hgs.Share.Requests.RoleMenus;
@@ -157,8 +158,10 @@ public class RoleMenuService : IRoleMenuService
             .Select(rm => rm.MenuId)
             .ToListAsync(cancellationToken);
 
-        // Filter out already assigned menus
-        var newMenuIds = menuIds.Except(existingMenuIds).ToList();
+        // Danh sách gửi lên là "tập đầy đủ" — gán menu chưa có, gỡ menu không còn trong lựa chọn.
+        var requestedMenuIds = menuIds.Distinct().ToList();
+        var newMenuIds = requestedMenuIds.Except(existingMenuIds).ToList();
+        var removedMenuIds = existingMenuIds.Except(requestedMenuIds).ToList();
 
         var createdRoleMenus = new List<RoleMenus>();
         foreach (var menuId in newMenuIds)
@@ -184,6 +187,17 @@ public class RoleMenuService : IRoleMenuService
             createdRoleMenus.Add(roleMenu);
         }
 
+        var removedRoleMenus = new List<RoleMenus>();
+        if (removedMenuIds.Any())
+        {
+            removedRoleMenus = await _dbContext.RoleMenus
+                .Include(rm => rm.Menu)
+                .Where(rm => rm.RoleId == roleId && removedMenuIds.Contains(rm.MenuId))
+                .ToListAsync(cancellationToken);
+
+            _dbContext.RoleMenus.RemoveRange(removedRoleMenus);
+        }
+
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         // 1 dòng audit cho mỗi menu được gán
@@ -197,6 +211,18 @@ public class RoleMenuService : IRoleMenuService
                 entityId: roleId,
                 detail: $"Gán menu #{roleMenu.MenuId} cho role '{role.Name}'",
                 newValue: new { roleId, menuId = roleMenu.MenuId });
+        }
+
+        // 1 dòng audit cho mỗi menu bị gỡ
+        foreach (var roleMenu in removedRoleMenus)
+        {
+            await _auditLog.LogSecurityEventAsync(
+                action: "MENU_REVOKED_FROM_ROLE",
+                eventCategory: "Permission", success: true, severity: "Warning",
+                entityName: "Roles",
+                entityId: roleId,
+                detail: $"Gỡ menu '{roleMenu.Menu?.Name}' khỏi role '{role.Name}'",
+                oldValue: new { roleId, menuId = roleMenu.MenuId, MenuName = roleMenu.Menu?.Name });
         }
 
         await _cacheService.ClearAllMenuCacheAsync(cancellationToken);

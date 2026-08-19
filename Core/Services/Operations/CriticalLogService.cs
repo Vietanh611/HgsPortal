@@ -1,4 +1,4 @@
-using Core.Interfaces;
+using Core.Interfaces.Operations;
 using Data.DbContexts;
 using Domain.Entities.System;
 using Hgs.Share.Requests.CriticalLogs;

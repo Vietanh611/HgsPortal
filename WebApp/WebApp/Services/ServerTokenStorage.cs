@@ -8,6 +8,8 @@ namespace WebApp.Services;
 /// </summary>
 public class ServerTokenStorage : WebApp.Client.Services.Data.ITokenStorage
 {
+    public bool IsServerSidePrerender => true;
+
     public Task<string?> GetAccessTokenAsync()
     {
         return Task.FromResult<string?>(null);

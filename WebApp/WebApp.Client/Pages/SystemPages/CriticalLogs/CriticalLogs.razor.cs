@@ -5,11 +5,12 @@ using Hgs.Share.Responses.CriticalLogs;
 using Microsoft.AspNetCore.Components;
 using System.Globalization;
 using System.Net;
+using WebApp.Client.Components;
 using WebApp.Client.Services.Network;
 
 namespace WebApp.Client.Pages.SystemPages.CriticalLogs;
 
-public partial class CriticalLogs : ComponentBase
+public partial class CriticalLogs : AuthorizedPageBase
 {
     [Inject] private ApiClient ApiClient { get; set; } = default!;
 
@@ -27,6 +28,11 @@ public partial class CriticalLogs : ComponentBase
 
     private async Task<GridDataProviderResult<CriticalLogsGetAllResponse>> CriticalLogsDataProvider(GridDataProviderRequest<CriticalLogsGetAllResponse> request)
     {
+        if (!IsInteractive)
+        {
+            return new GridDataProviderResult<CriticalLogsGetAllResponse> { Data = Array.Empty<CriticalLogsGetAllResponse>(), TotalCount = 0 };
+        }
+
         errorMessage = null;
         showEmptyState = false;
 

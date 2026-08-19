@@ -1,4 +1,4 @@
-using Core.Interfaces;
+using Core.Interfaces.Identity;
 using Data.DbContexts;
 using Domain.Entities.Identity;
 using Microsoft.AspNetCore.Http;
@@ -126,6 +126,11 @@ public class OrgScopeService : IOrgScopeService
         return scopePaths.Any(path => orgPath == path || orgPath.StartsWith(path + "/"));
     }
 
+    /// <summary>
+    /// Kiểm tra role có thể được gán bởi caller: phải active, không phải role hệ thống, có gắn org và
+    /// org đó thuộc phạm vi quản lý (anchor = User.OrganizationUnitId của caller, gồm cấp con).
+    /// SUPER_ADMIN gán được mọi role không phải hệ thống.
+    /// </summary>
     public async Task<bool> IsRoleAssignableAsync(int roleId, CancellationToken cancellationToken = default)
     {
         var role = await _dbContext.Roles
@@ -150,6 +155,10 @@ public class OrgScopeService : IOrgScopeService
         return await IsOrgUnitInScopeAsync(role.OrganizationUnitId.Value, cancellationToken);
     }
 
+    /// <summary>
+    /// Trả về các role caller có thể gán: active, không phải role hệ thống, thuộc org trong phạm vi quản lý
+    /// (anchor = User.OrganizationUnitId của caller, gồm cấp con). SUPER_ADMIN nhận toàn bộ role active không phải hệ thống.
+    /// </summary>
     public async Task<IEnumerable<Roles>> GetAssignableRolesAsync(CancellationToken cancellationToken = default)
     {
         var scopePaths = await GetCallerScopePathsAsync(cancellationToken);

@@ -1,5 +1,5 @@
 using API.Authorization;
-using Core.Interfaces;
+using Core.Interfaces.Identity;
 using Core.Services.Settings;
 using Domain.Entities.FlyOps;
 using Domain.Entities.Identity;
@@ -218,6 +218,31 @@ public class UsersController : BaseApiController
         catch (Exception ex)
         {
             return BadRequest(ApiResponse.FailResponse(ex.Message, 400));
+        }
+    }
+
+    /// <summary>
+    /// Mở khóa tài khoản đang bị khóa do đăng nhập sai nhiều lần (thao tác quản trị để user
+    /// đăng nhập lại ngay thay vì chờ hết thời gian khóa); user đích phải nằm trong org-scope → 403.
+    /// </summary>
+    [HttpPut("{id:int}/unlock")]
+    public async Task<ActionResult<ApiResponse>> Unlock(int id)
+    {
+        try
+        {
+            var unlocked = await _usersService.UnlockAsync(id);
+            if (!unlocked)
+            {
+                return NotFound(ApiResponse.FailResponse("User not found", 404));
+            }
+
+            _logger.LogInformation("Unlocked user with id '{Id}'.", id);
+            return Ok(ApiResponse.SuccessResponse("User unlocked successfully", 200));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized access to unlock user");
+            return StatusCode(403, ApiResponse.FailResponse("Bạn không có quyền thực hiện thao tác này", 403));
         }
     }
 

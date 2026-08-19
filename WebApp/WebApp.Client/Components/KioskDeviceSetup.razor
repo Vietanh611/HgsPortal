@@ -1,13 +1,14 @@
 @using BlazorBootstrap
 @using Hgs.Share.Requests.Devices
 @using WebApp.Client.Services
+@using WebApp.Client.Services.Operation
 @inject KioskDeviceConfigService KioskConfig
 @inject DevicesService DevicesService
 @inject WebApp.Client.Services.Components.ToastService ToastService
 
 @if (Config == null)
 {
-    <div class="card kiosk-setup-card mb-4 shadow-sm">
+    <div class="card kiosk-setup-card mb-2 shadow-sm">
         <div class="card-body">
             <div class="d-flex align-items-center gap-2 mb-2">
                 <Icon Name="IconName.Display" Color="IconColor.Warning" />

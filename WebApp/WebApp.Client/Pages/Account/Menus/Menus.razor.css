@@ -1,0 +1,28 @@
+/* Cột mũi tên đóng/mở child detail (cột đầu tiên do AllowDetailView render) luôn
+   giữ đủ chiều rộng để nhìn thấy và dễ chạm trên mọi kích thước màn hình.
+   Trên màn hình nhỏ, table auto-layout nén cột này xuống mức tối thiểu làm mũi tên
+   không nhìn thấy được. Dùng ">" để chỉ áp dụng cho grid cha, không lan xuống
+   grid con (child detail) vốn không có cột toggle. */
+::deep .menus-grid > thead > tr > th:first-child,
+::deep .menus-grid > tbody > tr > td:first-child {
+    width: 3rem;
+    min-width: 3rem;
+}
+
+::deep .menus-grid .bb-detail-view-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: var(--radius-sm);
+    color: var(--hgs-blue);
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+    ::deep .menus-grid .bb-detail-view-icon:hover,
+    ::deep .menus-grid .bb-detail-view-icon:focus-visible {
+        background: #F0F6FF;
+        outline: none;
+    }

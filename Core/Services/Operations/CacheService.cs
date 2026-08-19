@@ -1,4 +1,4 @@
-using Core.Interfaces;
+using Core.Interfaces.Operations;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace Core.Services.Operations;

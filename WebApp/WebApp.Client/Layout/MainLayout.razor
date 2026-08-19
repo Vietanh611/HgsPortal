@@ -4,7 +4,9 @@
 @using WebApp.Client.Services.Auth
 @using WebApp.Client.Services.Data
 @using WebApp.Client.Services.Network
+@using WebApp.Client.Services.Notification
 @using WebApp.Client.Services.Components
+@using WebApp.Client.Components.Notifications
 @using BlazorBootstrap
 @using Hgs.Share.Responses.ApiResponses
 @using Hgs.Share.Responses.Menus
@@ -18,6 +20,7 @@
 @inject IServiceProvider ServiceProvider
 @inject AuthService AuthService
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NotificationPollingService NotificationPolling
 
 <CascadingAuthenticationState>
     <div class="bb-page">
@@ -28,33 +31,37 @@
                  IsResponsive="true" />
 
         <main>
-            <div class="bb-top-row px-3">
+<div class="bb-top-row px-3">
                 <Icon Name="IconName.List" Class="sidebar-toggle-icon d-none d-md-inline-flex" role="button" aria-label="Bật/tắt menu" tabindex="0" @onclick="ToggleSidebar" />
-                @if (currentUser != null)
-                {
-                    <Dropdown>
-                        <DropdownToggleButton>
-                                @if (!string.IsNullOrWhiteSpace(currentUser?.AvatarUrl))
-                                {
-                                    <img src="@currentUser.AvatarUrl" alt="Ảnh đại diện" class="avatar-circle" />
-                                }
-                                else
-                                {
-                                    <span class="avatar-circle">@AvatarChar</span>
-                                }
-                            <span class="user-display-name">@DisplayName</span>
-                        </DropdownToggleButton>
-                        <DropdownMenu Position="DropdownMenuPosition.End">
-                            <DropdownItem To="/profile" Type="DropdownItemType.Link">
-                                <i class="bi bi-person me-1"></i> Thông tin tài khoản
-                            </DropdownItem>
-                            <DropdownDivider />
-                            <DropdownItem To="/logout" Type="DropdownItemType.Link">
-                                <i class="bi bi-box-arrow-right me-1"></i> Đăng xuất
-                            </DropdownItem>
-                        </DropdownMenu>
-                    </Dropdown>
-                }
+                <GlobalSearch Menus="userMenus" />
+                <div class="ms-auto d-flex align-items-center gap-2">
+                    <NotificationBell />
+                    @if (currentUser != null)
+                    {
+                        <Dropdown>
+                            <DropdownToggleButton type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="true">
+                                    @if (!string.IsNullOrWhiteSpace(currentUser?.AvatarUrl))
+                                    {
+                                        <img src="@currentUser.AvatarUrl" alt="Ảnh đại diện" class="avatar-circle" />
+                                    }
+                                    else
+                                    {
+                                        <span class="avatar-circle">@AvatarChar</span>
+                                    }
+                                <span class="user-display-name">@DisplayName</span>
+                            </DropdownToggleButton>
+                            <DropdownMenu Position="DropdownMenuPosition.End">
+                                <DropdownItem To="profile" Type="DropdownItemType.Link">
+                                    <i class="bi bi-person me-1"></i> Thông tin tài khoản
+                                </DropdownItem>
+                                <DropdownDivider />
+                                <button type="button" class="dropdown-item" @onclick="HandleLogout">
+                                    <i class="bi bi-box-arrow-right me-1"></i> Đăng xuất
+                                </button>
+                            </DropdownMenu>
+                        </Dropdown>
+                    }
+                </div>
             </div>
             <article class="content px-1">
                 @Body
@@ -95,6 +102,10 @@
         
             sidebar.ToggleSidebar();
     }
+    private async Task HandleLogout()
+    {
+        await AuthService.LogoutAsync();
+    }
     protected override async Task OnInitializedAsync()
     {
         // Subscribe to authentication state changes
@@ -106,10 +117,14 @@
             if (!refreshed)
             {
                 await TokenStorage.ClearTokensAsync();
+                NotificationPolling.Stop();
                 userMenus = new List<MenusGetByUserIdResponse>();
                 _menuLoaded.TrySetResult(true);
                 return;
             }
+
+            // Chỉ poll thông báo khi đã xác thực (spec §4.4: start theo vòng đời đăng nhập).
+            NotificationPolling.Start();
 
             await LoadUserMenus();
             await LoadCurrentUser();
@@ -133,6 +148,8 @@
 
             if (authState.User.Identity?.IsAuthenticated == true)
             {
+                NotificationPolling.Start();
+
                 // Avoid duplicate API call if we're already loading menus
                 if (!_isLoadingMenus)
                 {
@@ -145,6 +162,7 @@
             }
             else
             {
+                NotificationPolling.Stop();
                 userMenus = new List<MenusGetByUserIdResponse>();
                 currentUser = null;
                 var lastUserId = _lastUserId;
@@ -161,6 +179,7 @@
 
     public async ValueTask DisposeAsync()
     {
+        NotificationPolling.Stop();
         AuthenticationStateProvider.AuthenticationStateChanged -= OnAuthenticationStateChanged;
     }
 
@@ -208,7 +227,7 @@
                 return;
             }
 
-            var response = await apiClient.GetAsync<ApiResponse<IEnumerable<MenusGetByUserIdResponse>>>("api/my-menus");
+            var response = await apiClient.GetAsync<ApiResponse<IEnumerable<MenusGetByUserIdResponse>>>("api/my/menus");
             if (response != null && response.Success && response.Data != null)
             {
                 userMenus = response.Data.ToList();

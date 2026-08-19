@@ -6,6 +6,7 @@ using Hgs.Share.Responses.Menus;
 using Hgs.Share.Responses.OrganizationUnits;
 using Hgs.Share.Responses.Roles;
 using Microsoft.AspNetCore.Components;
+using WebApp.Client.Components;
 using WebApp.Client.Services.Components;
 using WebApp.Client.Services.Network;
 using BlazorBootstrap;
@@ -13,7 +14,7 @@ using CustomToastService = WebApp.Client.Services.Components.ToastService;
 
 namespace WebApp.Client.Pages.Account.Roles;
 
-public partial class Roles
+public partial class Roles : AuthorizedPageBase
 {
     [Inject] private CustomToastService ToastService { get; set; } = default!;
     [Inject] private ApiClient ApiClient { get; set; } = default!;
@@ -22,7 +23,7 @@ public partial class Roles
     private AssignMenuModal assignMenuModal = default!;
     private IEnumerable<RolesGetAllResponse>? roles;
     private IEnumerable<OrganizationUnitsGetAllResponse>? organizationUnits;
-    private IEnumerable<MenusGetAllResponse>? menus;
+    private IEnumerable<MenusGetByUserIdResponse>? menus;
     private List<int> selectedMenuIds = new();
     private HashSet<int> expandedMenuIds = new();
     private RolesCreateRequest roleForm = new();
@@ -36,7 +37,7 @@ public partial class Roles
     private bool isAssigningMenus = false;
     private int editingRoleId = 0;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnInitializedAuthorizedAsync()
     {
         await Task.WhenAll(LoadRoles(), LoadOrganizationUnits());
     }
@@ -93,7 +94,7 @@ public partial class Roles
         isLoadingMenus = true;
         try
         {
-            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<MenusGetAllResponse>>>("api/menus", silent: true);
+            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<MenusGetByUserIdResponse>>>("api/my/menus", silent: true);
             if (response != null && response.Success && response.Data != null)
             {
                 menus = response.Data;

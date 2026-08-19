@@ -1,5 +1,5 @@
 using API.Authorization;
-using Core.Interfaces;
+using Core.Interfaces.Operations;
 using Hgs.Share.Requests.CriticalLogs;
 using Hgs.Share.Responses.ApiResponses;
 using Hgs.Share.Responses.CriticalLogs;

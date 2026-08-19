@@ -1,0 +1,122 @@
+@page "/notifications"
+@inherits AuthorizedPageBase
+@namespace WebApp.Client.Pages.Notifications
+@using Hgs.Share.Responses.Notifications
+@using BlazorBootstrap
+
+<PageTitle>Thông báo</PageTitle>
+
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                <h1 class="h2 mb-0">Thông báo</h1>
+                <Button Color="ButtonColor.Primary" Disabled="@isMarkingAll" @onclick="MarkAllRead" Class="text-nowrap">
+                    <Icon Name="IconName.CheckAll" /> Đánh dấu tất cả đã đọc
+                </Button>
+            </div>
+
+            <Card class="filter-card mb-2">
+                <CardHeader>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Bộ lọc</h5>
+                        <Button Color="ButtonColor.Link" @onclick="ToggleFilterCollapse" aria-expanded="@filterExpanded">
+                            <Icon Name="@(filterExpanded ? IconName.ChevronUp : IconName.ChevronDown)" />
+                        </Button>
+                    </div>
+                </CardHeader>
+                <Collapse Class="@(filterExpanded ? "show" : "")">
+                    <CardBody>
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-4 col-lg-3">
+                                <label for="notifCategory" class="form-label fw-bold">Loại thông báo</label>
+                                <select id="notifCategory" class="form-select" @bind="filterCategory">
+                                    <option value="">Tất cả</option>
+                                    <option value="Security">Bảo mật</option>
+                                    <option value="Permission">Phân quyền</option>
+                                    <option value="System">Hệ thống</option>
+                                    <option value="CustomerSatisfaction">Đánh giá khách hàng</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 col-lg-3">
+                                <label for="notifRead" class="form-label fw-bold">Trạng thái</label>
+                                <select id="notifRead" class="form-select" @bind="filterRead">
+                                    <option value="">Tất cả</option>
+                                    <option value="true">Đã đọc</option>
+                                    <option value="false">Chưa đọc</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-lg-3 d-flex gap-2">
+                                <Button Color="ButtonColor.Primary" @onclick="ApplyFilters">
+                                    <Icon Name="IconName.Search" /> Áp dụng
+                                </Button>
+                                <Button Color="ButtonColor.Secondary" Outline="true" @onclick="ResetFilters">
+                                    <Icon Name="IconName.ArrowClockwise" /> Đặt lại
+                                </Button>
+                            </div>
+                        </div>
+                    </CardBody>
+                </Collapse>
+            </Card>
+
+            @if (errorMessage != null)
+            {
+                <HgsErrorState Message="@errorMessage" RetryClick="@ApplyFilters" />
+            }
+            else if (showEmptyState)
+            {
+                <HgsEmptyState Title="Không có thông báo nào"
+                               Message="Thử điều chỉnh bộ lọc hoặc chọn loại thông báo khác." />
+            }
+            else
+            {
+                <Grid TItem="NotificationListItemResponse" @ref="grid" DataProvider="NotificationsDataProvider"
+                      AllowPaging="true" PageSize="20" Responsive="true"
+                      Class="table table-hover table-bordered table-striped notif-grid">
+                    <GridColumn TItem="NotificationListItemResponse" HeaderText="Nội dung" AllowSorting="false">
+                        <div class="fw-semibold">@context.Title</div>
+                        @if (!string.IsNullOrWhiteSpace(context.Body))
+                        {
+                            <div class="text-muted small">@context.Body</div>
+                        }
+                    </GridColumn>
+                    <GridColumn TItem="NotificationListItemResponse" HeaderText="Loại" AllowSorting="false">
+                        <Badge Color="@(GetCategoryBadgeColor(context.Category))">@GetCategoryLabel(context.Category)</Badge>
+                    </GridColumn>
+                    <GridColumn TItem="NotificationListItemResponse" HeaderText="Mức độ" AllowSorting="false">
+                        <Badge Color="@(GetSeverityBadgeColor(context.Severity))">@context.Severity</Badge>
+                    </GridColumn>
+                    <GridColumn TItem="NotificationListItemResponse" HeaderText="Thời gian" AllowSorting="false">
+                        @context.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")
+                    </GridColumn>
+                    <GridColumn TItem="NotificationListItemResponse" HeaderText="Trạng thái" AllowSorting="false">
+                        @if (context.IsRead)
+                        {
+                            <Badge Color="BadgeColor.Secondary">Đã đọc</Badge>
+                        }
+                        else
+                        {
+                            <Badge Color="BadgeColor.Primary">Chưa đọc</Badge>
+                        }
+                    </GridColumn>
+                    <GridColumn TItem="NotificationListItemResponse" HeaderText="Thao tác" AllowSorting="false">
+                        <div class="d-flex gap-1">
+                            @if (!string.IsNullOrWhiteSpace(context.ActionUrl))
+                            {
+                                <Button Color="ButtonColor.Info" Outline="true" Size="ButtonSize.Small" @onclick="() => OpenNotification(context)" aria-label="Mở thông báo">
+                                    <Icon Name="IconName.Eye" />
+                                </Button>
+                            }
+                            @if (!context.IsRead)
+                            {
+                                <Button Color="ButtonColor.Success" Outline="true" Size="ButtonSize.Small" @onclick="() => MarkRead(context)" aria-label="Đánh dấu đã đọc">
+                                    <Icon Name="IconName.CheckAll" />
+                                </Button>
+                            }
+                        </div>
+                    </GridColumn>
+                </Grid>
+            }
+        </div>
+    </div>
+</div>

@@ -1,4 +1,5 @@
 @page "/devices"
+@inherits AuthorizedPageBase
 @using Hgs.Share.Requests.Devices
 @using Hgs.Share.Responses.Devices
 @using Hgs.Share.Responses.OrganizationUnits
@@ -6,16 +7,16 @@
 
 <PageTitle>Quản lý thiết bị</PageTitle>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
     <div>
         <h1 class="h2 mb-1">Quản lý thiết bị</h1>
         <p class="text-secondary mb-0">Kiosk và màn hình hiển thị kết nối vào hệ thống.</p>
     </div>
     <div class="d-flex gap-2">
-        <Button Color="ButtonColor.Secondary" Outline="true" @onclick="LoadDevices" aria-label="Làm mới danh sách thiết bị">
+        <Button Color="ButtonColor.Secondary" Outline="true" @onclick="LoadDevices" aria-label="Làm mới danh sách thiết bị" Class="text-nowrap">
             <Icon Name="IconName.ArrowClockwise" /> Làm mới
         </Button>
-        <Button Color="ButtonColor.Primary" @onclick="ShowCreateModal">
+        <Button Color="ButtonColor.Primary" @onclick="ShowCreateModal" Class="text-nowrap">
             <Icon Name="IconName.PlusLg" /> Tạo mã ghép
         </Button>
     </div>
@@ -87,7 +88,7 @@
                     @(GetOrgUnitName(context.OrganizationUnitId))
                 </GridColumn>
                 <GridColumn TItem="DeviceGetAllResponse" HeaderText="Hoạt động gần nhất" SortKeyExpression="item => item.LastSeenAt">
-                    @(context.LastSeenAt?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa từng")
+                    @(context.LastSeenAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "Chưa từng")
                 </GridColumn>
                 <GridColumn TItem="DeviceGetAllResponse" HeaderText="Thao tác" AllowSorting="false">
                     <Button Color="ButtonColor.Primary" Outline="true" Size="ButtonSize.Small" class="me-1"

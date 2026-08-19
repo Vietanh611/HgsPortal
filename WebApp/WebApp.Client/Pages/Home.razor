@@ -1,4 +1,5 @@
-﻿@page "/home"
+@page "/home"
+@inherits AuthorizedPageBase
 @using System.Linq
 @using Hgs.Share.Responses.ApiResponses
 @using Hgs.Share.Responses.Menus
@@ -20,7 +21,7 @@
 
 @if (isLoading)
 {
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
         <div>
             <PlaceholderContainer Animation="PlaceholderAnimation.Glow">
                 <Placeholder Width="PlaceholderWidth.Col8" />
@@ -29,7 +30,7 @@
         </div>
     </div>
 
-    <div class="row g-3 mb-4">
+    <div class="row g-3 mb-2">
         @for (var i = 0; i < 4; i++)
         {
             <div class="col-12 col-sm-6 col-xl-3">
@@ -62,7 +63,7 @@ else if (errorMessage != null)
 }
 else
 {
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
         <div>
             <h1 class="h2 mb-1">Xin chào, @DisplayName</h1>
             @if (userRoles.Any())
@@ -81,7 +82,7 @@ else
     {
         @if (modules.Any())
         {
-            <div class="row g-3 mb-4">
+            <div class="row g-3 mb-2">
                 @foreach (var module in modules)
                 {
                     <div class="col-12 col-sm-6 col-xl-3">
@@ -131,7 +132,7 @@ else
                                         <td>@(log.Username ?? "N/A")</td>
                                         <td><Badge Color="@(GetActionBadgeColor(log.Action))">@log.Action</Badge></td>
                                         <td>@log.EntityName</td>
-                                        <td>@log.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                        <td>@log.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</td>
                                     </tr>
                                 }
                             </tbody>
@@ -181,7 +182,7 @@ else
         : !string.IsNullOrWhiteSpace(currentUser?.Username) ? currentUser!.Username
         : "User";
 
-    protected override async Task OnInitializedAsync() => await LoadDashboardAsync();
+    protected override async Task OnInitializedAuthorizedAsync() => await LoadDashboardAsync();
 
     private async Task LoadDashboardAsync()
     {
@@ -255,7 +256,7 @@ else
                 return cached;
             }
 
-            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<MenusGetByUserIdResponse>>>("api/my-menus");
+            var response = await ApiClient.GetAsync<ApiResponse<IEnumerable<MenusGetByUserIdResponse>>>("api/my/menus");
             if (response != null && response.Success && response.Data != null)
             {
                 var menus = response.Data.ToList();

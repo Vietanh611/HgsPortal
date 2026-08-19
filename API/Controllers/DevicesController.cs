@@ -1,5 +1,5 @@
 using API.Authorization;
-using Core.Interfaces;
+using Core.Interfaces.Operations;
 using Hgs.Share.Exceptions;
 using Hgs.Share.Requests.Devices;
 using Hgs.Share.Responses.ApiResponses;

@@ -1,0 +1,132 @@
+@using Hgs.Share.Responses.PermissionDelegation
+@using BlazorBootstrap
+
+<Modal @ref="modal" Title="@($"Phân quyền - {TargetUsername}")" OnClose="Close" Size="ModalSize.Large">
+    <BodyTemplate>
+        @if (IsLoading)
+        {
+            <div class="text-center">
+                <Spinner Color="SpinnerColor.Primary" />
+            </div>
+        }
+        else
+        {
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Quyền hiện tại</label>
+                @if (UserRoles == null || !UserRoles.Any())
+                {
+                    <span class="text-muted">Chưa có quyền nào</span>
+                }
+                else
+                {
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var role in UserRoles)
+                        {
+                            <Badge Color="BadgeColor.Primary">@role.Name</Badge>
+                        }
+                    </div>
+                }
+                @if (UserMenus != null && UserMenus.Any())
+                {
+                    <label class="form-label fw-semibold mt-3">Menu nhận qua vai trò</label>
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var menu in UserMenus)
+                        {
+                            <Badge Color="BadgeColor.Secondary">@menu.Name</Badge>
+                        }
+                    </div>
+                }
+            </div>
+
+            <hr />
+
+            <label class="form-label fw-semibold">Chọn quyền gán</label>
+            @if (AssignableRoles == null || !AssignableRoles.Any())
+            {
+                <Alert Color="AlertColor.Warning">Không có quyền nào để gán trong phạm vi của bạn</Alert>
+            }
+            else
+            {
+                <div class="border p-3 rounded" style="max-height: 300px; overflow-y: auto;">
+                    @foreach (var role in AssignableRoles)
+                    {
+                        var isChecked = SelectedRoleIds.Contains(role.Id);
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox"
+                                   id="perm-role-@role.Id"
+                                   value="@role.Id"
+                                   checked="@isChecked"
+                                   @onchange="@(e => HandleRoleCheckboxChanged(role.Id, e.Value?.ToString()))" />
+                            <label class="form-check-label" for="perm-role-@role.Id">
+                                <strong>@role.Name</strong> (@role.Code)
+                                @if (!string.IsNullOrEmpty(role.OrganizationUnitName))
+                                {
+                                    <span class="text-muted small">— @role.OrganizationUnitName</span>
+                                }
+                                @if (isChecked)
+                                {
+                                    <Badge Color="BadgeColor.Success" class="ms-2">Đang giữ</Badge>
+                                }
+                            </label>
+                            @if (!string.IsNullOrEmpty(role.Description))
+                            {
+                                <small class="text-muted d-block ms-4">@role.Description</small>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        }
+    </BodyTemplate>
+    <FooterTemplate>
+        <Button Color="ButtonColor.Secondary" @onclick="Close" Disabled="@IsSaving">Hủy</Button>
+        <Button Color="ButtonColor.Primary" @onclick="HandleSubmit" Disabled="@(IsSaving || IsLoading)">
+            @if (IsSaving)
+            {
+                <Spinner Color="SpinnerColor.Light" Size="SpinnerSize.Small" class="me-2" />
+            }
+            Lưu phân quyền
+        </Button>
+    </FooterTemplate>
+</Modal>
+
+@code {
+    private Modal modal = default!;
+
+    [Parameter] public string TargetUsername { get; set; } = string.Empty;
+    [Parameter] public IEnumerable<AssignableRoleResponse>? AssignableRoles { get; set; }
+    [Parameter] public List<RoleInfo> UserRoles { get; set; } = new();
+    [Parameter] public List<MenuInfo> UserMenus { get; set; } = new();
+    [Parameter] public List<int> SelectedRoleIds { get; set; } = new();
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public bool IsSaving { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnSubmit { get; set; }
+    [Parameter] public Action<int, string?> OnRoleCheckboxChanged { get; set; } = default!;
+
+    public async Task ShowAsync()
+    {
+        await modal.ShowAsync();
+    }
+
+    public async Task HideAsync()
+    {
+        await modal.HideAsync();
+    }
+
+    private void HandleRoleCheckboxChanged(int roleId, string? value)
+    {
+        OnRoleCheckboxChanged(roleId, value);
+    }
+
+    private async Task Close()
+    {
+        await HideAsync();
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task HandleSubmit()
+    {
+        await OnSubmit.InvokeAsync();
+    }
+}
