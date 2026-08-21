@@ -112,7 +112,7 @@ padding: 0;
     background: var(--hgs-blue-dark);
     color: #ffffff;
     border: none;
-    font-size: 24px;
+    font-size: 34px;
     font-weight: 600;
     text-align: center;
     vertical-align: middle;
@@ -127,8 +127,8 @@ padding: 0;
 
 .display-page .arrival-display-table tbody td {
     border: none;
-    font-size: 24px;
-    font-weight: 500;
+    font-size: 30px;
+    font-weight: 600;
     text-align: center;
     vertical-align: middle;
     color: var(--text);
@@ -149,7 +149,6 @@ padding: 0;
     }
 
 .display-page .route {
-    font-size: 1.2rem;
     font-weight: 700;
     line-height: 1.2;
     color: var(--text);
@@ -269,5 +268,28 @@ padding: 0;
 
     .display-page .city {
         font-size: .55rem;
+    }
+}
+
+/* Footer */
+.display-page .display-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--hgs-blue-dark);
+    color: #fff;
+    text-align: center;
+    padding: var(--space-sm) var(--space-md);
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: .05em;
+    z-index: 100;
+}
+
+@media (max-width: 480px) {
+    .display-page .display-footer {
+        font-size: .9rem;
+        padding: var(--space-xs) var(--space-sm);
     }
 }

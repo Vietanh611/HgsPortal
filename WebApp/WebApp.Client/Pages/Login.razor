@@ -9,47 +9,6 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
-@code {
-    private string logoPath => $"{Navigation.BaseUri}assets/hgs/new%20logo/logo.png";
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            // Check if user is already authenticated
-            // var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-            // if (authState.User.Identity?.IsAuthenticated == true)
-            // {
-            //     Navigation.NavigateTo("home", forceLoad: true);
-            // }
-            
-            await LoadRememberedCredentials();
-        }
-    }
-
-    private async Task LoadRememberedCredentials()
-    {
-        if (hasLoadedCredentials) return;
-        
-        hasLoadedCredentials = true;
-        // Load saved username
-        var savedUsername = await JS.InvokeAsync<string>("localStorage.getItem", "rememberedUsername");
-        if (!string.IsNullOrEmpty(savedUsername))
-        {
-            loginRequest.Username = savedUsername;
-        }
-        
-        // Load Remember Me preference
-        var savedRememberMe = await JS.InvokeAsync<string>("localStorage.getItem", "rememberMe");
-        if (!string.IsNullOrEmpty(savedRememberMe))
-        {
-            rememberMe = bool.Parse(savedRememberMe);
-        }
-        
-        StateHasChanged();
-    }
-}
-
 <PageTitle>Đăng nhập</PageTitle>
 
 <div class="login-container">
@@ -58,62 +17,72 @@
             <img src="@logoPath" alt="HGS Logo" class="login-logo" />
         </CardBody>
         <CardBody>
-            <EditForm Model="@loginRequest" OnValidSubmit="HandleLogin">
-                <DataAnnotationsValidator />
+            @if (!isInitialized)
+            {
+                <div class="login-loading" aria-busy="true" aria-label="Đang tải">
+                    <Spinner Color="SpinnerColor.Primary" />
+                    <div class="login-loading-text">Đang tải...</div>
+                </div>
+            }
+            else
+            {
+                <EditForm Model="@loginRequest" OnValidSubmit="HandleLogin">
+                    <DataAnnotationsValidator />
 
-                <div class="mb-3">
-                    <label class="form-label">Tên đăng nhập</label>
+                    <div class="mb-3">
+                        <label class="form-label">Tên đăng nhập</label>
 
-                    <div class="input-group">
-                        <span class="input-group-text">
-                            <i class="bi bi-person"></i>
-                        </span>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-person"></i>
+                            </span>
 
-                        <InputText @bind-Value="loginRequest.Username"
-                                   class="form-control"
-                                   placeholder="Nhập tên đăng nhập" />
+                            <InputText @bind-Value="loginRequest.Username"
+                                       class="form-control"
+                                       placeholder="Nhập tên đăng nhập" />
+                        </div>
+
+                        <ValidationMessage For="() => loginRequest.Username" />
                     </div>
 
-                    <ValidationMessage For="() => loginRequest.Username" />
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Mật khẩu</label>
-                    <div class="input-group">
-                        <span class="input-group-text">
-                            <i class="bi bi-lock"></i>
-                        </span>
-                        <InputText type="@(showPassword ? "text" : "password")"
-                                   class="form-control"
-                                   @bind-Value="loginRequest.Password"
-                                   placeholder="Nhập mật khẩu" />
-                        <span class="input-group-text" role="button" @onclick="() => showPassword = !showPassword">
-                            <i class="bi @(showPassword ? "bi-eye-slash" : "bi-eye")"></i>
-                        </span>
+                    <div class="mb-3">
+                        <label class="form-label">Mật khẩu</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-lock"></i>
+                            </span>
+                            <InputText type="@(showPassword ? "text" : "password")"
+                                       class="form-control"
+                                       @bind-Value="loginRequest.Password"
+                                       placeholder="Nhập mật khẩu" />
+                            <span class="input-group-text" role="button" @onclick="() => showPassword = !showPassword">
+                                <i class="bi @(showPassword ? "bi-eye-slash" : "bi-eye")"></i>
+                            </span>
+                        </div>
+                        <ValidationMessage For="() => loginRequest.Password" />
                     </div>
-                    <ValidationMessage For="() => loginRequest.Password" />
-                </div>
 
-                <div class="mb-3 form-check">
-                    <InputCheckbox @bind-Value="rememberMe" class="form-check-input" id="rememberMe" />
-                    <label class="form-check-label" for="rememberMe">Ghi nhớ đăng nhập</label>
-                </div>
+                    <div class="mb-3 form-check">
+                        <InputCheckbox @bind-Value="rememberMe" class="form-check-input" id="rememberMe" />
+                        <label class="form-check-label" for="rememberMe">Ghi nhớ đăng nhập</label>
+                    </div>
 
-                @if (!string.IsNullOrEmpty(errorMessage))
-                {
-                    <Alert Color="AlertColor.Danger" Class="mb-3">
-                        @errorMessage
-                    </Alert>
-                }
-
-                <Button Type="ButtonType.Submit" Color="ButtonColor.Primary" Class="w-100" Disabled="@isLoading">
-                    @if (isLoading)
+                    @if (!string.IsNullOrEmpty(errorMessage))
                     {
-                        <Spinner Color="SpinnerColor.Light" Size="SpinnerSize.Small" class="me-2" />
+                        <Alert Color="AlertColor.Danger" Class="mb-3">
+                            @errorMessage
+                        </Alert>
                     }
-                    Đăng nhập
-                </Button>
-            </EditForm>
+
+                    <Button Type="ButtonType.Submit" Color="ButtonColor.Primary" Class="w-100" Disabled="@isLoading">
+                        @if (isLoading)
+                        {
+                            <Spinner Color="SpinnerColor.Light" Size="SpinnerSize.Small" class="me-2" />
+                        }
+                        Đăng nhập
+                    </Button>
+                </EditForm>
+            }
         </CardBody>
         <CardFooter Class="text-center login-footer">
             <a href="forgot-password">Quên mật khẩu?</a>
@@ -187,17 +156,70 @@
     .login-footer a:hover {
         text-decoration: underline;
     }
+
+    .login-loading {
+        min-height: 240px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .login-loading-text {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
 </style>
 
 @code {
+    private sealed class RememberedLogin
+    {
+        public string Username { get; set; } = "";
+        public bool RememberMe { get; set; }
+    }
+
     private const string AccountLockedErrorCode = "ACCOUNT_LOCKED";
     private AuthenticateRequest loginRequest = new();
     private string errorMessage = string.Empty;
     private bool isLoading = false;
     private bool showPassword = false;
     private bool rememberMe = false;
+    private bool isInitialized = false;
     private bool hasLoadedCredentials = false;
 
+    private string logoPath => $"{Navigation.BaseUri}assets/hgs/new%20logo/logo.png";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !hasLoadedCredentials)
+        {
+            await LoadRememberedCredentials();
+        }
+    }
+
+    private async Task LoadRememberedCredentials()
+    {
+        if (hasLoadedCredentials) return;
+        hasLoadedCredentials = true;
+
+        try
+        {
+            var remembered = await JS.InvokeAsync<RememberedLogin>("loginStorage.getRemembered");
+            loginRequest.Username = remembered.Username;
+            rememberMe = remembered.RememberMe;
+        }
+        catch
+        {
+            // localStorage không truy cập được hoặc helper chưa sẵn sàng:
+            // mở form với giá trị trống — fallback an toàn, không chặn đăng nhập.
+        }
+        finally
+        {
+            isInitialized = true;
+            StateHasChanged();
+        }
+    }
 
     private async Task HandleLogin()
     {
@@ -244,7 +266,6 @@
 
             // Navigate to home page
             Navigation.NavigateTo("home", forceLoad: false);
-
         }
         catch (Exception ex)
         {

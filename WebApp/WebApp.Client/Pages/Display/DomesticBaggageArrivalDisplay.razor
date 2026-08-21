@@ -1,4 +1,4 @@
-﻿@page "/display/DomesticBaggageArrivalDisplay"
+﻿@page "/display/DAD"
 @attribute [AllowAnonymous]
 @layout EmptyLayout
 @rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
@@ -30,10 +30,22 @@
     else if (!isAuthenticated && kioskConfig == null)
     {
         <div class="kiosk-setup-screen">
+            @if (deviceNotice != null)
+            {
+                <div class="alert alert-warning" role="alert">
+                    @deviceNotice
+                </div>
+            }
             <KioskDeviceSetup Config="@kioskConfig" OnChanged="HandleConfigChanged" />
             <p class="text-muted mt-3 mb-0">
                 Nhập mã ghép phía trên để kích hoạt màn hình và bắt đầu hiển thị.
             </p>
+        </div>
+    }
+    else if (deviceNotice != null)
+    {
+        <div class="alert alert-warning" role="alert">
+            @deviceNotice
         </div>
     }
     else if (errorMessage != null)
@@ -73,10 +85,10 @@
                                             <table class="arrival-display-table">
                                                 <thead>
                                                     <tr>
-                                                        <th><i class="bi bi-airplane"></i> Carrier</th>
-                                                        <th><i class="bi bi-airplane-fill"></i> Flight</th>
-                                                        <th><i class="bi bi-geo-alt"></i> Depart From</th>
-                                                        <th><i class="bi bi-bag"></i> Belt No.</th>
+                                                        <th>Carrier</th>
+                                                        <th>Flight</th>
+                                                        <th>Depart From</th>
+                                                        <th>Belt No.</th>
                                                     </tr>
                                                 </thead>
 
@@ -150,6 +162,9 @@
             Chưa có dữ liệu hiển thị.
         </div>
     }
+    <footer class="display-footer">
+        CAN'T FIND YOUR BAGGAGE? Please contact our Lost & Found staff
+    </footer>
 </div>
 
 @code {
@@ -159,6 +174,7 @@
     private bool isChecking = true;
     private bool isLoading = true;
     private string? errorMessage;
+    private string? deviceNotice;
     private int carouselKey = 0;
     private PeriodicTimer? timer;
     private CancellationTokenSource? cts;
@@ -240,20 +256,51 @@
                 }
                 : null;
 
-            var baggageResponse = await ApiClient.GetAsync<ApiResponse<IEnumerable<BaggageArrivalDisplayDto>>>("api/display/GetDomesticBaggageArrivalDisplay", headers: headers);
+            var baggageResult = await ApiClient.GetSilentAsync<ApiResponse<IEnumerable<BaggageArrivalDisplayDto>>>(
+                "api/display/GetDomesticBaggageArrivalDisplay", headers);
 
-            if (baggageResponse != null && baggageResponse.Success && baggageResponse.Data != null)
+            if (baggageResult.IsUnauthorized)
             {
-                baggageData = baggageResponse.Data.ToList();
+                if (kioskConfig != null)
+                {
+                    await HandleDeviceUnauthorizedAsync(baggageResult.ErrorCode);
+                }
+                else
+                {
+                    errorMessage = "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
+                }
+                return;
             }
 
-            var assetsResponse = await ApiClient.GetAsync<ApiResponse<IEnumerable<CoreAssetsGetAllResponse>>>("api/coreassets", headers: headers);
-            if (assetsResponse != null && assetsResponse.Success && assetsResponse.Data != null)
+            if (baggageResult.Success && baggageResult.Data is { Success: true, Data: not null })
             {
-                images = assetsResponse.Data
+                baggageData = baggageResult.Data.Data.ToList();
+            }
+
+            var assetsResult = await ApiClient.GetSilentAsync<ApiResponse<IEnumerable<CoreAssetsGetAllResponse>>>(
+                "api/coreassets", headers);
+
+            if (assetsResult.IsUnauthorized)
+            {
+                if (kioskConfig != null)
+                {
+                    await HandleDeviceUnauthorizedAsync(assetsResult.ErrorCode);
+                }
+                else
+                {
+                    errorMessage = "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
+                }
+                return;
+            }
+
+            if (assetsResult.Success && assetsResult.Data is { Success: true, Data: not null })
+            {
+                images = assetsResult.Data.Data
                     .Where(a => a.Code == "ARRIVAL_DISPLAY" && a.IsActive)
                     .ToList();
             }
+
+            deviceNotice = null;
             StateHasChanged();
         }
         catch (Exception ex)
@@ -266,10 +313,34 @@
         }
     }
 
+    /// <summary>
+    /// Xử lý khi device key bị API từ chối (401): nếu thiết bị bị tắt (DEVICE_DISABLED) thì giữ
+    /// cấu hình và hiện thông báo chờ admin bật lại; nếu bị thu hồi/không còn hiệu lực thì xóa
+    /// cấu hình để hiện lại màn hình ghép cặp.
+    /// </summary>
+    private async Task HandleDeviceUnauthorizedAsync(string? errorCode)
+    {
+        if (errorCode == "DEVICE_DISABLED")
+        {
+            deviceNotice = "Thiết bị đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.";
+            StateHasChanged();
+            return;
+        }
+
+        await KioskConfig.ClearAsync();
+        kioskConfig = null;
+        deviceNotice = "Thiết bị đã bị thu hồi hoặc không còn hiệu lực. Vui lòng nhập mã ghép mới từ quản trị viên.";
+        StateHasChanged();
+    }
+
     private async Task HandleConfigChanged()
     {
         kioskConfig = await KioskConfig.GetAsync();
         errorMessage = null;
+        if (kioskConfig == null)
+        {
+            deviceNotice = null;
+        }
         if (isAuthenticated || kioskConfig != null)
         {
             await LoadData();

@@ -4,7 +4,8 @@ namespace WebApp.Client.Services.Network;
 /// Kết quả của một request API nền (silent) dùng <see cref="ApiClient.GetSilentAsync{T}"/>.
 /// Không tự redirect, không retry — caller tự quyết định xử lý dựa trên cờ trạng thái:
 /// 401 (IsUnauthorized) → refresh + thử lại; 403 (IsForbidden) → bỏ qua; lỗi khác
-/// (ErrorMessage) → thử lại chu kỳ sau.
+/// (ErrorMessage) → thử lại chu kỳ sau. ErrorCode mang mã lỗi chi tiết từ body ApiResponse
+/// (vd DEVICE_REVOKED/DEVICE_DISABLED) để caller phân biệt nguyên nhân 401.
 /// </summary>
 public class ApiCallResult<T>
 {
@@ -13,4 +14,5 @@ public class ApiCallResult<T>
     public bool IsUnauthorized { get; init; }
     public bool IsForbidden { get; init; }
     public string? ErrorMessage { get; init; }
+    public string? ErrorCode { get; init; }
 }

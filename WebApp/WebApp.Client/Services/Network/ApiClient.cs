@@ -249,19 +249,23 @@ public class ApiClient
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                return new ApiCallResult<T> { IsUnauthorized = true };
+                return new ApiCallResult<T> { IsUnauthorized = true, ErrorCode = await ReadErrorCodeAsync(response) };
             }
 
             if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
             {
-                return new ApiCallResult<T> { IsForbidden = true };
+                return new ApiCallResult<T> { IsForbidden = true, ErrorCode = await ReadErrorCodeAsync(response) };
             }
 
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
                 Console.WriteLine($"GET {endpoint} failed: {response.StatusCode} - {errorContent}");
-                return new ApiCallResult<T> { ErrorMessage = $"API Error: {response.StatusCode}" };
+                return new ApiCallResult<T>
+                {
+                    ErrorMessage = $"API Error: {response.StatusCode}",
+                    ErrorCode = ReadErrorCode(errorContent)
+                };
             }
 
             var data = await response.Content.ReadFromJsonAsync<T>(_jsonOptions);
@@ -271,6 +275,35 @@ public class ApiClient
         {
             Console.WriteLine($"GET {endpoint} failed: {ex.Message}");
             return new ApiCallResult<T> { ErrorMessage = ex.Message };
+        }
+    }
+
+    /// <summary>
+    /// Đọc ErrorCode từ body lỗi (dạng ApiResponse) của response 401/403 — kiosk cần mã này để
+    /// phân biệt DEVICE_DISABLED (giữ cấu hình, chờ bật lại) với DEVICE_REVOKED (phải ghép cặp lại).
+    /// </summary>
+    private async Task<string?> ReadErrorCodeAsync(HttpResponseMessage response)
+    {
+        try
+        {
+            return ReadErrorCode(await response.Content.ReadAsStringAsync());
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private string? ReadErrorCode(string body)
+    {
+        try
+        {
+            var apiResponse = JsonSerializer.Deserialize<ApiResponse<object>>(body, _jsonOptions);
+            return apiResponse?.ErrorCode;
+        }
+        catch
+        {
+            return null;
         }
     }
 

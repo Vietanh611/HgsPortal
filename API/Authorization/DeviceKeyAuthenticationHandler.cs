@@ -1,8 +1,10 @@
 using Core.Interfaces.Operations;
+using Hgs.Share.Responses.ApiResponses;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
+using System.Text.Json;
 
 namespace API.Authorization;
 
@@ -21,8 +23,13 @@ public class DeviceKeyAuthenticationHandler : AuthenticationHandler<DeviceKeyAut
     public const string DeviceIdClaim = "device_id";
     /// <summary>Khóa trong HttpContext.Items lưu id DB của thiết bị đã xác thực trong suốt request, để middleware phía sau nhận diện thiết bị.</summary>
     public const string AuthenticatedDeviceIdKey = "AuthenticatedDeviceId";
+    /// <summary>Khóa trong HttpContext.Items lưu lý do xác thực bị từ chối (REVOKED/DISABLED), dùng để ghi body 401 cho kiosk biết cách xử lý.</summary>
+    public const string DeviceAuthStatusKey = "DeviceAuthStatus";
     /// <summary>Tiền tố cache key dùng để giới hạn việc ghi LastSeenAt xuống tối đa 1 lần/phút/thiết bị.</summary>
     private const string LastSeenCachePrefix = "device:lastseen:";
+
+    private const string DeviceAuthStatusRevoked = "REVOKED";
+    private const string DeviceAuthStatusDisabled = "DISABLED";
 
     private readonly IDevicesService _devicesService;
     private readonly ICacheService _cacheService;
@@ -42,7 +49,8 @@ public class DeviceKeyAuthenticationHandler : AuthenticationHandler<DeviceKeyAut
     /// <summary>
     /// Xác thực thiết bị bằng cặp header X-Device-Id/X-Device-Key qua IDevicesService. Khi thành
     /// công, id DB của thiết bị được đưa vào HttpContext.Items và principal chỉ mang claim
-    /// device_id — cố ý không mang claim user.
+    /// device_id — cố ý không mang claim user. Khi bị từ chối, lưu lý do (REVOKED/DISABLED)
+    /// vào Context.Items để HandleChallengeAsync ghi body 401 với ErrorCode tương ứng.
     /// </summary>
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
@@ -54,13 +62,20 @@ public class DeviceKeyAuthenticationHandler : AuthenticationHandler<DeviceKeyAut
             return AuthenticateResult.Fail("Missing device credentials");
         }
 
-        var device = await _devicesService.AuthenticateDeviceAsync(deviceId, deviceKey, cancellationToken: Context.RequestAborted);
-        if (device is null)
+        var result = await _devicesService.AuthenticateDeviceAsync(deviceId, deviceKey, cancellationToken: Context.RequestAborted);
+        if (!result.IsAuthenticated)
         {
-            Logger.LogWarning("Device authentication failed for identifier '{DeviceIdentifier}' on {Path}.", deviceId, Context.Request.Path);
+            Logger.LogWarning("Device authentication failed for identifier '{DeviceIdentifier}' on {Path} (reason: {Reason}).", deviceId, Context.Request.Path, result.Reason);
+            Context.Items[DeviceAuthStatusKey] = result.Reason switch
+            {
+                DeviceAuthFailureReason.Revoked => DeviceAuthStatusRevoked,
+                DeviceAuthFailureReason.Disabled => DeviceAuthStatusDisabled,
+                _ => null
+            };
             return AuthenticateResult.Fail("Invalid device credentials");
         }
 
+        var device = result.Device!;
         Context.Items[AuthenticatedDeviceIdKey] = device.Id;
         await TouchLastSeenAsync(device.Id, Context.RequestAborted);
 
@@ -74,6 +89,41 @@ public class DeviceKeyAuthenticationHandler : AuthenticationHandler<DeviceKeyAut
         var principal = new ClaimsPrincipal(identity);
 
         return AuthenticateResult.Success(new AuthenticationTicket(principal, Scheme.Name));
+    }
+
+    /// <summary>
+    /// Ghi body 401 (ApiResponse) kèm ErrorCode DEVICE_REVOKED/DEVICE_DISABLED/DEVICE_INVALID để
+    /// kiosk phân biệt thiết bị bị tắt (giữ cấu hình, chờ bật lại) hay bị thu hồi (phải ghép cặp
+    /// lại). Với request có Bearer hợp lệ thì scheme không rơi vào nhánh challenge này nên admin
+    /// preview luôn nhận 200 và không bị ảnh hưởng.
+    /// </summary>
+    protected override Task HandleChallengeAsync(AuthenticationProperties properties)
+    {
+        Response.StatusCode = StatusCodes.Status401Unauthorized;
+        Response.ContentType = "application/json; charset=utf-8";
+
+        var status = Context.Items[DeviceAuthStatusKey]?.ToString();
+        var (errorCode, message) = status switch
+        {
+            DeviceAuthStatusRevoked => ("DEVICE_REVOKED", "Thiết bị đã bị thu hồi."),
+            DeviceAuthStatusDisabled => ("DEVICE_DISABLED", "Thiết bị đã bị vô hiệu hóa."),
+            _ => ("DEVICE_INVALID", "Thiết bị không hợp lệ.")
+        };
+
+        var body = new ApiResponse
+        {
+            Success = false,
+            StatusCode = StatusCodes.Status401Unauthorized,
+            ErrorCode = errorCode,
+            Message = message
+        };
+
+        Response.Headers.WWWAuthenticate = Scheme.Name;
+
+        return Response.WriteAsync(JsonSerializer.Serialize(body, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        }));
     }
 
     /// <summary>

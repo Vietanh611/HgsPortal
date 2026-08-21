@@ -13,7 +13,7 @@ using WebApp.Client.Services.Operation;
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 // Add Blazored.LocalStorage
 builder.Services.AddBlazoredLocalStorage();
-
+builder.Logging.SetMinimumLevel(LogLevel.Warning);
 // Read configuration from wwwroot/appsettings.json
 var apiBaseUrl = builder.Configuration.GetValue<string>("ApiBaseUrl");
 if (string.IsNullOrWhiteSpace(apiBaseUrl))

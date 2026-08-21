@@ -334,39 +334,54 @@ public class DevicesService : IDevicesService
         };
     }
 
-    public async Task<Device?> AuthenticateDeviceAsync(string deviceIdentifier, string deviceKey, string? expectedDeviceType = null, CancellationToken cancellationToken = default)
+    public async Task<DeviceAuthenticationResult> AuthenticateDeviceAsync(string deviceIdentifier, string deviceKey, string? expectedDeviceType = null, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(deviceIdentifier) || string.IsNullOrWhiteSpace(deviceKey))
         {
-            return null;
+            return new DeviceAuthenticationResult(null, DeviceAuthFailureReason.Invalid);
         }
 
         var device = await _dbContext.ManagedDevices
             .AsNoTracking()
             .FirstOrDefaultAsync(d => d.DeviceIdentifier == deviceIdentifier.Trim(), cancellationToken);
 
-        if (device is null || device.IsDeleted || !device.IsEnabled || device.Status != DeviceStatuses.Active)
+        if (device is null || device.IsDeleted)
         {
-            return null;
+            return new DeviceAuthenticationResult(null, DeviceAuthFailureReason.Invalid);
+        }
+
+        if (device.Status == DeviceStatuses.Revoked || device.RevokedAt.HasValue)
+        {
+            return new DeviceAuthenticationResult(null, DeviceAuthFailureReason.Revoked);
+        }
+
+        if (!device.IsEnabled)
+        {
+            return new DeviceAuthenticationResult(null, DeviceAuthFailureReason.Disabled);
+        }
+
+        if (device.Status != DeviceStatuses.Active)
+        {
+            return new DeviceAuthenticationResult(null, DeviceAuthFailureReason.Invalid);
         }
 
         if (!string.IsNullOrWhiteSpace(expectedDeviceType) && device.DeviceType != expectedDeviceType)
         {
-            return null;
+            return new DeviceAuthenticationResult(null, DeviceAuthFailureReason.Invalid);
         }
 
         if (string.IsNullOrEmpty(device.DeviceKeyHash))
         {
-            return null;
+            return new DeviceAuthenticationResult(null, DeviceAuthFailureReason.Invalid);
         }
 
         var keyHash = _tokenService.HashDeviceKey(deviceKey);
         if (!HashesEqual(device.DeviceKeyHash, keyHash))
         {
-            return null;
+            return new DeviceAuthenticationResult(null, DeviceAuthFailureReason.Invalid);
         }
 
-        return device;
+        return new DeviceAuthenticationResult(device, DeviceAuthFailureReason.None);
     }
 
     public async Task UpdateLastSeenAtAsync(int deviceId, string? ipAddress, CancellationToken cancellationToken = default)

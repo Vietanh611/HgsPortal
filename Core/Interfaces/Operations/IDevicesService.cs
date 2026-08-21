@@ -28,8 +28,11 @@ public interface IDevicesService
     /// <summary>Ghép cặp thiết bị bằng mã pairing (Anonymous - kiosk). Trả { deviceId, deviceKey } 1 lần duy nhất.</summary>
     Task<DevicePairResponse> PairDeviceAsync(string pairingCode, string? ipAddress, CancellationToken cancellationToken = default);
 
-    /// <summary>Xác thực thiết bị bằng DeviceIdentifier + DeviceKey. Trả về device nếu hợp lệ, ngược lại null.</summary>
-    Task<Device?> AuthenticateDeviceAsync(string deviceIdentifier, string deviceKey, string? expectedDeviceType = null, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Xác thực thiết bị bằng DeviceIdentifier + DeviceKey. Trả về result kèm lý do bị từ chối
+    /// (Disabled/Revoked) để kiosk biết thiết bị đang bị tắt hay đã bị thu hồi và xử lý tương ứng.
+    /// </summary>
+    Task<DeviceAuthenticationResult> AuthenticateDeviceAsync(string deviceIdentifier, string deviceKey, string? expectedDeviceType = null, CancellationToken cancellationToken = default);
 
     /// <summary>Cập nhật LastSeenAt/LastSeenIp (gọi khi thiết bị thực hiện request hợp lệ).</summary>
     Task UpdateLastSeenAtAsync(int deviceId, string? ipAddress, CancellationToken cancellationToken = default);

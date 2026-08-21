@@ -28,6 +28,10 @@ Scripts/*
 
 #SKILL folder
 skills/
+#AI system (skills, docs, agents, context, skill-library)
+.ai/
+#opencode native skill mirror (junctions -> .ai/skills/)
+.opencode/skills/
 #MARKDOWN
 *.md
 

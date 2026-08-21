@@ -7,6 +7,6 @@
     "MD034": true,
     "MD029": false
   },
-  "globs": ["Docs/**/*.md"],
-  "ignores": ["node_modules/**", ".git/**", ".gitnexus/**"]
+  "globs": ["Docs/**/*.md", ".ai/docs/**/*.md", ".ai/agents/**/*.md", ".ai/context/**/*.md", ".ai/README.md"],
+  "ignores": ["node_modules/**", ".git/**", ".gitnexus/**", ".ai/skill-library/**", ".ai/skills/**"]
 }

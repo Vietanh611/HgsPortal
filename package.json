@@ -4,8 +4,8 @@
   "private": true,
   "description": "HGS Portal - documentation tooling",
   "scripts": {
-    "docs:lint": "markdownlint-cli2 \"Docs/**/*.md\"",
-    "docs:lint:fix": "markdownlint-cli2 --fix \"Docs/**/*.md\""
+    "docs:lint": "markdownlint-cli2",
+    "docs:lint:fix": "markdownlint-cli2 --fix"
   },
   "devDependencies": {
     "markdownlint-cli2": "^0.17.2"

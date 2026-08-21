@@ -37,8 +37,15 @@
                     <div>@(Log.RequestId ?? "N/A")</div>
                 </div>
                 <div class="col-12 mb-3">
-                    <label class="form-label fw-bold">Message</label>
-                    <pre class="bg-light p-3 rounded" style="max-height: 200px; overflow-y: auto;">@(Log.Message ?? "N/A")</pre>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <label class="form-label fw-bold mb-0">Message</label>
+                        <Button Color="ButtonColor.Secondary" Outline="true" Size="ButtonSize.Small"
+                                @onclick="CopyMessageAsync" aria-label="Sao chép Message">
+                            <Icon Name="@(copiedField == FieldMessage ? IconName.Clipboard2CheckFill : IconName.Clipboard2)" />
+                            @(copiedField == FieldMessage ? "Đã sao chép" : "Sao chép")
+                        </Button>
+                    </div>
+                    <pre class="bg-light p-3 rounded mt-2" style="max-height: 200px; overflow-y: auto;">@(Log.Message ?? "N/A")</pre>
                 </div>
                 @if (!string.IsNullOrEmpty(Log.MessageTemplate))
                 {
@@ -50,15 +57,29 @@
                 @if (!string.IsNullOrEmpty(Log.Exception))
                 {
                     <div class="col-12 mb-3">
-                        <label class="form-label fw-bold">Exception</label>
-                        <pre class="bg-light p-3 rounded" style="max-height: 400px; overflow-y: auto;">@Log.Exception</pre>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <label class="form-label fw-bold mb-0">Exception</label>
+                            <Button Color="ButtonColor.Secondary" Outline="true" Size="ButtonSize.Small"
+                                    @onclick="CopyExceptionAsync" aria-label="Sao chép Exception">
+                                <Icon Name="@(copiedField == FieldException ? IconName.Clipboard2CheckFill : IconName.Clipboard2)" />
+                                @(copiedField == FieldException ? "Đã sao chép" : "Sao chép")
+                            </Button>
+                        </div>
+                        <pre class="bg-light p-3 rounded mt-2" style="max-height: 400px; overflow-y: auto;">@Log.Exception</pre>
                     </div>
                 }
                 @if (!string.IsNullOrEmpty(Log.Properties))
                 {
                     <div class="col-12 mb-3">
-                        <label class="form-label fw-bold">Properties</label>
-                        <pre class="bg-light p-3 rounded" style="max-height: 300px; overflow-y: auto;">@FormatProperties(Log.Properties)</pre>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <label class="form-label fw-bold mb-0">Properties</label>
+                            <Button Color="ButtonColor.Secondary" Outline="true" Size="ButtonSize.Small"
+                                    @onclick="CopyPropertiesAsync" aria-label="Sao chép Properties">
+                                <Icon Name="@(copiedField == FieldProperties ? IconName.Clipboard2CheckFill : IconName.Clipboard2)" />
+                                @(copiedField == FieldProperties ? "Đã sao chép" : "Sao chép")
+                            </Button>
+                        </div>
+                        <pre class="bg-light p-3 rounded mt-2" style="max-height: 300px; overflow-y: auto;">@FormatProperties(Log.Properties)</pre>
                     </div>
                 }
             </div>
@@ -74,8 +95,16 @@
     [Parameter] public CriticalLogsGetAllResponse? Log { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
 
+    private const string FieldMessage = "Message";
+    private const string FieldException = "Exception";
+    private const string FieldProperties = "Properties";
+
+    // Trường vừa copy — dùng để đổi nhãn nút thành "Đã sao chép" trong 1,5s làm phản hồi trực quan.
+    private string? copiedField;
+
     public async Task ShowAsync()
     {
+        copiedField = null;
         await modal.ShowAsync();
     }
 
@@ -88,6 +117,41 @@
     {
         await HideAsync();
         await OnClose.InvokeAsync();
+    }
+
+    private Task CopyMessageAsync() =>
+        CopyFieldAsync(Log?.Message ?? string.Empty, FieldMessage);
+
+    private Task CopyExceptionAsync() =>
+        CopyFieldAsync(Log?.Exception ?? string.Empty, FieldException);
+
+    // Copy bản Properties đã format (khớp nội dung đang hiển thị) thay vì XML thô.
+    private Task CopyPropertiesAsync() =>
+        CopyFieldAsync(FormatProperties(Log?.Properties), FieldProperties);
+
+    private async Task CopyFieldAsync(string text, string fieldKey)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return;
+        }
+
+        try
+        {
+            await JS.InvokeVoidAsync("hgsCopyToClipboard", text);
+            copiedField = fieldKey;
+            StateHasChanged();
+            await Task.Delay(1500);
+            if (copiedField == fieldKey)
+            {
+                copiedField = null;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Clipboard error: {ex.Message}");
+        }
     }
 
     // Properties do sink ghi dang XML — can le dep de doc hon khi tra cuu.
